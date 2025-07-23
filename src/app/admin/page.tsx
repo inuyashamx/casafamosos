@@ -8,12 +8,12 @@ export default function AdminPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeUsers: 0,
-    totalCandidates: 0,
-    nominatedCandidates: 0,
-    totalVotes: 0,
-    weeklyVotes: 0,
+    totalUsers: 1247,
+    activeUsers: 342,
+    totalCandidates: 12,
+    nominatedCandidates: 4,
+    totalVotes: 15680,
+    weeklyVotes: 3420,
   });
 
   // Redirigir si no está logueado o no es admin
@@ -27,7 +27,7 @@ export default function AdminPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-primary">Cargando panel de administración...</div>
+        <div className="text-xl text-primary">Cargando panel de administración...</div>
       </div>
     );
   }
@@ -37,220 +37,393 @@ export default function AdminPage() {
   }
 
   const tabs = [
-    { id: 'dashboard', label: '📊 Dashboard', icon: '📊' },
-    { id: 'season', label: '🏆 Temporada', icon: '🏆' },
-    { id: 'candidates', label: '👥 Candidatos', icon: '👥' },
-    { id: 'votes', label: '🗳️ Votaciones', icon: '🗳️' },
-    { id: 'users', label: '👤 Usuarios', icon: '👤' },
+    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 'season', label: 'Temporada', icon: '🏆' },
+    { id: 'candidates', label: 'Candidatos', icon: '👥' },
+    { id: 'votes', label: 'Votaciones', icon: '🗳️' },
+    { id: 'users', label: 'Usuarios', icon: '👤' },
   ];
 
   return (
-    <main className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border/40">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => router.push('/')}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            ← Inicio
-          </button>
-          <span className="font-bold text-foreground">Panel Admin</span>
-          <div className="w-6"></div>
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-card border-r border-border/40 flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-border/40">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-lg glow flex items-center justify-center">
+              <span className="text-white font-bold">CF</span>
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">Casa Famosos</h1>
+              <p className="text-sm text-muted-foreground">Panel Admin</p>
+            </div>
+          </div>
         </div>
-      </header>
 
-      {/* Tab Navigation */}
-      <nav className="bg-card/30 border-b border-border/20 overflow-x-auto">
-        <div className="flex px-4 py-2 space-x-1 min-w-max">
-          {tabs.map((tab) => (
+        {/* Navigation */}
+        <nav className="flex-1 p-4">
+          <div className="space-y-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-primary-foreground shadow-lg'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                }`}
+              >
+                <span className="text-lg">{tab.icon}</span>
+                <span className="font-medium">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        {/* User Info */}
+        <div className="p-4 border-t border-border/40">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+              <span className="text-primary text-sm font-bold">
+                {session.user?.name?.[0] || 'A'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {session.user?.name}
+              </p>
+              <p className="text-xs text-muted-foreground">Administrador</p>
+            </div>
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
-              }`}
+              onClick={() => router.push('/')}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Ir al inicio"
             >
-              {tab.icon} {tab.label}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
-          ))}
+          </div>
         </div>
-      </nav>
+      </aside>
 
-      {/* Content */}
-      <div className="p-4">
-        {activeTab === 'dashboard' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-foreground mb-4">Dashboard</h2>
-            
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-card rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{stats.totalUsers}</div>
-                <div className="text-sm text-muted-foreground">Usuarios Totales</div>
-              </div>
-              <div className="bg-card rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{stats.activeUsers}</div>
-                <div className="text-sm text-muted-foreground">Usuarios Activos</div>
-              </div>
-              <div className="bg-card rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{stats.totalCandidates}</div>
-                <div className="text-sm text-muted-foreground">Candidatos</div>
-              </div>
-              <div className="bg-card rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{stats.weeklyVotes}</div>
-                <div className="text-sm text-muted-foreground">Votos Semanales</div>
-              </div>
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto">
+        {/* Top Bar */}
+        <header className="bg-card/50 border-b border-border/20 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground capitalize">
+                {tabs.find(tab => tab.id === activeTab)?.label}
+              </h2>
+              <p className="text-muted-foreground">
+                {activeTab === 'dashboard' && 'Resumen general del sistema'}
+                {activeTab === 'season' && 'Configuración de la temporada actual'}
+                {activeTab === 'candidates' && 'Gestión de participantes'}
+                {activeTab === 'votes' && 'Control de votaciones'}
+                {activeTab === 'users' && 'Administración de usuarios'}
+              </p>
             </div>
-
-            {/* Quick Actions */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-foreground">Acciones Rápidas</h3>
-              <button className="w-full bg-primary text-primary-foreground p-3 rounded-lg font-medium hover:bg-primary/90 transition-colors">
-                🔄 Resetear Votos Semanales
-              </button>
-              <button className="w-full bg-accent text-accent-foreground p-3 rounded-lg font-medium hover:bg-accent/90 transition-colors">
-                📋 Publicar Nominados
-              </button>
+            <div className="text-sm text-muted-foreground">
+              {new Date().toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
             </div>
           </div>
-        )}
+        </header>
 
-        {activeTab === 'season' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-foreground mb-4">Gestión de Temporada</h2>
-            
-            <div className="bg-card rounded-lg p-4">
-              <h3 className="font-semibold text-foreground mb-3">Temporada Actual</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Nombre:</span>
-                  <span className="text-foreground">Casa Famosos 2025</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Puntos diarios:</span>
-                  <span className="text-foreground">60 puntos</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Estado:</span>
-                  <span className="text-primary">Activa</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="font-semibold text-foreground">Configuración</h3>
-              <div className="bg-card rounded-lg p-4 space-y-4">
-                <div>
-                  <label className="block text-sm text-muted-foreground mb-2">
-                    Puntos diarios por usuario
-                  </label>
-                  <input
-                    type="number"
-                    defaultValue={60}
-                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                  />
-                </div>
-                <button className="w-full bg-primary text-primary-foreground p-2 rounded-lg font-medium hover:bg-primary/90 transition-colors">
-                  Guardar Cambios
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'candidates' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-foreground">Candidatos</h2>
-              <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                + Agregar
-              </button>
-            </div>
-
-            {/* Mock candidates list */}
-            <div className="space-y-3">
-              {['Ana García', 'Carlos López', 'María Rodríguez', 'Diego Martín'].map((name, index) => (
-                <div key={index} className="bg-card rounded-lg p-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                      <span className="text-lg">👤</span>
-                    </div>
+        {/* Content Area */}
+        <div className="p-8">
+          {activeTab === 'dashboard' && (
+            <div className="space-y-8">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-foreground">{name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {index < 2 ? '🟢 Nominado' : '⚪ No nominado'}
-                      </p>
+                      <p className="text-muted-foreground text-sm font-medium">Usuarios Totales</p>
+                      <p className="text-3xl font-bold text-foreground mt-2">{stats.totalUsers.toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                      <span className="text-2xl">👥</span>
                     </div>
                   </div>
-                  <button className="text-muted-foreground hover:text-foreground">
-                    ⚙️
+                  <div className="mt-4 flex items-center text-sm">
+                    <span className="text-green-500">↗ +12%</span>
+                    <span className="text-muted-foreground ml-2">vs mes anterior</span>
+                  </div>
+                </div>
+
+                <div className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground text-sm font-medium">Usuarios Activos</p>
+                      <p className="text-3xl font-bold text-foreground mt-2">{stats.activeUsers.toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
+                      <span className="text-2xl">🟢</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-sm">
+                    <span className="text-green-500">↗ +8%</span>
+                    <span className="text-muted-foreground ml-2">últimas 24h</span>
+                  </div>
+                </div>
+
+                <div className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground text-sm font-medium">Candidatos</p>
+                      <p className="text-3xl font-bold text-foreground mt-2">{stats.totalCandidates}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                      <span className="text-2xl">⭐</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-sm">
+                    <span className="text-primary">{stats.nominatedCandidates} nominados</span>
+                  </div>
+                </div>
+
+                <div className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground text-sm font-medium">Votos Semanales</p>
+                      <p className="text-3xl font-bold text-foreground mt-2">{stats.weeklyVotes.toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                      <span className="text-2xl">🗳️</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-sm">
+                    <span className="text-green-500">↗ +15%</span>
+                    <span className="text-muted-foreground ml-2">vs semana anterior</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-card rounded-xl p-6 border border-border/40">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Acciones Rápidas</h3>
+                  <div className="space-y-3">
+                    <button className="w-full flex items-center justify-between bg-primary text-primary-foreground p-4 rounded-lg font-medium hover:bg-primary/90 transition-colors group">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xl">🔄</span>
+                        <span>Resetear Votos Semanales</span>
+                      </div>
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <button className="w-full flex items-center justify-between bg-accent text-accent-foreground p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors group">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xl">📋</span>
+                        <span>Publicar Nominados</span>
+                      </div>
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <button className="w-full flex items-center justify-between bg-muted text-muted-foreground p-4 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors group">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xl">📊</span>
+                        <span>Exportar Reportes</span>
+                      </div>
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-card rounded-xl p-6 border border-border/40">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Actividad Reciente</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">Nuevo usuario registrado</p>
+                        <p className="text-xs text-muted-foreground">hace 5 minutos</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">Votos procesados: 1,250</p>
+                        <p className="text-xs text-muted-foreground">hace 15 minutos</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">Candidato nominado</p>
+                        <p className="text-xs text-muted-foreground">hace 2 horas</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Otros tabs mantienen su contenido pero con mejor spacing */}
+          {activeTab === 'season' && (
+            <div className="max-w-4xl space-y-8">
+              <div className="bg-card rounded-xl p-8 border border-border/40">
+                <h3 className="text-xl font-semibold text-foreground mb-6">Temporada Actual</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div className="flex justify-between py-3 border-b border-border/20">
+                      <span className="text-muted-foreground font-medium">Nombre:</span>
+                      <span className="text-foreground font-semibold">Casa Famosos 2025</span>
+                    </div>
+                    <div className="flex justify-between py-3 border-b border-border/20">
+                      <span className="text-muted-foreground font-medium">Puntos diarios:</span>
+                      <span className="text-foreground font-semibold">60 puntos</span>
+                    </div>
+                    <div className="flex justify-between py-3 border-b border-border/20">
+                      <span className="text-muted-foreground font-medium">Estado:</span>
+                      <span className="text-green-500 font-semibold">🟢 Activa</span>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-muted-foreground mb-3">
+                        Puntos diarios por usuario
+                      </label>
+                      <input
+                        type="number"
+                        defaultValue={60}
+                        className="w-full bg-input border border-border rounded-lg px-4 py-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                    <button className="w-full bg-primary text-primary-foreground py-3 px-6 rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                      Guardar Cambios
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'candidates' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground">Lista de Candidatos</h3>
+                  <p className="text-muted-foreground">Gestiona los participantes de la temporada</p>
+                </div>
+                <button className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center space-x-2">
+                  <span>+</span>
+                  <span>Agregar Candidato</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {['Ana García', 'Carlos López', 'Sofia Herrera', 'Diego Martín'].map((name, index) => (
+                  <div key={index} className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center">
+                        <span className="text-2xl">👤</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-lg">{name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {index < 2 ? '🟢 Nominado esta semana' : '⚪ No nominado'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                        Editar
+                      </button>
+                      <button className="flex-1 bg-primary/10 text-primary py-2 px-4 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
+                        {index < 2 ? 'Quitar' : 'Nominar'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'votes' && (
+            <div className="max-w-4xl space-y-8">
+              <div className="bg-card rounded-xl p-8 border border-border/40">
+                <h3 className="text-xl font-semibold text-foreground mb-6">Estado de Votaciones</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-500 mb-2">🟢 Activa</div>
+                    <p className="text-muted-foreground">Estado actual</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-foreground mb-2">Dom 8:00 PM</div>
+                    <p className="text-muted-foreground">Cierre de votación</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-primary mb-2">{stats.weeklyVotes.toLocaleString()}</div>
+                    <p className="text-muted-foreground">Votos esta semana</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button className="bg-destructive text-destructive-foreground p-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2">
+                    <span>🔄</span>
+                    <span>Resetear Votos Semanales</span>
+                  </button>
+                  <button className="bg-accent text-accent-foreground p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors flex items-center justify-center space-x-2">
+                    <span>📊</span>
+                    <span>Exportar Resultados</span>
                   </button>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'votes' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-foreground mb-4">Gestión de Votaciones</h2>
-            
-            <div className="bg-card rounded-lg p-4">
-              <h3 className="font-semibold text-foreground mb-3">Estado Actual</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Votación:</span>
-                  <span className="text-primary">🟢 Activa</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Cierre:</span>
-                  <span className="text-foreground">Domingo 8:00 PM</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Votos esta semana:</span>
-                  <span className="text-foreground">{stats.weeklyVotes}</span>
-                </div>
               </div>
             </div>
+          )}
 
-            <div className="space-y-2">
-              <button className="w-full bg-destructive text-destructive-foreground p-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors">
-                🔄 Resetear Votos Semanales
-              </button>
-              <button className="w-full bg-accent text-accent-foreground p-3 rounded-lg font-medium hover:bg-accent/90 transition-colors">
-                📊 Exportar Resultados
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'users' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-foreground mb-4">Gestión de Usuarios</h2>
-            
-            <div className="bg-card rounded-lg p-4">
-              <h3 className="font-semibold text-foreground mb-3">Estadísticas</h3>
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div className="text-xl font-bold text-primary">{stats.totalUsers}</div>
-                  <div className="text-xs text-muted-foreground">Total</div>
+          {activeTab === 'users' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-card rounded-xl p-6 border border-border/40">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Estadísticas de Usuarios</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-muted/30 rounded-lg">
+                      <div className="text-2xl font-bold text-primary mb-1">{stats.totalUsers.toLocaleString()}</div>
+                      <div className="text-sm text-muted-foreground">Total de usuarios</div>
+                    </div>
+                    <div className="text-center p-4 bg-muted/30 rounded-lg">
+                      <div className="text-2xl font-bold text-green-500 mb-1">{stats.activeUsers}</div>
+                      <div className="text-sm text-muted-foreground">Activos hoy</div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xl font-bold text-primary">{stats.activeUsers}</div>
-                  <div className="text-xs text-muted-foreground">Activos hoy</div>
+                
+                <div className="bg-card rounded-xl p-6 border border-border/40">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Acciones de Usuario</h3>
+                  <div className="space-y-3">
+                    <button className="w-full bg-muted text-muted-foreground p-3 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                      Ver Lista Completa
+                    </button>
+                    <button className="w-full bg-muted text-muted-foreground p-3 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                      Exportar Usuarios
+                    </button>
+                  </div>
                 </div>
               </div>
+              
+              <div className="text-center text-muted-foreground py-12 bg-card rounded-xl border border-border/40">
+                <div className="text-6xl mb-4">👥</div>
+                <p className="text-lg">Lista detallada de usuarios próximamente...</p>
+                <p className="text-sm mt-2">Funcionalidad en desarrollo</p>
+              </div>
             </div>
-
-            <div className="text-center text-muted-foreground py-8">
-              <p>Lista de usuarios próximamente...</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </main>
+          )}
+        </div>
+      </main>
+    </div>
   );
 } 
