@@ -7,6 +7,7 @@ export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState({
     totalUsers: 1247,
     activeUsers: 342,
@@ -46,43 +47,68 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border/40 flex flex-col">
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-card border-r border-border/40 flex flex-col transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
         {/* Header */}
-        <div className="p-6 border-b border-border/40">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-lg glow flex items-center justify-center">
-              <span className="text-white font-bold">CF</span>
+        <div className="p-4 lg:p-6 border-b border-border/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 lg:w-10 h-8 lg:h-10 bg-gradient-to-r from-primary to-accent rounded-lg glow flex items-center justify-center">
+                <span className="text-white font-bold text-sm lg:text-base">CF</span>
+              </div>
+              <div>
+                <h1 className="text-base lg:text-lg font-bold text-foreground">Casa Famosos</h1>
+                <p className="text-xs lg:text-sm text-muted-foreground">Panel Admin</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">Casa Famosos</h1>
-              <p className="text-sm text-muted-foreground">Panel Admin</p>
-            </div>
+            {/* Close button for mobile */}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden text-muted-foreground hover:text-foreground"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <div className="space-y-2">
+        <nav className="flex-1 p-3 lg:p-4">
+          <div className="space-y-1 lg:space-y-2">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setSidebarOpen(false); // Close sidebar on mobile after selection
+                }}
+                className={`w-full flex items-center space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-left transition-all duration-200 ${
                   activeTab === tab.id
                     ? 'bg-primary text-primary-foreground shadow-lg'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
                 }`}
               >
-                <span className="text-lg">{tab.icon}</span>
-                <span className="font-medium">{tab.label}</span>
+                <span className="text-base lg:text-lg">{tab.icon}</span>
+                <span className="font-medium text-sm lg:text-base">{tab.label}</span>
               </button>
             ))}
           </div>
         </nav>
 
         {/* User Info */}
-        <div className="p-4 border-t border-border/40">
+        <div className="p-3 lg:p-4 border-t border-border/40">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
               <span className="text-primary text-sm font-bold">
@@ -109,23 +135,35 @@ export default function AdminPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 lg:ml-0 overflow-auto">
         {/* Top Bar */}
-        <header className="bg-card/50 border-b border-border/20 px-8 py-4">
+        <header className="bg-card/50 border-b border-border/20 px-4 lg:px-8 py-3 lg:py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground capitalize">
-                {tabs.find(tab => tab.id === activeTab)?.label}
-              </h2>
-              <p className="text-muted-foreground">
-                {activeTab === 'dashboard' && 'Resumen general del sistema'}
-                {activeTab === 'season' && 'Configuración de la temporada actual'}
-                {activeTab === 'candidates' && 'Gestión de participantes'}
-                {activeTab === 'votes' && 'Control de votaciones'}
-                {activeTab === 'users' && 'Administración de usuarios'}
-              </p>
+            <div className="flex items-center space-x-4">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden text-muted-foreground hover:text-foreground"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              
+              <div>
+                <h2 className="text-xl lg:text-2xl font-bold text-foreground capitalize">
+                  {tabs.find(tab => tab.id === activeTab)?.label}
+                </h2>
+                <p className="text-muted-foreground text-sm lg:text-base hidden sm:block">
+                  {activeTab === 'dashboard' && 'Resumen general del sistema'}
+                  {activeTab === 'season' && 'Configuración de la temporada actual'}
+                  {activeTab === 'candidates' && 'Gestión de participantes'}
+                  {activeTab === 'votes' && 'Control de votaciones'}
+                  {activeTab === 'users' && 'Administración de usuarios'}
+                </p>
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs lg:text-sm text-muted-foreground hidden md:block">
               {new Date().toLocaleDateString('es-ES', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -137,131 +175,131 @@ export default function AdminPage() {
         </header>
 
         {/* Content Area */}
-        <div className="p-8">
+        <div className="p-4 lg:p-8">
           {activeTab === 'dashboard' && (
-            <div className="space-y-8">
+            <div className="space-y-6 lg:space-y-8">
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground text-sm font-medium">Usuarios Totales</p>
-                      <p className="text-3xl font-bold text-foreground mt-2">{stats.totalUsers.toLocaleString()}</p>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div className="mb-2 lg:mb-0">
+                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Usuarios Totales</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{stats.totalUsers.toLocaleString()}</p>
                     </div>
-                    <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                      <span className="text-2xl">👥</span>
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 bg-blue-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
+                      <span className="text-lg lg:text-2xl">👥</span>
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center text-sm">
+                  <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
                     <span className="text-green-500">↗ +12%</span>
-                    <span className="text-muted-foreground ml-2">vs mes anterior</span>
+                    <span className="text-muted-foreground ml-2 hidden lg:inline">vs mes anterior</span>
                   </div>
                 </div>
 
-                <div className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground text-sm font-medium">Usuarios Activos</p>
-                      <p className="text-3xl font-bold text-foreground mt-2">{stats.activeUsers.toLocaleString()}</p>
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div className="mb-2 lg:mb-0">
+                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Usuarios Activos</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{stats.activeUsers.toLocaleString()}</p>
                     </div>
-                    <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
-                      <span className="text-2xl">🟢</span>
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 bg-green-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
+                      <span className="text-lg lg:text-2xl">🟢</span>
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center text-sm">
+                  <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
                     <span className="text-green-500">↗ +8%</span>
-                    <span className="text-muted-foreground ml-2">últimas 24h</span>
+                    <span className="text-muted-foreground ml-2 hidden lg:inline">últimas 24h</span>
                   </div>
                 </div>
 
-                <div className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground text-sm font-medium">Candidatos</p>
-                      <p className="text-3xl font-bold text-foreground mt-2">{stats.totalCandidates}</p>
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div className="mb-2 lg:mb-0">
+                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Candidatos</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{stats.totalCandidates}</p>
                     </div>
-                    <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                      <span className="text-2xl">⭐</span>
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 bg-purple-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
+                      <span className="text-lg lg:text-2xl">⭐</span>
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center text-sm">
+                  <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
                     <span className="text-primary">{stats.nominatedCandidates} nominados</span>
                   </div>
                 </div>
 
-                <div className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground text-sm font-medium">Votos Semanales</p>
-                      <p className="text-3xl font-bold text-foreground mt-2">{stats.weeklyVotes.toLocaleString()}</p>
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div className="mb-2 lg:mb-0">
+                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Votos Semanales</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{stats.weeklyVotes.toLocaleString()}</p>
                     </div>
-                    <div className="w-12 h-12 bg-orange-500/10 rounded-lg flex items-center justify-center">
-                      <span className="text-2xl">🗳️</span>
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 bg-orange-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
+                      <span className="text-lg lg:text-2xl">🗳️</span>
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center text-sm">
+                  <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
                     <span className="text-green-500">↗ +15%</span>
-                    <span className="text-muted-foreground ml-2">vs semana anterior</span>
+                    <span className="text-muted-foreground ml-2 hidden lg:inline">vs semana anterior</span>
                   </div>
                 </div>
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-card rounded-xl p-6 border border-border/40">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Acciones Rápidas</h3>
-                  <div className="space-y-3">
-                    <button className="w-full flex items-center justify-between bg-primary text-primary-foreground p-4 rounded-lg font-medium hover:bg-primary/90 transition-colors group">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-xl">🔄</span>
-                        <span>Resetear Votos Semanales</span>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Acciones Rápidas</h3>
+                  <div className="space-y-2 lg:space-y-3">
+                    <button className="w-full flex items-center justify-between bg-primary text-primary-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-primary/90 transition-colors group">
+                      <div className="flex items-center space-x-2 lg:space-x-3">
+                        <span className="text-lg lg:text-xl">🔄</span>
+                        <span className="text-sm lg:text-base">Resetear Votos Semanales</span>
                       </div>
-                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
-                    <button className="w-full flex items-center justify-between bg-accent text-accent-foreground p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors group">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-xl">📋</span>
-                        <span>Publicar Nominados</span>
+                    <button className="w-full flex items-center justify-between bg-accent text-accent-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors group">
+                      <div className="flex items-center space-x-2 lg:space-x-3">
+                        <span className="text-lg lg:text-xl">📋</span>
+                        <span className="text-sm lg:text-base">Publicar Nominados</span>
                       </div>
-                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
-                    <button className="w-full flex items-center justify-between bg-muted text-muted-foreground p-4 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors group">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-xl">📊</span>
-                        <span>Exportar Reportes</span>
+                    <button className="w-full flex items-center justify-between bg-muted text-muted-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors group">
+                      <div className="flex items-center space-x-2 lg:space-x-3">
+                        <span className="text-lg lg:text-xl">📊</span>
+                        <span className="text-sm lg:text-base">Exportar Reportes</span>
                       </div>
-                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
                   </div>
                 </div>
 
-                <div className="bg-card rounded-xl p-6 border border-border/40">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Actividad Reciente</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Actividad Reciente</h3>
+                  <div className="space-y-3 lg:space-y-4">
+                    <div className="flex items-center space-x-3 p-2 lg:p-3 bg-muted/30 rounded-lg">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">Nuevo usuario registrado</p>
+                        <p className="text-xs lg:text-sm font-medium text-foreground">Nuevo usuario registrado</p>
                         <p className="text-xs text-muted-foreground">hace 5 minutos</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center space-x-3 p-2 lg:p-3 bg-muted/30 rounded-lg">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">Votos procesados: 1,250</p>
+                        <p className="text-xs lg:text-sm font-medium text-foreground">Votos procesados: 1,250</p>
                         <p className="text-xs text-muted-foreground">hace 15 minutos</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center space-x-3 p-2 lg:p-3 bg-muted/30 rounded-lg">
                       <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">Candidato nominado</p>
+                        <p className="text-xs lg:text-sm font-medium text-foreground">Candidato nominado</p>
                         <p className="text-xs text-muted-foreground">hace 2 horas</p>
                       </div>
                     </div>
@@ -271,38 +309,38 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Otros tabs mantienen su contenido pero con mejor spacing */}
+          {/* Otros tabs con responsive design */}
           {activeTab === 'season' && (
-            <div className="max-w-4xl space-y-8">
-              <div className="bg-card rounded-xl p-8 border border-border/40">
-                <h3 className="text-xl font-semibold text-foreground mb-6">Temporada Actual</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <div className="flex justify-between py-3 border-b border-border/20">
-                      <span className="text-muted-foreground font-medium">Nombre:</span>
-                      <span className="text-foreground font-semibold">Casa Famosos 2025</span>
+            <div className="max-w-none lg:max-w-4xl space-y-6 lg:space-y-8">
+              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-8 border border-border/40">
+                <h3 className="text-lg lg:text-xl font-semibold text-foreground mb-4 lg:mb-6">Temporada Actual</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                  <div className="space-y-3 lg:space-y-4">
+                    <div className="flex justify-between py-2 lg:py-3 border-b border-border/20">
+                      <span className="text-muted-foreground font-medium text-sm lg:text-base">Nombre:</span>
+                      <span className="text-foreground font-semibold text-sm lg:text-base">Casa Famosos 2025</span>
                     </div>
-                    <div className="flex justify-between py-3 border-b border-border/20">
-                      <span className="text-muted-foreground font-medium">Puntos diarios:</span>
-                      <span className="text-foreground font-semibold">60 puntos</span>
+                    <div className="flex justify-between py-2 lg:py-3 border-b border-border/20">
+                      <span className="text-muted-foreground font-medium text-sm lg:text-base">Puntos diarios:</span>
+                      <span className="text-foreground font-semibold text-sm lg:text-base">60 puntos</span>
                     </div>
-                    <div className="flex justify-between py-3 border-b border-border/20">
-                      <span className="text-muted-foreground font-medium">Estado:</span>
-                      <span className="text-green-500 font-semibold">🟢 Activa</span>
+                    <div className="flex justify-between py-2 lg:py-3 border-b border-border/20">
+                      <span className="text-muted-foreground font-medium text-sm lg:text-base">Estado:</span>
+                      <span className="text-green-500 font-semibold text-sm lg:text-base">🟢 Activa</span>
                     </div>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3 lg:space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-3">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2 lg:mb-3">
                         Puntos diarios por usuario
                       </label>
                       <input
                         type="number"
                         defaultValue={60}
-                        className="w-full bg-input border border-border rounded-lg px-4 py-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full bg-input border border-border rounded-lg px-3 lg:px-4 py-2 lg:py-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
-                    <button className="w-full bg-primary text-primary-foreground py-3 px-6 rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                    <button className="w-full bg-primary text-primary-foreground py-2 lg:py-3 px-4 lg:px-6 rounded-lg font-medium hover:bg-primary/90 transition-colors">
                       Guardar Cambios
                     </button>
                   </div>
@@ -312,37 +350,37 @@ export default function AdminPage() {
           )}
 
           {activeTab === 'candidates' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
+            <div className="space-y-4 lg:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
                 <div>
-                  <h3 className="text-xl font-semibold text-foreground">Lista de Candidatos</h3>
-                  <p className="text-muted-foreground">Gestiona los participantes de la temporada</p>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Lista de Candidatos</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">Gestiona los participantes de la temporada</p>
                 </div>
-                <button className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center space-x-2">
+                <button className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2">
                   <span>+</span>
                   <span>Agregar Candidato</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                 {['Ana García', 'Carlos López', 'Sofia Herrera', 'Diego Martín'].map((name, index) => (
-                  <div key={index} className="bg-card rounded-xl p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center">
-                        <span className="text-2xl">👤</span>
+                  <div key={index} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                    <div className="flex items-center space-x-3 lg:space-x-4 mb-3 lg:mb-4">
+                      <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center">
+                        <span className="text-xl lg:text-2xl">👤</span>
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-foreground text-lg">{name}</h4>
-                        <p className="text-sm text-muted-foreground">
+                        <h4 className="font-semibold text-foreground text-base lg:text-lg">{name}</h4>
+                        <p className="text-xs lg:text-sm text-muted-foreground">
                           {index < 2 ? '🟢 Nominado esta semana' : '⚪ No nominado'}
                         </p>
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 lg:px-4 rounded-lg text-xs lg:text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
                         Editar
                       </button>
-                      <button className="flex-1 bg-primary/10 text-primary py-2 px-4 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
+                      <button className="flex-1 bg-primary/10 text-primary py-2 px-3 lg:px-4 rounded-lg text-xs lg:text-sm font-medium hover:bg-primary/20 transition-colors">
                         {index < 2 ? 'Quitar' : 'Nominar'}
                       </button>
                     </div>
@@ -353,32 +391,32 @@ export default function AdminPage() {
           )}
 
           {activeTab === 'votes' && (
-            <div className="max-w-4xl space-y-8">
-              <div className="bg-card rounded-xl p-8 border border-border/40">
-                <h3 className="text-xl font-semibold text-foreground mb-6">Estado de Votaciones</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="max-w-none lg:max-w-4xl space-y-6 lg:space-y-8">
+              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-8 border border-border/40">
+                <h3 className="text-lg lg:text-xl font-semibold text-foreground mb-4 lg:mb-6">Estado de Votaciones</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-green-500 mb-2">🟢 Activa</div>
-                    <p className="text-muted-foreground">Estado actual</p>
+                    <div className="text-2xl lg:text-3xl font-bold text-green-500 mb-2">🟢 Activa</div>
+                    <p className="text-muted-foreground text-sm lg:text-base">Estado actual</p>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-foreground mb-2">Dom 8:00 PM</div>
-                    <p className="text-muted-foreground">Cierre de votación</p>
+                    <div className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Dom 8:00 PM</div>
+                    <p className="text-muted-foreground text-sm lg:text-base">Cierre de votación</p>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-primary mb-2">{stats.weeklyVotes.toLocaleString()}</div>
-                    <p className="text-muted-foreground">Votos esta semana</p>
+                    <div className="text-2xl lg:text-3xl font-bold text-primary mb-2">{stats.weeklyVotes.toLocaleString()}</div>
+                    <p className="text-muted-foreground text-sm lg:text-base">Votos esta semana</p>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button className="bg-destructive text-destructive-foreground p-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
+                  <button className="bg-destructive text-destructive-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2">
                     <span>🔄</span>
-                    <span>Resetear Votos Semanales</span>
+                    <span className="text-sm lg:text-base">Resetear Votos Semanales</span>
                   </button>
-                  <button className="bg-accent text-accent-foreground p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors flex items-center justify-center space-x-2">
+                  <button className="bg-accent text-accent-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors flex items-center justify-center space-x-2">
                     <span>📊</span>
-                    <span>Exportar Resultados</span>
+                    <span className="text-sm lg:text-base">Exportar Resultados</span>
                   </button>
                 </div>
               </div>
@@ -386,39 +424,39 @@ export default function AdminPage() {
           )}
 
           {activeTab === 'users' && (
-            <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-card rounded-xl p-6 border border-border/40">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Estadísticas de Usuarios</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-muted/30 rounded-lg">
-                      <div className="text-2xl font-bold text-primary mb-1">{stats.totalUsers.toLocaleString()}</div>
-                      <div className="text-sm text-muted-foreground">Total de usuarios</div>
+            <div className="space-y-6 lg:space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Estadísticas de Usuarios</h3>
+                  <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                    <div className="text-center p-3 lg:p-4 bg-muted/30 rounded-lg">
+                      <div className="text-xl lg:text-2xl font-bold text-primary mb-1">{stats.totalUsers.toLocaleString()}</div>
+                      <div className="text-xs lg:text-sm text-muted-foreground">Total de usuarios</div>
                     </div>
-                    <div className="text-center p-4 bg-muted/30 rounded-lg">
-                      <div className="text-2xl font-bold text-green-500 mb-1">{stats.activeUsers}</div>
-                      <div className="text-sm text-muted-foreground">Activos hoy</div>
+                    <div className="text-center p-3 lg:p-4 bg-muted/30 rounded-lg">
+                      <div className="text-xl lg:text-2xl font-bold text-green-500 mb-1">{stats.activeUsers}</div>
+                      <div className="text-xs lg:text-sm text-muted-foreground">Activos hoy</div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="bg-card rounded-xl p-6 border border-border/40">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Acciones de Usuario</h3>
-                  <div className="space-y-3">
-                    <button className="w-full bg-muted text-muted-foreground p-3 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Acciones de Usuario</h3>
+                  <div className="space-y-2 lg:space-y-3">
+                    <button className="w-full bg-muted text-muted-foreground p-2 lg:p-3 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors text-sm lg:text-base">
                       Ver Lista Completa
                     </button>
-                    <button className="w-full bg-muted text-muted-foreground p-3 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                    <button className="w-full bg-muted text-muted-foreground p-2 lg:p-3 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors text-sm lg:text-base">
                       Exportar Usuarios
                     </button>
                   </div>
                 </div>
               </div>
               
-              <div className="text-center text-muted-foreground py-12 bg-card rounded-xl border border-border/40">
-                <div className="text-6xl mb-4">👥</div>
-                <p className="text-lg">Lista detallada de usuarios próximamente...</p>
-                <p className="text-sm mt-2">Funcionalidad en desarrollo</p>
+              <div className="text-center text-muted-foreground py-8 lg:py-12 bg-card rounded-lg lg:rounded-xl border border-border/40">
+                <div className="text-4xl lg:text-6xl mb-3 lg:mb-4">👥</div>
+                <p className="text-base lg:text-lg">Lista detallada de usuarios próximamente...</p>
+                <p className="text-xs lg:text-sm mt-2">Funcionalidad en desarrollo</p>
               </div>
             </div>
           )}
