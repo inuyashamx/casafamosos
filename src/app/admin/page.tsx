@@ -568,8 +568,527 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* Semanas Tab */}
+          {activeTab === 'weeks' && (
+            <div className="space-y-6 lg:space-y-8">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                <div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Semanas</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">Administra las semanas de votación de la temporada</p>
+                </div>
+                <button 
+                  onClick={() => setShowWeekForm(true)}
+                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <span>+</span>
+                  <span>Nueva Semana</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                {weeks.map((week) => (
+                  <div key={week.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-semibold text-foreground text-base lg:text-lg">Semana {week.number}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            week.status === 'active' || week.status === 'voting'
+                              ? 'bg-green-500/10 text-green-500'
+                              : week.status === 'completed'
+                                ? 'bg-muted text-muted-foreground'
+                                : 'bg-muted/50 text-muted-foreground'
+                          }`}>
+                            {week.status === 'active' || week.status === 'voting' ? '🟢 Activa' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-sm">
+                          {new Date(week.startDate).toLocaleDateString('es-ES')} - {new Date(week.endDate).toLocaleDateString('es-ES')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-foreground">{week.nominees}</div>
+                        <div className="text-xs text-muted-foreground">Nominados</div>
+                      </div>
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-foreground">{week.status === 'completed' ? 'Cerrada' : week.status === 'voting' ? 'Votando' : 'Pendiente'}</div>
+                        <div className="text-xs text-muted-foreground">Estado</div>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                        Ver Nominados
+                      </button>
+                      {week.status === 'voting' ? (
+                        <button className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors">
+                          Cerrar Semana
+                        </button>
+                      ) : week.status === 'scheduled' ? (
+                        <button className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
+                          Activar
+                        </button>
+                      ) : null}
+                      {week.status !== 'voting' && (
+                        <button className="flex-1 bg-muted/20 text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/40 transition-colors">
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Week Form Modal */}
+              {showWeekForm && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Nueva Semana</h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                          Número de Semana
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="1"
+                          min="1"
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Fecha de Inicio
+                          </label>
+                          <input
+                            type="date"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Fecha de Fin
+                          </label>
+                          <input
+                            type="date"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Inicio de Votación
+                          </label>
+                          <input
+                            type="datetime-local"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Fin de Votación
+                          </label>
+                          <input
+                            type="datetime-local"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-3 mt-6">
+                      <button
+                        onClick={() => setShowWeekForm(false)}
+                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowWeekForm(false);
+                          // Aquí iría la lógica para crear la semana
+                        }}
+                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        Crear Semana
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Candidatos Tab */}
+          {activeTab === 'candidates' && (
+            <div className="space-y-6 lg:space-y-8">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                <div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Candidatos</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">Administra los candidatos del programa</p>
+                </div>
+                <button 
+                  onClick={() => setShowCandidateForm(true)}
+                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <span>+</span>
+                  <span>Nuevo Candidato</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                {candidates.map((candidate) => (
+                  <div key={candidate.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-semibold text-foreground text-base lg:text-lg">{candidate.name}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            candidate.status === 'active'
+                              ? 'bg-green-500/10 text-green-500'
+                              : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {candidate.status === 'active' ? '🟢 Activo' : '⚪ Eliminado'}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-sm">
+                          {candidate.profession}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-foreground">{candidate.age}</div>
+                        <div className="text-xs text-muted-foreground">Edad</div>
+                      </div>
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-foreground">{candidate.eliminatedWeek ? `Eliminado en Semana ${candidate.eliminatedWeek}` : 'No eliminado'}</div>
+                        <div className="text-xs text-muted-foreground">Eliminado</div>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                        Editar
+                      </button>
+                      {candidate.status === 'active' ? (
+                        <button className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors">
+                          Eliminar
+                        </button>
+                      ) : (
+                        <button className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
+                          Activar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Candidate Form Modal */}
+              {showCandidateForm && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Nuevo Candidato</h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                          Nombre del Candidato
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ana García"
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Edad
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="28"
+                            min="18"
+                            max="100"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Profesión
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Actriz"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Foto (URL)
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://example.com/photo.jpg"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Eliminado en Semana
+                          </label>
+                          <select
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          >
+                            <option value="">No eliminado</option>
+                            {weeks.map(w => (
+                              <option key={w.id} value={w.id}>Semana {w.number}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-3 mt-6">
+                      <button
+                        onClick={() => setShowCandidateForm(false)}
+                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCandidateForm(false);
+                          // Aquí iría la lógica para crear el candidato
+                        }}
+                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        Crear Candidato
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Nominados Tab */}
+          {activeTab === 'nominees' && (
+            <div className="space-y-6 lg:space-y-8">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                <div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Control de Nominaciones</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">Gestiona las nominaciones de los candidatos</p>
+                </div>
+                <button 
+                  onClick={() => handleConfirmAction(
+                    'Resetear Nominaciones',
+                    '¿Estás seguro de que quieres resetear todas las nominaciones de la temporada actual? Esta acción no se puede deshacer.',
+                    () => alert('Nominaciones reseteadas')
+                  )}
+                  className="bg-destructive text-destructive-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <span>🔄</span>
+                  <span>Resetear Nominaciones</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                {candidates.map((candidate) => (
+                  <div key={candidate.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-semibold text-foreground text-base lg:text-lg">{candidate.name}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            candidate.status === 'active'
+                              ? 'bg-green-500/10 text-green-500'
+                              : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {candidate.status === 'active' ? '🟢 Activo' : '⚪ Eliminado'}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-sm">
+                          {candidate.profession}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-foreground">{candidate.nominated ? 'Nominado' : 'No Nominado'}</div>
+                        <div className="text-xs text-muted-foreground">Nominación</div>
+                      </div>
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-foreground">{candidate.eliminatedWeek ? `Eliminado en Semana ${candidate.eliminatedWeek}` : 'No eliminado'}</div>
+                        <div className="text-xs text-muted-foreground">Eliminado</div>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                        Editar Nominación
+                      </button>
+                      {candidate.status === 'active' && !candidate.nominated && (
+                        <button className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
+                          Nominar
+                        </button>
+                      )}
+                      {candidate.status === 'active' && candidate.nominated && (
+                        <button className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors">
+                          Desnominar
+                        </button>
+                      )}
+                      {candidate.status === 'active' && candidate.nominated && (
+                        <button className="flex-1 bg-muted/20 text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/40 transition-colors">
+                          Eliminar Nominación
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Votaciones Tab */}
+          {activeTab === 'votes' && (
+            <div className="space-y-6 lg:space-y-8">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                <div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Control de Votaciones</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">Gestiona las votaciones de la temporada</p>
+                </div>
+                <button 
+                  onClick={() => handleConfirmAction(
+                    'Resetear Votaciones',
+                    '¿Estás seguro de que quieres resetear todas las votaciones de la temporada? Esta acción no se puede deshacer.',
+                    () => alert('Votaciones reseteadas')
+                  )}
+                  className="bg-destructive text-destructive-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <span>🔄</span>
+                  <span>Resetear Votaciones</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                {/* Aquí iría la lógica para mostrar estadísticas de votos, gráficos, etc. */}
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Estadísticas de Votaciones</h3>
+                  <div className="space-y-3 lg:space-y-4">
+                    <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-xs lg:text-sm font-medium text-foreground">Votos Totales</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{stats.totalVotes.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-xs lg:text-sm font-medium text-foreground">Votos Semanales</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{stats.weeklyVotes.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <span className="text-xs lg:text-sm font-medium text-foreground">Candidatos Nominados</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{stats.totalCandidates - stats.eliminatedCandidates}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Aquí iría la lógica para mostrar la tabla de votos por semana */}
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Votaciones por Semana</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-border">
+                      <thead className="bg-muted/30">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Semana
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Votos Totales
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Votos Semanales
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Estado
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Acciones
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-card divide-y divide-border">
+                        {weeks.map((week) => (
+                          <tr key={week.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
+                              Semana {week.number}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                              {stats.totalVotes.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                              {stats.weeklyVotes.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                              {week.status === 'active' || week.status === 'voting' ? 'Votando' : week.status === 'completed' ? 'Cerrada' : 'Pendiente'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <button 
+                                onClick={() => handleConfirmAction(
+                                  'Cerrar Semana',
+                                  `¿Estás seguro de que quieres cerrar la semana ${week.number}? Esta acción no se puede deshacer.`,
+                                  () => alert(`Semana ${week.number} cerrada`)
+                                )}
+                                className="text-red-500 hover:text-red-700 mr-2"
+                              >
+                                ✅
+                              </button>
+                              <button 
+                                onClick={() => handleConfirmAction(
+                                  'Eliminar Semana',
+                                  `¿Estás seguro de que quieres eliminar la semana ${week.number}? Esta acción no se puede deshacer.`,
+                                  () => alert(`Semana ${week.number} eliminada`)
+                                )}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Otras pestañas */}
-          {activeTab !== 'dashboard' && activeTab !== 'seasons' && (
+          {activeTab !== 'dashboard' && activeTab !== 'seasons' && activeTab !== 'weeks' && activeTab !== 'candidates' && activeTab !== 'nominees' && activeTab !== 'votes' && (
             <div className="text-center text-muted-foreground py-12">
               <div className="text-4xl lg:text-6xl mb-4">🚧</div>
               <p className="text-lg">Sección en construcción...</p>
