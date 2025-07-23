@@ -81,6 +81,17 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Vote Button */}
+        <button
+          onClick={handleVoteClick}
+          className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-4 px-8 rounded-lg text-lg font-bold mb-6 transition-all duration-300 hover:scale-[1.02]"
+          style={{
+            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.6)',
+          }}
+        >
+          🗳️ VOTAR
+        </button>
       </section>
 
       {/* Nominees List */}
@@ -157,30 +168,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-4 right-4 flex flex-col space-y-3 z-50">
-        {/* Chat Button */}
-        <button
-          onClick={handleChatClick}
-          className="w-14 h-14 bg-secondary rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105"
-          style={{
-            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)',
-          }}
-        >
-          <span className="text-xl">💬</span>
-        </button>
-        
-        {/* Vote Button */}
-        <button
-          onClick={handleVoteClick}
-          className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105"
-          style={{
-            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.6)',
-          }}
-        >
-          <span className="text-2xl">🗳️</span>
-        </button>
-      </div>
+      {/* Floating Chat Button */}
+      <button
+        onClick={handleChatClick}
+        className="fixed bottom-4 right-4 w-14 h-14 bg-secondary rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 z-50"
+        style={{
+          boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)',
+        }}
+      >
+        <span className="text-xl">💬</span>
+      </button>
 
       {/* Login Modal */}
       {showLoginModal && (
