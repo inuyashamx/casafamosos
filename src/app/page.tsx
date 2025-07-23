@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import Image from 'next/image';
 import Chat from '@/components/Chat';
 
@@ -16,6 +16,7 @@ export default function Home() {
   const { data: session, status } = useSession();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [userPoints, setUserPoints] = useState(60);
   
   // Contador regresivo (mock)
@@ -47,10 +48,87 @@ export default function Home() {
             <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-lg glow"></div>
             <span className="text-lg font-bold text-foreground">Casa Famosos 2025</span>
           </div>
-          {session && (
-            <div className="text-sm text-primary font-medium bg-primary/10 px-3 py-1 rounded-full">
-              {userPoints} puntos
+          
+          {session ? (
+            <div className="flex items-center space-x-3">
+              {/* User Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center hover:bg-primary/30 transition-colors"
+                >
+                  <span className="text-primary text-sm font-bold">
+                    {session.user?.name?.[0] || 'U'}
+                  </span>
+                </button>
+                
+                {showUserMenu && (
+                  <>
+                    {/* Overlay para cerrar el menú */}
+                    <div 
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowUserMenu(false)}
+                    />
+                    
+                    {/* Menú desplegable */}
+                    <div className="absolute right-0 mt-2 w-48 bg-card border border-border/40 rounded-lg shadow-lg z-20">
+                      <div className="p-3 border-b border-border/20">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {session.user?.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {session.user?.email}
+                        </p>
+                      </div>
+                      
+                      <div className="py-2">
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            window.location.href = '/dashboard';
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors flex items-center space-x-2"
+                        >
+                          <span>👤</span>
+                          <span>Mi Perfil</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            // Aquí iría la lógica para ver historial de votos
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors flex items-center space-x-2"
+                        >
+                          <span>📊</span>
+                          <span>Mis Votos</span>
+                        </button>
+                        
+                        <div className="border-t border-border/20 mt-2 pt-2">
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              signOut({ callbackUrl: '/' });
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-destructive hover:bg-destructive/10 transition-colors flex items-center space-x-2"
+                          >
+                            <span>🚪</span>
+                            <span>Cerrar Sesión</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
+          ) : (
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="text-sm text-primary font-medium bg-primary/10 px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
+            >
+              Iniciar Sesión
+            </button>
           )}
         </div>
       </header>
