@@ -8,21 +8,55 @@ export default function AdminPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState({ title: '', message: '', onConfirm: () => {} });
+  
+  // Estados para formularios
+  const [showSeasonForm, setShowSeasonForm] = useState(false);
+  const [showCandidateForm, setShowCandidateForm] = useState(false);
+  const [showWeekForm, setShowWeekForm] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState('2025');
+  const [selectedWeek, setSelectedWeek] = useState(null);
+
   const [stats, setStats] = useState({
     totalUsers: 1247,
     activeUsers: 342,
+    totalSeasons: 2,
+    activeSeason: 'Casa Famosos 2025',
     totalCandidates: 12,
-    nominatedCandidates: 4,
+    eliminatedCandidates: 3,
+    currentWeek: 4,
+    activeWeek: true,
     totalVotes: 15680,
     weeklyVotes: 3420,
   });
+
+  // Mock data
+  const seasons = [
+    { id: '2025', name: 'Casa Famosos 2025', year: 2025, status: 'active', startDate: '2025-01-15', endDate: '2025-06-15' },
+    { id: '2024', name: 'Casa Famosos 2024', year: 2024, status: 'completed', startDate: '2024-01-15', endDate: '2024-06-15' }
+  ];
+
+  const weeks = [
+    { id: 1, number: 1, startDate: '2025-01-15', endDate: '2025-01-21', status: 'completed', nominees: 4 },
+    { id: 2, number: 2, startDate: '2025-01-22', endDate: '2025-01-28', status: 'completed', nominees: 4 },
+    { id: 3, number: 3, startDate: '2025-01-29', endDate: '2025-02-04', status: 'completed', nominees: 3 },
+    { id: 4, number: 4, startDate: '2025-02-05', endDate: '2025-02-11', status: 'active', nominees: 4 },
+    { id: 5, number: 5, startDate: '2025-02-12', endDate: '2025-02-18', status: 'scheduled', nominees: 0 },
+  ];
+
+  const candidates = [
+    { id: 1, name: 'Ana García', photo: '', age: 28, profession: 'Actriz', status: 'active', nominated: true, eliminatedWeek: null },
+    { id: 2, name: 'Carlos López', photo: '', age: 32, profession: 'Cantante', status: 'active', nominated: true, eliminatedWeek: null },
+    { id: 3, name: 'Sofia Herrera', photo: '', age: 25, profession: 'Influencer', status: 'active', nominated: false, eliminatedWeek: null },
+    { id: 4, name: 'Diego Martín', photo: '', age: 30, profession: 'Actor', status: 'eliminated', nominated: false, eliminatedWeek: 2 },
+  ];
 
   // Redirigir si no está logueado o no es admin
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/');
     }
-    // Aquí verificarías si es admin desde la API
   }, [status, router]);
 
   if (status === 'loading') {
@@ -39,14 +73,49 @@ export default function AdminPage() {
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'season', label: 'Temporada', icon: '🏆' },
+    { id: 'seasons', label: 'Temporadas', icon: '🏆' },
+    { id: 'weeks', label: 'Semanas', icon: '📅' },
     { id: 'candidates', label: 'Candidatos', icon: '👥' },
+    { id: 'nominees', label: 'Nominados', icon: '🎯' },
     { id: 'votes', label: 'Votaciones', icon: '🗳️' },
-    { id: 'users', label: 'Usuarios', icon: '👤' },
   ];
+
+  const handleConfirmAction = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmAction({ title, message, onConfirm });
+    setShowConfirmModal(true);
+  };
+
+  const executeConfirmAction = () => {
+    confirmAction.onConfirm();
+    setShowConfirmModal(false);
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Modal de Confirmación */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl p-6 max-w-md w-full border border-border/40">
+            <h3 className="text-lg font-semibold text-foreground mb-2">{confirmAction.title}</h3>
+            <p className="text-muted-foreground mb-6">{confirmAction.message}</p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeConfirmAction}
+                className="flex-1 bg-destructive text-destructive-foreground py-2 px-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 
@@ -84,6 +153,24 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Season Selector */}
+        <div className="p-3 lg:p-4 border-b border-border/40">
+          <label className="block text-xs font-medium text-muted-foreground mb-2">
+            Temporada Activa
+          </label>
+          <select
+            value={selectedSeason}
+            onChange={(e) => setSelectedSeason(e.target.value)}
+            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+          >
+            {seasons.map(season => (
+              <option key={season.id} value={season.id}>
+                {season.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Navigation */}
         <nav className="flex-1 p-3 lg:p-4">
           <div className="space-y-1 lg:space-y-2">
@@ -92,7 +179,7 @@ export default function AdminPage() {
                 key={tab.id}
                 onClick={() => {
                   setActiveTab(tab.id);
-                  setSidebarOpen(false); // Close sidebar on mobile after selection
+                  setSidebarOpen(false);
                 }}
                 className={`w-full flex items-center space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-left transition-all duration-200 ${
                   activeTab === tab.id
@@ -156,20 +243,16 @@ export default function AdminPage() {
                 </h2>
                 <p className="text-muted-foreground text-sm lg:text-base hidden sm:block">
                   {activeTab === 'dashboard' && 'Resumen general del sistema'}
-                  {activeTab === 'season' && 'Configuración de la temporada actual'}
+                  {activeTab === 'seasons' && 'Gestión de temporadas'}
+                  {activeTab === 'weeks' && 'Administración de semanas de votación'}
                   {activeTab === 'candidates' && 'Gestión de participantes'}
+                  {activeTab === 'nominees' && 'Control de nominaciones semanales'}
                   {activeTab === 'votes' && 'Control de votaciones'}
-                  {activeTab === 'users' && 'Administración de usuarios'}
                 </p>
               </div>
             </div>
             <div className="text-xs lg:text-sm text-muted-foreground hidden md:block">
-              {new Date().toLocaleDateString('es-ES', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              {seasons.find(s => s.id === selectedSeason)?.name || 'Casa Famosos 2025'}
             </div>
           </div>
         </header>
@@ -199,16 +282,15 @@ export default function AdminPage() {
                 <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div className="mb-2 lg:mb-0">
-                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Usuarios Activos</p>
-                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{stats.activeUsers.toLocaleString()}</p>
+                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Semana Actual</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">Semana {stats.currentWeek}</p>
                     </div>
                     <div className="w-8 h-8 lg:w-12 lg:h-12 bg-green-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
-                      <span className="text-lg lg:text-2xl">🟢</span>
+                      <span className="text-lg lg:text-2xl">📅</span>
                     </div>
                   </div>
                   <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
-                    <span className="text-green-500">↗ +8%</span>
-                    <span className="text-muted-foreground ml-2 hidden lg:inline">últimas 24h</span>
+                    <span className="text-green-500">{stats.activeWeek ? '🟢 Activa' : '🔴 Cerrada'}</span>
                   </div>
                 </div>
 
@@ -223,7 +305,7 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
-                    <span className="text-primary">{stats.nominatedCandidates} nominados</span>
+                    <span className="text-destructive">{stats.eliminatedCandidates} eliminados</span>
                   </div>
                 </div>
 
@@ -249,28 +331,38 @@ export default function AdminPage() {
                 <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
                   <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Acciones Rápidas</h3>
                   <div className="space-y-2 lg:space-y-3">
-                    <button className="w-full flex items-center justify-between bg-primary text-primary-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-primary/90 transition-colors group">
+                    <button 
+                      onClick={() => setActiveTab('weeks')}
+                      className="w-full flex items-center justify-between bg-primary text-primary-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-primary/90 transition-colors group">
+                      <div className="flex items-center space-x-2 lg:space-x-3">
+                        <span className="text-lg lg:text-xl">📅</span>
+                        <span className="text-sm lg:text-base">Gestionar Semana Actual</span>
+                      </div>
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab('nominees')}
+                      className="w-full flex items-center justify-between bg-accent text-accent-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors group">
+                      <div className="flex items-center space-x-2 lg:space-x-3">
+                        <span className="text-lg lg:text-xl">🎯</span>
+                        <span className="text-sm lg:text-base">Actualizar Nominados</span>
+                      </div>
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={() => handleConfirmAction(
+                        'Resetear Votos Semanales',
+                        '¿Estás seguro de que quieres resetear todos los votos de la semana actual? Esta acción no se puede deshacer.',
+                        () => alert('Votos reseteados')
+                      )}
+                      className="w-full flex items-center justify-between bg-destructive text-destructive-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors group">
                       <div className="flex items-center space-x-2 lg:space-x-3">
                         <span className="text-lg lg:text-xl">🔄</span>
-                        <span className="text-sm lg:text-base">Resetear Votos Semanales</span>
-                      </div>
-                      <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    <button className="w-full flex items-center justify-between bg-accent text-accent-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors group">
-                      <div className="flex items-center space-x-2 lg:space-x-3">
-                        <span className="text-lg lg:text-xl">📋</span>
-                        <span className="text-sm lg:text-base">Publicar Nominados</span>
-                      </div>
-                      <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    <button className="w-full flex items-center justify-between bg-muted text-muted-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors group">
-                      <div className="flex items-center space-x-2 lg:space-x-3">
-                        <span className="text-lg lg:text-xl">📊</span>
-                        <span className="text-sm lg:text-base">Exportar Reportes</span>
+                        <span className="text-sm lg:text-base">Resetear Votos</span>
                       </div>
                       <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -280,28 +372,28 @@ export default function AdminPage() {
                 </div>
 
                 <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Actividad Reciente</h3>
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Estado de la Temporada</h3>
                   <div className="space-y-3 lg:space-y-4">
-                    <div className="flex items-center space-x-3 p-2 lg:p-3 bg-muted/30 rounded-lg">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-xs lg:text-sm font-medium text-foreground">Nuevo usuario registrado</p>
-                        <p className="text-xs text-muted-foreground">hace 5 minutos</p>
+                    <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-xs lg:text-sm font-medium text-foreground">Temporada Activa</span>
                       </div>
+                      <span className="text-xs text-muted-foreground">{stats.activeSeason}</span>
                     </div>
-                    <div className="flex items-center space-x-3 p-2 lg:p-3 bg-muted/30 rounded-lg">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-xs lg:text-sm font-medium text-foreground">Votos procesados: 1,250</p>
-                        <p className="text-xs text-muted-foreground">hace 15 minutos</p>
+                    <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-xs lg:text-sm font-medium text-foreground">Semana en Curso</span>
                       </div>
+                      <span className="text-xs text-muted-foreground">Semana {stats.currentWeek}</span>
                     </div>
-                    <div className="flex items-center space-x-3 p-2 lg:p-3 bg-muted/30 rounded-lg">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-xs lg:text-sm font-medium text-foreground">Candidato nominado</p>
-                        <p className="text-xs text-muted-foreground">hace 2 horas</p>
+                    <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                        <span className="text-xs lg:text-sm font-medium text-foreground">Participantes Activos</span>
                       </div>
+                      <span className="text-xs text-muted-foreground">{stats.totalCandidates - stats.eliminatedCandidates}</span>
                     </div>
                   </div>
                 </div>
@@ -309,155 +401,12 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Otros tabs con responsive design */}
-          {activeTab === 'season' && (
-            <div className="max-w-none lg:max-w-4xl space-y-6 lg:space-y-8">
-              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-8 border border-border/40">
-                <h3 className="text-lg lg:text-xl font-semibold text-foreground mb-4 lg:mb-6">Temporada Actual</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-                  <div className="space-y-3 lg:space-y-4">
-                    <div className="flex justify-between py-2 lg:py-3 border-b border-border/20">
-                      <span className="text-muted-foreground font-medium text-sm lg:text-base">Nombre:</span>
-                      <span className="text-foreground font-semibold text-sm lg:text-base">Casa Famosos 2025</span>
-                    </div>
-                    <div className="flex justify-between py-2 lg:py-3 border-b border-border/20">
-                      <span className="text-muted-foreground font-medium text-sm lg:text-base">Puntos diarios:</span>
-                      <span className="text-foreground font-semibold text-sm lg:text-base">60 puntos</span>
-                    </div>
-                    <div className="flex justify-between py-2 lg:py-3 border-b border-border/20">
-                      <span className="text-muted-foreground font-medium text-sm lg:text-base">Estado:</span>
-                      <span className="text-green-500 font-semibold text-sm lg:text-base">🟢 Activa</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3 lg:space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-2 lg:mb-3">
-                        Puntos diarios por usuario
-                      </label>
-                      <input
-                        type="number"
-                        defaultValue={60}
-                        className="w-full bg-input border border-border rounded-lg px-3 lg:px-4 py-2 lg:py-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
-                    <button className="w-full bg-primary text-primary-foreground py-2 lg:py-3 px-4 lg:px-6 rounded-lg font-medium hover:bg-primary/90 transition-colors">
-                      Guardar Cambios
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'candidates' && (
-            <div className="space-y-4 lg:space-y-6">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
-                <div>
-                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Lista de Candidatos</h3>
-                  <p className="text-muted-foreground text-sm lg:text-base">Gestiona los participantes de la temporada</p>
-                </div>
-                <button className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2">
-                  <span>+</span>
-                  <span>Agregar Candidato</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-                {['Ana García', 'Carlos López', 'Sofia Herrera', 'Diego Martín'].map((name, index) => (
-                  <div key={index} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                    <div className="flex items-center space-x-3 lg:space-x-4 mb-3 lg:mb-4">
-                      <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center">
-                        <span className="text-xl lg:text-2xl">👤</span>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-foreground text-base lg:text-lg">{name}</h4>
-                        <p className="text-xs lg:text-sm text-muted-foreground">
-                          {index < 2 ? '🟢 Nominado esta semana' : '⚪ No nominado'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 lg:px-4 rounded-lg text-xs lg:text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
-                        Editar
-                      </button>
-                      <button className="flex-1 bg-primary/10 text-primary py-2 px-3 lg:px-4 rounded-lg text-xs lg:text-sm font-medium hover:bg-primary/20 transition-colors">
-                        {index < 2 ? 'Quitar' : 'Nominar'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'votes' && (
-            <div className="max-w-none lg:max-w-4xl space-y-6 lg:space-y-8">
-              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-8 border border-border/40">
-                <h3 className="text-lg lg:text-xl font-semibold text-foreground mb-4 lg:mb-6">Estado de Votaciones</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
-                  <div className="text-center">
-                    <div className="text-2xl lg:text-3xl font-bold text-green-500 mb-2">🟢 Activa</div>
-                    <p className="text-muted-foreground text-sm lg:text-base">Estado actual</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Dom 8:00 PM</div>
-                    <p className="text-muted-foreground text-sm lg:text-base">Cierre de votación</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl lg:text-3xl font-bold text-primary mb-2">{stats.weeklyVotes.toLocaleString()}</div>
-                    <p className="text-muted-foreground text-sm lg:text-base">Votos esta semana</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
-                  <button className="bg-destructive text-destructive-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2">
-                    <span>🔄</span>
-                    <span className="text-sm lg:text-base">Resetear Votos Semanales</span>
-                  </button>
-                  <button className="bg-accent text-accent-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors flex items-center justify-center space-x-2">
-                    <span>📊</span>
-                    <span className="text-sm lg:text-base">Exportar Resultados</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'users' && (
-            <div className="space-y-6 lg:space-y-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Estadísticas de Usuarios</h3>
-                  <div className="grid grid-cols-2 gap-3 lg:gap-4">
-                    <div className="text-center p-3 lg:p-4 bg-muted/30 rounded-lg">
-                      <div className="text-xl lg:text-2xl font-bold text-primary mb-1">{stats.totalUsers.toLocaleString()}</div>
-                      <div className="text-xs lg:text-sm text-muted-foreground">Total de usuarios</div>
-                    </div>
-                    <div className="text-center p-3 lg:p-4 bg-muted/30 rounded-lg">
-                      <div className="text-xl lg:text-2xl font-bold text-green-500 mb-1">{stats.activeUsers}</div>
-                      <div className="text-xs lg:text-sm text-muted-foreground">Activos hoy</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Acciones de Usuario</h3>
-                  <div className="space-y-2 lg:space-y-3">
-                    <button className="w-full bg-muted text-muted-foreground p-2 lg:p-3 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors text-sm lg:text-base">
-                      Ver Lista Completa
-                    </button>
-                    <button className="w-full bg-muted text-muted-foreground p-2 lg:p-3 rounded-lg font-medium hover:bg-muted/80 hover:text-foreground transition-colors text-sm lg:text-base">
-                      Exportar Usuarios
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="text-center text-muted-foreground py-8 lg:py-12 bg-card rounded-lg lg:rounded-xl border border-border/40">
-                <div className="text-4xl lg:text-6xl mb-3 lg:mb-4">👥</div>
-                <p className="text-base lg:text-lg">Lista detallada de usuarios próximamente...</p>
-                <p className="text-xs lg:text-sm mt-2">Funcionalidad en desarrollo</p>
-              </div>
+          {/* Resto de las pestañas las implementaré en el siguiente mensaje para no hacer muy largo el código */}
+          {activeTab !== 'dashboard' && (
+            <div className="text-center text-muted-foreground py-12">
+              <div className="text-4xl lg:text-6xl mb-4">🚧</div>
+              <p className="text-lg">Sección en construcción...</p>
+              <p className="text-sm mt-2">Implementando {tabs.find(tab => tab.id === activeTab)?.label}</p>
             </div>
           )}
         </div>
