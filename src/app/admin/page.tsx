@@ -401,8 +401,175 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Resto de las pestañas las implementaré en el siguiente mensaje para no hacer muy largo el código */}
-          {activeTab !== 'dashboard' && (
+          {/* Temporadas Tab */}
+          {activeTab === 'seasons' && (
+            <div className="space-y-6 lg:space-y-8">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                <div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Temporadas</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">Administra las temporadas del programa</p>
+                </div>
+                <button 
+                  onClick={() => setShowSeasonForm(true)}
+                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <span>+</span>
+                  <span>Nueva Temporada</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                {seasons.map((season) => (
+                  <div key={season.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-semibold text-foreground text-base lg:text-lg">{season.name}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            season.status === 'active' 
+                              ? 'bg-green-500/10 text-green-500' 
+                              : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {season.status === 'active' ? '🟢 Activa' : '⚪ Completada'}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-sm">
+                          {new Date(season.startDate).toLocaleDateString('es-ES')} - {new Date(season.endDate).toLocaleDateString('es-ES')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-foreground">12</div>
+                        <div className="text-xs text-muted-foreground">Candidatos</div>
+                      </div>
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-foreground">4</div>
+                        <div className="text-xs text-muted-foreground">Semanas</div>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
+                        Editar
+                      </button>
+                      {season.status === 'active' ? (
+                        <button className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors">
+                          Completar
+                        </button>
+                      ) : (
+                        <button className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
+                          Activar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Season Form Modal */}
+              {showSeasonForm && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Nueva Temporada</h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                          Nombre de la Temporada
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Casa Famosos 2025"
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Año
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="2025"
+                            min="2020"
+                            max="2030"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Puntos Diarios
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="60"
+                            min="1"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Fecha de Inicio
+                          </label>
+                          <input
+                            type="date"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Fecha de Fin
+                          </label>
+                          <input
+                            type="date"
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                          Descripción (Opcional)
+                        </label>
+                        <textarea
+                          placeholder="Descripción de la temporada..."
+                          rows={3}
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none resize-none"
+                        ></textarea>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-3 mt-6">
+                      <button
+                        onClick={() => setShowSeasonForm(false)}
+                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowSeasonForm(false);
+                          // Aquí iría la lógica para crear la temporada
+                        }}
+                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        Crear Temporada
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Otras pestañas */}
+          {activeTab !== 'dashboard' && activeTab !== 'seasons' && (
             <div className="text-center text-muted-foreground py-12">
               <div className="text-4xl lg:text-6xl mb-4">🚧</div>
               <p className="text-lg">Sección en construcción...</p>
