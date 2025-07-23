@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Casa Famosos
 
-## Getting Started
+Plataforma de entretenimiento y celebridades construida con Next.js, MongoDB y NextAuth.
 
-First, run the development server:
+## 🚀 Características
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 14** con App Router
+- **MongoDB** como base de datos
+- **NextAuth.js** para autenticación
+- **Tailwind CSS** con tema oscuro
+- **TypeScript** para mejor desarrollo
+- **Diseño responsive** y moderno
+
+## 📋 Requisitos Previos
+
+- Node.js 18+ 
+- MongoDB (local o Atlas)
+- Cuenta de Google Developer (para OAuth opcional)
+
+## 🛠️ Instalación
+
+1. **Clona el repositorio**
+   ```bash
+   git clone <tu-repositorio>
+   cd casafamosos
+   ```
+
+2. **Instala las dependencias**
+   ```bash
+   npm install
+   ```
+
+3. **Configura las variables de entorno**
+   
+   Crea un archivo `.env.local` en la raíz del proyecto con:
+   ```env
+   # MongoDB
+   MONGODB_URI=mongodb://localhost:27017/casafamosos
+   
+   # NextAuth
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=tu-clave-secreta-aqui
+   
+   # Google OAuth (opcional)
+   GOOGLE_CLIENT_ID=tu-google-client-id
+   GOOGLE_CLIENT_SECRET=tu-google-client-secret
+   ```
+
+4. **Ejecuta el servidor de desarrollo**
+   ```bash
+   npm run dev
+   ```
+
+5. **Abre [http://localhost:3000](http://localhost:3000)** en tu navegador
+
+## 🗄️ Configuración de MongoDB
+
+### Opción 1: MongoDB Local
+1. Instala MongoDB en tu sistema
+2. Inicia el servicio de MongoDB
+3. Usa la URI: `mongodb://localhost:27017/casafamosos`
+
+### Opción 2: MongoDB Atlas
+1. Crea una cuenta en [MongoDB Atlas](https://www.mongodb.com/atlas)
+2. Crea un cluster
+3. Obtén la URI de conexión
+4. Reemplaza `<password>` con tu contraseña
+
+## 🔐 Configuración de NextAuth
+
+### Google OAuth (Recomendado)
+1. Ve a [Google Cloud Console](https://console.cloud.google.com/)
+2. Crea un nuevo proyecto
+3. Habilita la API de Google+ 
+4. Crea credenciales OAuth 2.0
+5. Agrega `http://localhost:3000/api/auth/callback/google` como URI de redirección
+
+## 📁 Estructura del Proyecto
+
+```
+src/
+├── app/                    # App Router de Next.js
+│   ├── api/               # Rutas de API
+│   │   └── auth/          # NextAuth endpoints
+│   ├── globals.css        # Estilos globales
+│   ├── layout.tsx         # Layout principal
+│   └── page.tsx           # Página principal
+├── components/            # Componentes reutilizables
+├── lib/                   # Utilidades y configuraciones
+│   ├── auth.ts           # Configuración de NextAuth
+│   ├── mongodb.ts        # Conexión a MongoDB
+│   └── mongodb-adapter.ts # Adaptador de MongoDB para NextAuth
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🎨 Tema Oscuro
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+El proyecto viene configurado con un tema oscuro moderno por defecto. Las variables CSS están definidas en `globals.css` y se pueden personalizar fácilmente.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Despliegue
 
-## Learn More
+### Vercel (Recomendado)
+1. Conecta tu repositorio a Vercel
+2. Configura las variables de entorno en el dashboard
+3. ¡Listo!
 
-To learn more about Next.js, take a look at the following resources:
+### Otros proveedores
+El proyecto es compatible con cualquier proveedor que soporte Next.js.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📝 Scripts Disponibles
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `npm run dev` - Servidor de desarrollo
+- `npm run build` - Construir para producción
+- `npm run start` - Servidor de producción
+- `npm run lint` - Ejecutar ESLint
 
-## Deploy on Vercel
+## 🤝 Contribuir
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## 🆘 Soporte
+
+Si tienes problemas o preguntas, abre un issue en el repositorio.

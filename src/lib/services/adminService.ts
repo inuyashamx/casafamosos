@@ -1,0 +1,209 @@
+import dbConnect from '../mongodb';
+import User from '../models/User';
+import Candidate from '../models/Candidate';
+import Season from '../models/Season';
+import Vote from '../models/Vote';
+
+export class AdminService {
+  static async createSeason(seasonData: {
+    name: string;
+    year: number;
+    description?: string;
+    startDate: Date;
+    endDate: Date;
+    dailyPointsDefault?: number;
+  }) {
+    await dbConnect();
+    
+    // Desactivar temporada anterior
+    await Season.updateMany({}, { isActive: false });
+    
+    const season = await Season.create({
+      ...seasonData,
+      isActive: true,
+    });
+    
+    return season;
+  }
+
+  static async updateSeasonSettings(seasonId: string, settings: {
+    dailyPointsDefault?: number;
+    votingEndTime?: string;
+    votingDays?: string[];
+  }) {
+    await dbConnect();
+    
+    const season = await Season.findByIdAndUpdate(
+      seasonId,
+      settings,
+      { new: true }
+    );
+    
+    // Si se cambió dailyPointsDefault, actualizar usuarios
+    if (settings.dailyPointsDefault) {
+      await User.updateMany(
+        {},
+        { dailyPoints: settings.dailyPointsDefault }
+      );
+    }
+    
+    return season;
+  }
+
+  static async createCandidate(candidateData: {
+    name: string;
+    photo: string;
+    bio?: string;
+    age?: number;
+    profession?: string;
+    socialMedia?: {
+      instagram?: string;
+      twitter?: string;
+      tiktok?: string;
+      youtube?: string;
+    };
+    seasonId: string;
+  }) {
+    await dbConnect();
+    
+    const candidate = await Candidate.create(candidateData);
+    return candidate;
+  }
+
+  static async updateCandidate(candidateId: string, updateData: any) {
+    await dbConnect();
+    
+    return await Candidate.findByIdAndUpdate(
+      candidateId,
+      updateData,
+      { new: true }
+    );
+  }
+
+  static async setNominated(candidateIds: string[], seasonId: string) {
+    await dbConnect();
+    
+    // Desmarcar todos los nominados actuales
+    await Candidate.updateMany(
+      { seasonId },
+      { isNominated: false }
+    );
+    
+    // Marcar nuevos nominados
+    await Candidate.updateMany(
+      { _id: { $in: candidateIds } },
+      { isNominated: true }
+    );
+    
+    return await Candidate.find({ 
+      seasonId, 
+      isNominated: true 
+    });
+  }
+
+  static async eliminateCandidate(candidateId: string) {
+    await dbConnect();
+    
+    return await Candidate.findByIdAndUpdate(
+      candidateId,
+      { 
+        isEliminated: true, 
+        isNominated: false,
+        eliminationDate: new Date() 
+      },
+      { new: true }
+    );
+  }
+
+  static async resetWeeklyVotes(seasonId: string) {
+    await dbConnect();
+    
+    await Candidate.updateMany(
+      { seasonId },
+      { weeklyVotes: 0 }
+    );
+    
+    return { success: true, message: 'Votos semanales reseteados' };
+  }
+
+  static async getDashboardStats(seasonId: string) {
+    await dbConnect();
+    
+    const [
+      totalUsers,
+      activeUsers,
+      totalCandidates,
+      nominatedCandidates,
+      totalVotes,
+      weeklyVotes
+    ] = await Promise.all([
+      User.countDocuments({ isActive: true }),
+      User.countDocuments({ 
+        isActive: true,
+        lastPointsReset: { 
+          $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) 
+        }
+      }),
+      Candidate.countDocuments({ seasonId, isEliminated: false }),
+      Candidate.countDocuments({ seasonId, isNominated: true }),
+      Vote.aggregate([
+        { $match: { seasonId: seasonId } },
+        { $group: { _id: null, total: { $sum: '$points' } } }
+      ]),
+      Vote.aggregate([
+        { 
+          $match: { 
+            seasonId: seasonId,
+            voteDate: { 
+              $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) 
+            }
+          }
+        },
+        { $group: { _id: null, total: { $sum: '$points' } } }
+      ])
+    ]);
+
+    return {
+      totalUsers,
+      activeUsers,
+      totalCandidates,
+      nominatedCandidates,
+      totalVotes: totalVotes[0]?.total || 0,
+      weeklyVotes: weeklyVotes[0]?.total || 0,
+    };
+  }
+
+  static async getUsersManagement(page = 1, limit = 20) {
+    await dbConnect();
+    
+    const users = await User.find({})
+      .select('name email totalVotes isActive createdAt')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip((page - 1) * limit);
+    
+    const total = await User.countDocuments({});
+    
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      }
+    };
+  }
+
+  static async toggleUserStatus(userId: string) {
+    await dbConnect();
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('Usuario no encontrado');
+    
+    user.isActive = !user.isActive;
+    await user.save();
+    
+    return user;
+  }
+} 
