@@ -59,6 +59,10 @@ const UserSchema = new mongoose.Schema({
     ref: 'User',
     default: null,
   },
+  lastVoteDate: {
+    type: Date,
+    default: null,
+  },
 }, {
   timestamps: true,
 });

@@ -91,6 +91,7 @@ export class VoteService {
       // Actualizar puntos del usuario
       user.usedPointsToday += totalPointsToUse;
       user.totalVotes += totalPointsToUse;
+      user.lastVoteDate = new Date();
       await user.save({ session });
 
       await session.commitTransaction();

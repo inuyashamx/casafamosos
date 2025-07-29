@@ -206,6 +206,14 @@ export default function AdminPage() {
   const [blockingUser, setBlockingUser] = useState<any>(null);
   const [blockReason, setBlockReason] = useState('');
   const [submittingBlock, setSubmittingBlock] = useState(false);
+  
+  // Estados para datatable
+  const [userSearch, setUserSearch] = useState('');
+  const [userSortBy, setUserSortBy] = useState('createdAt');
+  const [userSortOrder, setUserSortOrder] = useState('desc');
+  const [userPage, setUserPage] = useState(1);
+  const [userTotal, setUserTotal] = useState(0);
+  const [userPages, setUserPages] = useState(0);
 
   const [stats, setStats] = useState({
     totalUsers: 1247,
@@ -320,7 +328,7 @@ export default function AdminPage() {
   // Cargar usuarios cuando se active la pestaña de usuarios
   useEffect(() => {
     if (activeTab === 'users') {
-      loadUsers();
+      loadUsers(1, '', 'createdAt', 'desc');
     }
   }, [activeTab]);
 
@@ -1168,22 +1176,40 @@ export default function AdminPage() {
   };
 
   // Función para cargar usuarios
-  const loadUsers = async () => {
+  const loadUsers = async (page = 1, search = '', sortBy = 'createdAt', sortOrder = 'desc') => {
     try {
       setLoadingUsers(true);
       setError(null);
-      const response = await fetch('/api/admin?action=users');
+      
+      const params = new URLSearchParams({
+        action: 'users',
+        page: page.toString(),
+        limit: '20',
+        search: search,
+        sortBy: sortBy,
+        sortOrder: sortOrder
+      });
+      
+      const response = await fetch(`/api/admin?${params}`);
       if (!response.ok) {
         throw new Error('Error al cargar usuarios');
       }
       const data = await response.json();
       setUsers(data.users);
+      setUserTotal(data.pagination.total);
+      setUserPages(data.pagination.pages);
+      setUserPage(data.pagination.page);
     } catch (err: any) {
       setError(err.message);
       console.error('Error cargando usuarios:', err);
     } finally {
       setLoadingUsers(false);
     }
+  };
+
+  // Función para actualizar usuarios (para el botón)
+  const refreshUsers = () => {
+    loadUsers(userPage, userSearch, userSortBy, userSortOrder);
   };
 
   // Función para bloquear usuario
@@ -1261,6 +1287,110 @@ export default function AdminPage() {
     setBlockingUser(user);
     setBlockReason('');
     setShowBlockModal(true);
+  };
+
+  // Función para hacer admin
+  const toggleAdminStatus = async (userId: string, userName: string) => {
+    try {
+      setError(null);
+      
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'toggleAdminStatus',
+          userId: userId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al cambiar estado de admin');
+      }
+
+      await loadUsers(userPage, userSearch, userSortBy, userSortOrder);
+      showToast('success', `Estado de admin de ${userName} actualizado correctamente`);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error cambiando estado de admin:', err);
+    }
+  };
+
+  // Función para eliminar usuario
+  const deleteUser = async (userId: string, userName: string) => {
+    try {
+      setError(null);
+      
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'deleteUser',
+          userId: userId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar usuario');
+      }
+
+      await loadUsers(userPage, userSearch, userSortBy, userSortOrder);
+      showToast('success', `Usuario ${userName} eliminado correctamente`);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error eliminando usuario:', err);
+    }
+  };
+
+  // Función para manejar búsqueda
+  const handleUserSearch = (searchTerm: string) => {
+    setUserSearch(searchTerm);
+    setUserPage(1);
+    loadUsers(1, searchTerm, userSortBy, userSortOrder);
+  };
+
+  // Función para manejar ordenamiento
+  const handleUserSort = (sortBy: string, sortOrder: string) => {
+    setUserSortBy(sortBy);
+    setUserSortOrder(sortOrder);
+    setUserPage(1);
+    loadUsers(1, userSearch, sortBy, sortOrder);
+  };
+
+  // Función para manejar paginación
+  const handleUserPageChange = (page: number) => {
+    setUserPage(page);
+    loadUsers(page, userSearch, userSortBy, userSortOrder);
+  };
+
+  // Función temporal para actualizar usuarios
+  const updateUsers = async () => {
+    try {
+      setError(null);
+      const response = await fetch('/api/admin/update-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error actualizando usuarios');
+      }
+
+      const result = await response.json();
+      showToast('success', result.message);
+      await loadUsers(userPage, userSearch, userSortBy, userSortOrder);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error actualizando usuarios:', err);
+    }
   };
 
   if (status === 'loading') {
@@ -2988,101 +3118,243 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
                 <div>
                   <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Usuarios</h3>
-                  <p className="text-muted-foreground text-sm lg:text-base">Administra los usuarios del sistema</p>
+                  <p className="text-muted-foreground text-sm lg:text-base">
+                    Total: {userTotal.toLocaleString()} usuarios
+                  </p>
                 </div>
-                <button 
-                  onClick={loadUsers}
-                  disabled={loadingUsers}
-                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span>{loadingUsers ? '⏳' : '🔄'}</span>
-                  <span>{loadingUsers ? 'Cargando...' : 'Actualizar'}</span>
-                </button>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={updateUsers}
+                    className="bg-orange-500 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <span>🔧</span>
+                    <span>Actualizar BD</span>
+                  </button>
+                  <button 
+                    onClick={refreshUsers}
+                    disabled={loadingUsers}
+                    className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span>{loadingUsers ? '⏳' : '🔄'}</span>
+                    <span>{loadingUsers ? 'Cargando...' : 'Actualizar'}</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Loading State */}
-              {loadingUsers ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Cargando usuarios...</p>
+              {/* Search and Filters */}
+              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Search */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Buscar por nombre o email
+                    </label>
+                    <input
+                      type="text"
+                      value={userSearch}
+                      onChange={(e) => handleUserSearch(e.target.value)}
+                      placeholder="Buscar usuarios..."
+                      className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Sort */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Ordenar por
+                    </label>
+                    <div className="flex space-x-2">
+                      <select
+                        value={userSortBy}
+                        onChange={(e) => handleUserSort(e.target.value, userSortOrder)}
+                        className="flex-1 bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                      >
+                        <option value="createdAt">Fecha de Registro</option>
+                        <option value="lastVoteDate">Último Voto</option>
+                        <option value="name">Nombre</option>
+                        <option value="totalVotes">Cantidad de Votos</option>
+                      </select>
+                      <button
+                        onClick={() => handleUserSort(userSortBy, userSortOrder === 'asc' ? 'desc' : 'asc')}
+                        className="bg-muted text-muted-foreground px-3 py-2 rounded-lg hover:bg-muted/80 transition-colors"
+                      >
+                        {userSortOrder === 'asc' ? '↑' : '↓'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              ) : users.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-4xl mb-4">👤</div>
-                  <p className="text-lg font-medium text-foreground mb-2">No hay usuarios</p>
-                  <p className="text-muted-foreground">No se encontraron usuarios en el sistema</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                  {users.map((user) => (
-                    <div key={user._id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h4 className="font-semibold text-foreground text-base lg:text-lg">{user.name}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              user.isBlocked
-                                ? 'bg-red-500/10 text-red-500'
-                                : user.isActive
-                                  ? 'bg-green-500/10 text-green-500'
-                                  : 'bg-muted text-muted-foreground'
-                            }`}>
-                              {user.isBlocked ? '🚫 Bloqueado' : user.isActive ? '🟢 Activo' : '⚪ Inactivo'}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground text-sm">{user.email}</p>
-                          {user.isBlocked && user.blockReason && (
-                            <div className="mt-2 p-2 bg-red-500/10 rounded-lg">
-                              <p className="text-xs text-red-500 font-medium">Razón: {user.blockReason}</p>
-                              {user.blockedAt && (
-                                <p className="text-xs text-red-500/80">Bloqueado el {new Date(user.blockedAt).toLocaleDateString('es-ES')}</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+              </div>
 
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-muted/30 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-foreground">{user.totalVotes.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">Votos Totales</div>
-                        </div>
-                        <div className="bg-muted/30 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-foreground">{new Date(user.createdAt).toLocaleDateString('es-ES')}</div>
-                          <div className="text-xs text-muted-foreground">Fecha Registro</div>
-                        </div>
-                      </div>
-
-                      <div className="flex space-x-2">
-                        {user.isBlocked ? (
-                          <button 
-                            onClick={() => handleConfirmAction(
-                              'Desbloquear Usuario',
-                              `¿Estás seguro de que quieres desbloquear a ${user.name}?`,
-                              () => unblockUser(user._id, user.name)
-                            )}
-                            className="flex-1 bg-green-500/10 text-green-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-500/20 transition-colors"
-                          >
-                            🔓 Desbloquear
-                          </button>
-                        ) : (
-                          <button 
-                            onClick={() => openBlockModal(user)}
-                            className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
-                          >
-                            🚫 Bloquear
-                          </button>
-                        )}
-                      </div>
+              {/* DataTable */}
+              <div className="bg-card rounded-lg lg:rounded-xl border border-border/40 overflow-hidden">
+                {/* Loading State */}
+                {loadingUsers ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">Cargando usuarios...</p>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ) : users.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-4">👤</div>
+                    <p className="text-lg font-medium text-foreground mb-2">No hay usuarios</p>
+                    <p className="text-muted-foreground">
+                      {userSearch ? 'No se encontraron usuarios con esa búsqueda' : 'No se encontraron usuarios en el sistema'}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-muted/30">
+                          <tr>
+                            <th className="text-left p-4 font-medium text-foreground">Usuario</th>
+                            <th className="text-left p-4 font-medium text-foreground">Email</th>
+                            <th className="text-left p-4 font-medium text-foreground">Estado</th>
+                            <th className="text-left p-4 font-medium text-foreground">Votos</th>
+                            <th className="text-left p-4 font-medium text-foreground">Último Voto</th>
+                            <th className="text-left p-4 font-medium text-foreground">Registro</th>
+                            <th className="text-left p-4 font-medium text-foreground">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/40">
+                          {users.map((user) => (
+                            <tr key={user._id} className="hover:bg-muted/20 transition-colors">
+                              <td className="p-4">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                    <span className="text-primary font-medium text-sm">
+                                      {user.name.charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-foreground">{user.name}</div>
+                                    {user.isAdmin && (
+                                      <span className="text-xs bg-blue-500/10 text-blue-500 px-2 py-1 rounded-full">
+                                        👑 Admin
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-4 text-sm text-muted-foreground">{user.email}</td>
+                              <td className="p-4">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  user.isBlocked
+                                    ? 'bg-red-500/10 text-red-500'
+                                    : user.isActive
+                                      ? 'bg-green-500/10 text-green-500'
+                                      : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  {user.isBlocked ? '🚫 Bloqueado' : user.isActive ? '🟢 Activo' : '⚪ Inactivo'}
+                                </span>
+                                {user.isBlocked && user.blockReason && (
+                                  <div className="mt-1 text-xs text-red-500">
+                                    {user.blockReason}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-4 text-sm font-medium text-foreground">
+                                {user.totalVotes.toLocaleString()}
+                              </td>
+                              <td className="p-4 text-sm text-muted-foreground">
+                                {user.lastVoteDate 
+                                  ? new Date(user.lastVoteDate).toLocaleDateString('es-ES')
+                                  : 'Nunca'
+                                }
+                              </td>
+                              <td className="p-4 text-sm text-muted-foreground">
+                                {new Date(user.createdAt).toLocaleDateString('es-ES')}
+                              </td>
+                              <td className="p-4">
+                                <div className="flex flex-wrap gap-2">
+                                  {/* Admin Toggle */}
+                                  <button
+                                    onClick={() => toggleAdminStatus(user._id, user.name)}
+                                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                      user.isAdmin
+                                        ? 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20'
+                                        : 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'
+                                    }`}
+                                  >
+                                    {user.isAdmin ? '❌ Quitar Admin' : '👑 Hacer Admin'}
+                                  </button>
+
+                                  {/* Block/Unblock */}
+                                  {user.isBlocked ? (
+                                    <button 
+                                      onClick={() => handleConfirmAction(
+                                        'Desbloquear Usuario',
+                                        `¿Estás seguro de que quieres desbloquear a ${user.name}?`,
+                                        () => unblockUser(user._id, user.name)
+                                      )}
+                                      className="px-2 py-1 bg-green-500/10 text-green-500 rounded text-xs font-medium hover:bg-green-500/20 transition-colors"
+                                    >
+                                      🔓 Desbloquear
+                                    </button>
+                                  ) : (
+                                    <button 
+                                      onClick={() => openBlockModal(user)}
+                                      className="px-2 py-1 bg-red-500/10 text-red-500 rounded text-xs font-medium hover:bg-red-500/20 transition-colors"
+                                    >
+                                      🚫 Bloquear
+                                    </button>
+                                  )}
+
+                                  {/* Delete */}
+                                  <button
+                                    onClick={() => handleConfirmAction(
+                                      'Eliminar Usuario',
+                                      `¿Estás seguro de que quieres eliminar a ${user.name}? Esta acción no se puede deshacer.`,
+                                      () => deleteUser(user._id, user.name)
+                                    )}
+                                    className="px-2 py-1 bg-destructive/10 text-destructive rounded text-xs font-medium hover:bg-destructive/20 transition-colors"
+                                  >
+                                    🗑️ Eliminar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {userPages > 1 && (
+                      <div className="border-t border-border/40 p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">
+                            Página {userPage} de {userPages} ({userTotal.toLocaleString()} usuarios)
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleUserPageChange(userPage - 1)}
+                              disabled={userPage <= 1}
+                              className="px-3 py-1 bg-muted text-muted-foreground rounded hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              ← Anterior
+                            </button>
+                            <button
+                              onClick={() => handleUserPageChange(userPage + 1)}
+                              disabled={userPage >= userPages}
+                              className="px-3 py-1 bg-muted text-muted-foreground rounded hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Siguiente →
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
 

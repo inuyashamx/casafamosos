@@ -173,16 +173,28 @@ export class AdminService {
     };
   }
 
-  static async getUsersManagement(page = 1, limit = 20) {
+  static async getUsersManagement(page = 1, limit = 20, search = '', sortBy = 'createdAt', sortOrder = 'desc') {
     await dbConnect();
     
-    const users = await User.find({})
-      .select('name email totalVotes isActive isBlocked blockReason blockedAt createdAt')
-      .sort({ createdAt: -1 })
+    // Construir filtro de búsqueda
+    const searchFilter = search ? {
+      $or: [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ]
+    } : {};
+    
+    // Construir ordenamiento
+    const sortOptions: any = {};
+    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    
+    const users = await User.find(searchFilter)
+      .select('name email totalVotes isActive isBlocked blockReason blockedAt lastVoteDate createdAt')
+      .sort(sortOptions)
       .limit(limit)
       .skip((page - 1) * limit);
     
-    const total = await User.countDocuments({});
+    const total = await User.countDocuments(searchFilter);
     
     return {
       users,
@@ -239,5 +251,36 @@ export class AdminService {
     await user.save();
     
     return user;
+  }
+
+  static async toggleAdminStatus(userId: string) {
+    await dbConnect();
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('Usuario no encontrado');
+    
+    user.isAdmin = !user.isAdmin;
+    await user.save();
+    
+    return user;
+  }
+
+  static async deleteUser(userId: string) {
+    await dbConnect();
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('Usuario no encontrado');
+    
+    // Verificar que no sea el último admin
+    if (user.isAdmin) {
+      const adminCount = await User.countDocuments({ isAdmin: true });
+      if (adminCount <= 1) {
+        throw new Error('No se puede eliminar el último administrador');
+      }
+    }
+    
+    await User.findByIdAndDelete(userId);
+    
+    return { success: true, message: 'Usuario eliminado correctamente' };
   }
 } 

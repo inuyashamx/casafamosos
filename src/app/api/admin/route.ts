@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
       case 'users':
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
-        const users = await AdminService.getUsersManagement(page, limit);
+        const search = searchParams.get('search') || '';
+        const sortBy = searchParams.get('sortBy') || 'createdAt';
+        const sortOrder = searchParams.get('sortOrder') || 'desc';
+        const users = await AdminService.getUsersManagement(page, limit, search, sortBy, sortOrder);
         return NextResponse.json(users);
 
       default:
@@ -109,6 +112,16 @@ export async function POST(request: NextRequest) {
         const { userId: unblockUserId } = body;
         const unblockedUser = await AdminService.unblockUser(unblockUserId);
         return NextResponse.json({ user: unblockedUser });
+
+      case 'toggleAdminStatus':
+        const { userId: adminUserId } = body;
+        const adminUser = await AdminService.toggleAdminStatus(adminUserId);
+        return NextResponse.json({ user: adminUser });
+
+      case 'deleteUser':
+        const { userId: deleteUserId } = body;
+        const deleteResult = await AdminService.deleteUser(deleteUserId);
+        return NextResponse.json(deleteResult);
 
       default:
         return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
