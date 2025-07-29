@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -45,6 +45,8 @@ export default function VotePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Verificar autenticación
   useEffect(() => {
@@ -101,6 +103,25 @@ export default function VotePage() {
     fetchUserPoints();
   }, [session]);
 
+  // Verificar si es admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!session) return;
+      
+      try {
+        const response = await fetch('/api/admin?action=checkAdmin');
+        if (response.ok) {
+          const data = await response.json();
+          setIsAdmin(data.isAdmin || false);
+        }
+      } catch (err) {
+        console.error('Error checking admin status:', err);
+      }
+    };
+
+    checkAdminStatus();
+  }, [session]);
+
   // Calcular puntos usados
   const usedPoints = Object.values(userVotes).reduce((sum, points) => sum + points, 0);
   const remainingPoints = userPoints - usedPoints;
@@ -125,6 +146,8 @@ export default function VotePage() {
     const newPoints = currentPoints + points;
     updateVote(candidateId, newPoints);
   };
+
+
 
   // Función para enviar votos
   const submitVotes = async () => {
@@ -228,7 +251,7 @@ export default function VotePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-primary/20">
         <div className="px-4 py-3 flex items-center justify-between">
@@ -241,9 +264,85 @@ export default function VotePage() {
             </button>
             <h1 className="text-lg font-bold text-foreground">Votar</h1>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {userPoints} puntos
-          </div>
+
+          {/* User Menu */}
+          {session && (
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-primary/30 transition-colors overflow-hidden"
+                >
+                  {session.user?.image ? (
+                    <img 
+                      src={session.user.image} 
+                      alt={session.user.name || 'Usuario'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Si la imagen falla, mostrar la inicial
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <span className={`text-primary text-sm font-bold ${session.user?.image ? 'hidden' : ''}`}>
+                    {session.user?.name?.[0] || 'U'}
+                  </span>
+                </button>
+
+                {showUserMenu && (
+                  <>
+                    {/* Overlay para cerrar el menú */}
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowUserMenu(false)}
+                    />
+
+                    {/* Menú desplegable */}
+                    <div className="absolute right-0 mt-2 w-48 bg-card border border-border/40 rounded-lg shadow-lg z-20">
+                      <div className="p-3 border-b border-border/20">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {session.user?.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {session.user?.email}
+                        </p>
+                      </div>
+
+                      <div className="py-2">
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              window.location.href = '/admin';
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors flex items-center space-x-2"
+                          >
+                            <span>👑</span>
+                            <span>Panel Admin</span>
+                          </button>
+                        )}
+
+                        <div className="border-t border-border/20 mt-2 pt-2">
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              signOut({ callbackUrl: '/' });
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-destructive hover:bg-destructive/10 transition-colors flex items-center space-x-2"
+                          >
+                            <span>🚪</span>
+                            <span>Cerrar Sesión</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -332,6 +431,14 @@ export default function VotePage() {
                 >
                   +
                 </button>
+                <button
+                  onClick={() => updateVote(nominee.id, 0)}
+                  disabled={!userVotes[nominee.id] || userVotes[nominee.id] === 0}
+                  className="w-10 h-10 bg-red-500 text-white rounded-lg flex items-center justify-center hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Resetear puntos"
+                >
+                  ↺
+                </button>
               </div>
 
               {/* Quick Add Buttons */}
@@ -339,21 +446,21 @@ export default function VotePage() {
                 <button
                   onClick={() => addQuickPoints(nominee.id, 5)}
                   disabled={remainingPoints < 5}
-                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +5
                 </button>
                 <button
                   onClick={() => addQuickPoints(nominee.id, 10)}
                   disabled={remainingPoints < 10}
-                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +10
                 </button>
                 <button
                   onClick={() => addQuickPoints(nominee.id, 20)}
                   disabled={remainingPoints < 20}
-                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +20
                 </button>
@@ -361,21 +468,22 @@ export default function VotePage() {
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Submit Button */}
-        <div className="space-y-3">
+      {/* Floating Bottom Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/40 p-4 z-50">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="text-sm">
+            <span className="text-muted-foreground">Puntos disponibles:</span>
+            <span className="font-bold text-primary ml-1">{remainingPoints}</span>
+          </div>
           <button
             onClick={submitVotes}
             disabled={submitting || usedPoints === 0}
-            className="w-full bg-primary text-primary-foreground py-4 px-6 rounded-xl font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-primary text-primary-foreground py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? 'Enviando...' : `Enviar ${usedPoints} votos`}
+            {submitting ? 'Enviando...' : `Votar (${usedPoints} pts)`}
           </button>
-          {usedPoints === 0 && (
-            <p className="text-center text-sm text-muted-foreground">
-              Asigna puntos para poder votar
-            </p>
-          )}
         </div>
       </div>
     </main>

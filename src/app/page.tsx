@@ -147,6 +147,14 @@ export default function Home() {
     }
   };
 
+  // Redirigir a votación después del login si hay votación activa
+  useEffect(() => {
+    if (session && votingData?.week?.isActive && window.location.search.includes('message=voted')) {
+      // Limpiar el parámetro de la URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [session, votingData?.week?.isActive]);
+
   const handleChatClick = () => {
     if (!session) {
       setShowLoginModal(true);
@@ -370,16 +378,34 @@ export default function Home() {
               </button>
             </div>
             
-            {votingData.nominees.map((nominee, index) => (
-              <div key={nominee.id} className="bg-card rounded-xl p-4 border border-border/20 vote-card">
+            {votingData.nominees
+              .sort((a, b) => b.votes - a.votes)
+              .map((nominee, index) => (
+              <div key={nominee.id} className={`rounded-xl p-4 border vote-card ${
+                index === 0 
+                  ? '!bg-violet-600 !border-violet-700 shadow-lg' 
+                  : 'bg-card border-border/20'
+              }`}>
                 <div className="flex items-center space-x-4">
                   {/* Position Badge */}
-                  <div className={`position-badge ${index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-600' : 'bg-muted'}`}>
-                    #{index + 1}
+                  <div className={`position-badge ${
+                    index === 0 
+                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg' 
+                      : index === 1 
+                        ? 'bg-gray-400' 
+                        : index === 2 
+                          ? 'bg-amber-600' 
+                          : 'bg-muted'
+                  }`}>
+                    {index === 0 ? '👑' : `#${index + 1}`}
                   </div>
                   
                   {/* Avatar */}
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center avatar-glow">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    index === 0 
+                      ? 'bg-gradient-to-br from-yellow-400/30 to-amber-500/30 avatar-glow shadow-lg' 
+                      : 'bg-gradient-to-br from-primary/20 to-accent/20 avatar-glow'
+                  }`}>
                     {nominee.photo ? (
                       <Image 
                         src={nominee.photo} 
@@ -395,7 +421,14 @@ export default function Home() {
                   
                   {/* Info */}
                   <div className="flex-1">
-                    <h3 className="font-semibold text-foreground">{nominee.name}</h3>
+                    <h3 className={`font-semibold ${
+                      index === 0 
+                        ? 'text-white font-bold' 
+                        : 'text-foreground'
+                    }`}>
+                      {nominee.name}
+                      {index === 0 && <span className="ml-2 text-yellow-300">🏆</span>}
+                    </h3>
                     <div className="flex items-center space-x-2 mt-1">
                       <div className="flex-1 bg-muted rounded-full h-2 progress-bar">
                         <div 
@@ -403,7 +436,9 @@ export default function Home() {
                           style={{ width: `${nominee.percentage}%` }}
                         ></div>
                       </div>
-                      <span className="text-sm text-muted-foreground min-w-[3rem]">
+                      <span className={`text-sm min-w-[3rem] ${
+                        index === 0 ? 'text-white' : 'text-muted-foreground'
+                      }`}>
                         {nominee.percentage}%
                       </span>
                     </div>
@@ -411,8 +446,16 @@ export default function Home() {
                   
                   {/* Votes */}
                   <div className="text-right">
-                    <div className="text-lg font-bold text-primary">{nominee.votes.toLocaleString()}</div>
-                    <div className="text-xs text-muted-foreground">votos</div>
+                    <div className={`text-lg font-bold ${
+                      index === 0 ? 'text-white' : 'text-primary'
+                    }`}>
+                      {nominee.votes.toLocaleString()}
+                    </div>
+                    <div className={`text-xs ${
+                      index === 0 ? 'text-white' : 'text-muted-foreground'
+                    }`}>
+                      votos
+                    </div>
                   </div>
                 </div>
               </div>
@@ -461,7 +504,7 @@ export default function Home() {
             
             <div className="space-y-4">
               <button
-                onClick={() => signIn('google', { callbackUrl: '/' })}
+                onClick={() => signIn('google', { callbackUrl: votingData?.week?.isActive ? '/vote' : '/' })}
                 className="w-full bg-white text-gray-800 py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
