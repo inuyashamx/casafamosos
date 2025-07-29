@@ -78,6 +78,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
       }
 
+      // Resetear puntos diarios si es necesario
+      await user.resetDailyPoints();
+
       const availablePoints = user.getAvailablePoints();
       const activeWeek = await WeekService.getActiveWeek(activeSeason._id.toString());
       
@@ -161,6 +164,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
+    // Resetear puntos diarios si es necesario
+    await user.resetDailyPoints();
+
     // Verificar puntos disponibles
     const availablePoints = user.getAvailablePoints();
     const existingVotes = await Vote.find({
@@ -222,7 +228,7 @@ export async function POST(request: NextRequest) {
     await WeekService.updateWeekResults(activeWeek._id.toString());
 
     // Actualizar puntos usados del usuario
-    user.usedPoints += totalPointsToUse;
+    user.usedPointsToday += totalPointsToUse;
     await user.save();
 
     return NextResponse.json({
