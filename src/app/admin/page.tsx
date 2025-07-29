@@ -191,9 +191,6 @@ export default function AdminPage() {
     name: '',
     photo: '',
     bio: '',
-    age: undefined as number | undefined,
-    profession: '',
-    city: '',
   });
   const [submittingCandidate, setSubmittingCandidate] = useState(false);
 
@@ -852,9 +849,6 @@ export default function AdminPage() {
         name: '',
         photo: '',
         bio: '',
-        age: undefined,
-        profession: '',
-        city: '',
       });
       showToast('success', 'Candidato creado correctamente');
     } catch (err: any) {
@@ -898,9 +892,6 @@ export default function AdminPage() {
         name: '',
         photo: '',
         bio: '',
-        age: undefined,
-        profession: '',
-        city: '',
       });
       showToast('success', 'Candidato actualizado correctamente');
     } catch (err: any) {
@@ -911,7 +902,38 @@ export default function AdminPage() {
     }
   };
 
-  // Función para eliminar candidato
+  // Función para eliminar candidato de la competencia
+  const eliminateCandidate = async (candidateId: string) => {
+    try {
+      setError(null);
+      const response = await fetch('/api/candidates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'eliminate',
+          candidateId,
+          weekNumber: 1, // Por ahora hardcodeado, se puede mejorar después
+          reason: 'Eliminado por administrador'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar candidato de la competencia');
+      }
+
+      const updatedCandidate = await response.json();
+      setCandidates(prev => prev.map(c => c._id === candidateId ? updatedCandidate : c));
+      showToast('success', 'Candidato eliminado de la competencia correctamente');
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error eliminando candidato de la competencia:', err);
+    }
+  };
+
+  // Función para eliminar candidato de la base de datos
   const deleteCandidate = async (candidateId: string) => {
     try {
       setError(null);
@@ -941,9 +963,6 @@ export default function AdminPage() {
       name: candidate.name,
       photo: candidate.photo || '',
       bio: candidate.bio || '',
-      age: candidate.age,
-      profession: candidate.profession || '',
-      city: candidate.city || '',
     });
     setShowCandidateForm(true);
   };
@@ -1974,6 +1993,24 @@ export default function AdminPage() {
                 </div>
               )}
 
+              {/* Selector de Temporada */}
+              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
+                <div className="flex items-center space-x-4">
+                  <select
+                    value={selectedSeason}
+                    onChange={(e) => setSelectedSeason(e.target.value)}
+                    className="flex-1 bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                  >
+                    {seasons.map(season => (
+                      <option key={season._id} value={season._id}>
+                        {season.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
                 <div>
                   <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Candidatos</h3>
@@ -2024,7 +2061,7 @@ export default function AdminPage() {
                             </span>
                           </div>
                           <p className="text-muted-foreground text-sm">
-                            {candidate.profession || 'Sin profesión especificada'}
+                            {candidate.bio ? 'Con descripción' : 'Sin descripción'}
                           </p>
                           {candidate.bio && (
                             <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{candidate.bio}</p>
@@ -2046,8 +2083,8 @@ export default function AdminPage() {
 
                       <div className="grid grid-cols-2 gap-3 mb-4">
                         <div className="bg-muted/30 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-foreground">{candidate.age || 'N/A'}</div>
-                          <div className="text-xs text-muted-foreground">Edad</div>
+                          <div className="text-lg font-bold text-foreground">{candidate.stats.timesNominated}</div>
+                          <div className="text-xs text-muted-foreground">Nominaciones</div>
                         </div>
                         <div className="bg-muted/30 rounded-lg p-3 text-center">
                           <div className="text-lg font-bold text-foreground">{candidate.stats.totalVotes.toLocaleString()}</div>
@@ -2073,16 +2110,29 @@ export default function AdminPage() {
                         >
                           Editar
                         </button>
-                        <button 
-                          onClick={() => handleConfirmAction(
-                            'Eliminar Candidato',
-                            `¿Estás seguro de que quieres eliminar a "${candidate.name}"? Esta acción eliminará todos los datos asociados y no se puede deshacer.`,
-                            () => deleteCandidate(candidate._id)
-                          )}
-                          className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
-                        >
-                          🗑️ Eliminar
-                        </button>
+                        {candidate.status === 'active' ? (
+                          <button 
+                            onClick={() => handleConfirmAction(
+                              'Eliminar de la Competencia',
+                              `¿Estás seguro de que quieres eliminar a "${candidate.name}" de la competencia? Esta acción cambiará su estado a eliminado.`,
+                              () => eliminateCandidate(candidate._id)
+                            )}
+                            className="flex-1 bg-orange-500/10 text-orange-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-orange-500/20 transition-colors"
+                          >
+                            🚫 Eliminar de Competencia
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleConfirmAction(
+                              'Borrar del Sistema',
+                              `¿Estás seguro de que quieres borrar a "${candidate.name}" del sistema? Esta acción eliminará todos los datos asociados y no se puede deshacer.`,
+                              () => deleteCandidate(candidate._id)
+                            )}
+                            className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
+                          >
+                            🗑️ Borrar del Sistema
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -2125,60 +2175,17 @@ export default function AdminPage() {
                         ></textarea>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Edad
-                          </label>
-                          <input
-                            type="number"
-                            placeholder="28"
-                            min="18"
-                            max="100"
-                            value={candidateForm.age || ''}
-                            onChange={(e) => setCandidateForm(prev => ({ ...prev, age: e.target.value ? parseInt(e.target.value) : undefined }))}
-                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Profesión
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Actriz"
-                            value={candidateForm.profession}
-                            onChange={(e) => setCandidateForm(prev => ({ ...prev, profession: e.target.value }))}
-                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Ciudad
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Madrid"
-                            value={candidateForm.city}
-                            onChange={(e) => setCandidateForm(prev => ({ ...prev, city: e.target.value }))}
-                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Foto (URL)
-                          </label>
-                          <input
-                            type="url"
-                            placeholder="https://example.com/photo.jpg"
-                            value={candidateForm.photo}
-                            onChange={(e) => setCandidateForm(prev => ({ ...prev, photo: e.target.value }))}
-                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                          Foto (URL)
+                        </label>
+                        <input
+                          type="url"
+                          placeholder="https://example.com/photo.jpg"
+                          value={candidateForm.photo}
+                          onChange={(e) => setCandidateForm(prev => ({ ...prev, photo: e.target.value }))}
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
                       </div>
                     </div>
 
@@ -2192,9 +2199,6 @@ export default function AdminPage() {
                             name: '',
                             photo: '',
                             bio: '',
-                            age: undefined,
-                            profession: '',
-                            city: '',
                           });
                         }}
                         disabled={submittingCandidate}
