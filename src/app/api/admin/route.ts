@@ -36,6 +36,10 @@ export async function GET(request: NextRequest) {
         }
         const stats = await AdminService.getDashboardStats(seasonId);
         return NextResponse.json({ stats });
+      
+      case 'dashboard':
+        const dashboardStats = await AdminService.getDashboardStats(seasonId || '');
+        return NextResponse.json(dashboardStats);
 
       case 'users':
         const page = parseInt(searchParams.get('page') || '1');

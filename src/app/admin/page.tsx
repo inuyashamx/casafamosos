@@ -216,17 +216,39 @@ export default function AdminPage() {
   const [userPages, setUserPages] = useState(0);
 
   const [stats, setStats] = useState({
-    totalUsers: 1247,
-    activeUsers: 342,
-    totalSeasons: 2,
-    activeSeason: 'Casa Famosos 2025',
-    totalCandidates: 12,
-    eliminatedCandidates: 3,
-    currentWeek: 4,
-    activeWeek: true,
-    totalVotes: 15680,
-    weeklyVotes: 3420,
+    totalUsers: 0,
+    activeUsers: 0,
+    totalSeasons: 0,
+    activeSeason: '',
+    totalCandidates: 0,
+    eliminatedCandidates: 0,
+    currentWeek: 0,
+    activeWeek: false,
+    totalVotes: 0,
+    weeklyVotes: 0,
   });
+  const [loadingDashboardStats, setLoadingDashboardStats] = useState(false);
+
+  // Función para cargar estadísticas del dashboard
+  const loadDashboardStats = async () => {
+    try {
+      setLoadingDashboardStats(true);
+      const seasonId = selectedSeason || '';
+      
+      const response = await fetch(`/api/admin?action=dashboard&seasonId=${seasonId}`);
+      if (!response.ok) {
+        throw new Error('Error cargando estadísticas del dashboard');
+      }
+      
+      const dashboardData = await response.json();
+      setStats(dashboardData);
+    } catch (error) {
+      console.error('Error cargando estadísticas del dashboard:', error);
+      setError('Error cargando estadísticas del dashboard');
+    } finally {
+      setLoadingDashboardStats(false);
+    }
+  };
 
   // Mock data (se mantiene para otras secciones)
   const mockSeasons = [
@@ -331,6 +353,13 @@ export default function AdminPage() {
       loadUsers(1, '', 'createdAt', 'desc');
     }
   }, [activeTab]);
+
+  // Cargar estadísticas del dashboard cuando cambie la temporada o se active la pestaña
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      loadDashboardStats();
+    }
+  }, [selectedSeason, activeTab]);
 
   // Función para cargar temporadas
   const loadSeasons = async () => {
@@ -1675,6 +1704,24 @@ export default function AdminPage() {
         <div className="p-4 lg:p-8">
           {activeTab === 'dashboard' && (
             <div className="space-y-6 lg:space-y-8">
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
+                <div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Dashboard</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">
+                    Estadísticas de {selectedSeason ? seasons.find(s => s._id === selectedSeason)?.name : 'todas las temporadas'}
+                  </p>
+                </div>
+                <button 
+                  onClick={loadDashboardStats}
+                  disabled={loadingDashboardStats}
+                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{loadingDashboardStats ? '⏳' : '🔄'}</span>
+                  <span>{loadingDashboardStats ? 'Cargando...' : 'Actualizar'}</span>
+                </button>
+              </div>
+
               {/* Stats Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
                 <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">

@@ -3,6 +3,7 @@ import User from '../models/User';
 import Candidate from '../models/Candidate';
 import Season from '../models/Season';
 import Vote from '../models/Vote';
+import Week from '../models/Week';
 
 export class AdminService {
   static async createSeason(seasonData: {
@@ -129,31 +130,42 @@ export class AdminService {
   static async getDashboardStats(seasonId: string) {
     await dbConnect();
     
+    // Si no hay seasonId, obtener estadísticas globales
+    const seasonFilter = seasonId ? { seasonId } : {};
+    
     const [
       totalUsers,
       activeUsers,
+      totalSeasons,
+      activeSeason,
       totalCandidates,
-      nominatedCandidates,
+      eliminatedCandidates,
+      currentWeek,
+      activeWeek,
       totalVotes,
       weeklyVotes
     ] = await Promise.all([
       User.countDocuments({ isActive: true }),
       User.countDocuments({ 
         isActive: true,
-        lastPointsReset: { 
+        lastVoteDate: { 
           $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) 
         }
       }),
-      Candidate.countDocuments({ seasonId, isEliminated: false }),
-      Candidate.countDocuments({ seasonId, isNominated: true }),
+      Season.countDocuments({}),
+      Season.findOne({ isActive: true }).select('name'),
+      Candidate.countDocuments({ ...seasonFilter, isActive: true }),
+      Candidate.countDocuments({ ...seasonFilter, 'eliminationInfo.isEliminated': true }),
+      Week.findOne({ ...seasonFilter, isVotingActive: true }).select('weekNumber'),
+      Week.countDocuments({ ...seasonFilter, isVotingActive: true }),
       Vote.aggregate([
-        { $match: { seasonId: seasonId } },
+        { $match: seasonFilter },
         { $group: { _id: null, total: { $sum: '$points' } } }
       ]),
       Vote.aggregate([
         { 
           $match: { 
-            seasonId: seasonId,
+            ...seasonFilter,
             voteDate: { 
               $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) 
             }
@@ -166,8 +178,12 @@ export class AdminService {
     return {
       totalUsers,
       activeUsers,
+      totalSeasons,
+      activeSeason: activeSeason?.name || '',
       totalCandidates,
-      nominatedCandidates,
+      eliminatedCandidates,
+      currentWeek: currentWeek?.weekNumber || 0,
+      activeWeek: activeWeek > 0,
       totalVotes: totalVotes[0]?.total || 0,
       weeklyVotes: weeklyVotes[0]?.total || 0,
     };
