@@ -295,6 +295,8 @@ export default function AdminPage() {
     }
   }, [weeks, selectedWeek]);
 
+
+
   // Establecer la primera temporada como seleccionada cuando se carguen
   useEffect(() => {
     if (seasons.length > 0 && !selectedSeason) {
@@ -2149,24 +2151,6 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Selector de Semana */}
-              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
-                <select
-                  value={selectedWeek}
-                  onChange={(e) => handleWeekChange(e.target.value)}
-                  disabled={!selectedSeason || weeks.length === 0}
-                  className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Selecciona una semana</option>
-                  {weeks.map(week => (
-                    <option key={week._id} value={week._id}>
-                      Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
                 <div>
                   <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Candidatos</h3>
@@ -2402,39 +2386,22 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Selectores de Temporada y Semana */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
-                  <select
-                    value={selectedSeason}
-                    onChange={(e) => handleSeasonChange(e.target.value)}
-                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                  >
-                    {seasons.map(season => (
-                      <option key={season._id} value={season._id}>
-                        {season.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
-                  <select
-                    value={selectedWeek}
-                    onChange={(e) => handleWeekChange(e.target.value)}
-                    disabled={!selectedSeason || weeks.length === 0}
-                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Selecciona una semana</option>
-                    {weeks.map(week => (
-                      <option key={week._id} value={week._id}>
-                        Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Selector de Semana */}
+              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
+                <select
+                  value={selectedWeek}
+                  onChange={(e) => handleWeekChange(e.target.value)}
+                  disabled={!selectedSeason || weeks.length === 0}
+                  className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Selecciona una semana</option>
+                  {weeks.map(week => (
+                    <option key={week._id} value={week._id}>
+                      Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
