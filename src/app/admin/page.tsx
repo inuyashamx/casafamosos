@@ -1886,6 +1886,7 @@ export default function AdminPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     </button>
+                    {/* Botón de Resetear Votos oculto temporalmente
                     <button 
                       onClick={() => handleConfirmAction(
                         'Resetear Votos Semanales',
@@ -1901,6 +1902,7 @@ export default function AdminPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
+                    */}
                   </div>
                 </div>
 
@@ -3039,7 +3041,7 @@ export default function AdminPage() {
                 </select>
               </div>
 
-              {/* Botón de Resetear Votaciones */}
+              {/* Botón de Resetear Votaciones oculto temporalmente
               {selectedWeek && (
                 <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
                   <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Acciones de Votación</h3>
@@ -3061,6 +3063,7 @@ export default function AdminPage() {
                   </button>
                 </div>
               )}
+              */}
 
               {selectedWeek ? (
                 (() => {
