@@ -2618,121 +2618,197 @@ export default function AdminPage() {
           {/* Votaciones Tab */}
           {activeTab === 'votes' && (
             <div className="space-y-6 lg:space-y-8">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
-                <div>
-                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Control de Votaciones</h3>
-                  <p className="text-muted-foreground text-sm lg:text-base">Gestiona las votaciones de la temporada</p>
+              {/* Error Display */}
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-destructive">⚠️</span>
+                    <span className="text-destructive font-medium">{error}</span>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="ml-auto text-destructive hover:text-destructive/80"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
-                <button 
-                  onClick={() => handleConfirmAction(
-                    'Resetear Votaciones',
-                    '¿Estás seguro de que quieres resetear todas las votaciones de la temporada? Esta acción no se puede deshacer.',
-                    () => showToast('success', 'Votaciones reseteadas correctamente')
-                  )}
-                  className="bg-destructive text-destructive-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2"
+              )}
+
+              {/* Selector de Semana */}
+              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
+                <select
+                  value={selectedWeek}
+                  onChange={(e) => handleWeekChange(e.target.value)}
+                  disabled={!selectedSeason || weeks.length === 0}
+                  className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span>🔄</span>
-                  <span>Resetear Votaciones</span>
-                </button>
+                  <option value="">Selecciona una semana</option>
+                  {weeks.map(week => (
+                    <option key={week._id} value={week._id}>
+                      Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                {/* Aquí iría la lógica para mostrar estadísticas de votos, gráficos, etc. */}
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Estadísticas de Votaciones</h3>
-                  <div className="space-y-3 lg:space-y-4">
-                    <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="text-xs lg:text-sm font-medium text-foreground">Votos Totales</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{stats.totalVotes.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-xs lg:text-sm font-medium text-foreground">Votos Semanales</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{stats.weeklyVotes.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                        <span className="text-xs lg:text-sm font-medium text-foreground">Candidatos Nominados</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{stats.totalCandidates - stats.eliminatedCandidates}</span>
-                    </div>
-                  </div>
-                </div>
+              {selectedWeek ? (
+                (() => {
+                  const selectedWeekData = weeks.find(w => w._id === selectedWeek);
+                  if (!selectedWeekData) return null;
 
-                {/* Aquí iría la lógica para mostrar la tabla de votos por semana */}
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Votaciones por Semana</h3>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-border">
-                      <thead className="bg-muted/30">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Semana
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Votos Totales
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Votos Semanales
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Estado
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Acciones
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-card divide-y divide-border">
-                        {mockWeeks.map((week: any) => (
-                          <tr key={week.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
-                              Semana {week.number}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                              {stats.totalVotes.toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                              {stats.weeklyVotes.toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                              {week.status === 'active' || week.status === 'voting' ? 'Votando' : week.status === 'completed' ? 'Cerrada' : 'Pendiente'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <button 
-                                onClick={() => handleConfirmAction(
-                                  'Cerrar Semana',
-                                  `¿Estás seguro de que quieres cerrar la semana ${week.number}? Esta acción no se puede deshacer.`,
-                                  () => showToast('success', `Semana ${week.number} cerrada correctamente`)
-                                )}
-                                className="text-red-500 hover:text-red-700 mr-2"
-                              >
-                                ✅
-                              </button>
-                              <button 
-                                onClick={() => handleConfirmAction(
-                                  'Eliminar Semana',
-                                  `¿Estás seguro de que quieres eliminar la semana ${week.number}? Esta acción no se puede deshacer.`,
-                                  () => showToast('success', `Semana ${week.number} eliminada correctamente`)
-                                )}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                🗑️
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  const sortedNominees = [...selectedWeekData.nominees].sort((a, b) => {
+                    const aVotes = selectedWeekData.results.votingStats.find(v => v.candidateId === a.candidateId._id)?.votes || 0;
+                    const bVotes = selectedWeekData.results.votingStats.find(v => v.candidateId === b.candidateId._id)?.votes || 0;
+                    return bVotes - aVotes;
+                  });
+
+                  return (
+                    <div className="space-y-6 lg:space-y-8">
+                      {/* Resumen de la Semana */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+                        <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            <h4 className="font-semibold text-foreground">Votos Totales</h4>
+                          </div>
+                          <p className="text-2xl lg:text-3xl font-bold text-foreground">{selectedWeekData.results.totalVotes.toLocaleString()}</p>
+                          <p className="text-sm text-muted-foreground">Semana {selectedWeekData.weekNumber}</p>
+                        </div>
+
+                        <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <h4 className="font-semibold text-foreground">Nominados</h4>
+                          </div>
+                          <p className="text-2xl lg:text-3xl font-bold text-foreground">{selectedWeekData.nominees.length}</p>
+                          <p className="text-sm text-muted-foreground">Candidatos nominados</p>
+                        </div>
+
+                        <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                            <h4 className="font-semibold text-foreground">Estado</h4>
+                          </div>
+                          <p className="text-2xl lg:text-3xl font-bold text-foreground">
+                            {selectedWeekData.status === 'voting' || selectedWeekData.status === 'active' ? '🟢' : selectedWeekData.status === 'completed' ? '✅' : '⏳'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedWeekData.status === 'voting' || selectedWeekData.status === 'active' ? 'Votando' : selectedWeekData.status === 'completed' ? 'Cerrada' : 'Programada'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Top de Nominados */}
+                      <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                        <h3 className="text-lg lg:text-xl font-semibold text-foreground mb-4 lg:mb-6">Top de Nominados - Semana {selectedWeekData.weekNumber}</h3>
+                        
+                        {selectedWeekData.nominees.length === 0 ? (
+                          <div className="text-center py-8">
+                            <div className="text-4xl mb-4">🎯</div>
+                            <p className="text-lg font-medium text-foreground mb-2">No hay nominados</p>
+                            <p className="text-muted-foreground">Esta semana aún no tiene candidatos nominados</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {sortedNominees.map((nominee, index) => {
+                              const voteStats = selectedWeekData.results.votingStats.find(v => v.candidateId === nominee.candidateId._id);
+                              const votes = voteStats?.votes || 0;
+                              const percentage = voteStats?.percentage || 0;
+                              const isWinner = selectedWeekData.results.winner?.candidateId === nominee.candidateId._id;
+
+                              return (
+                                <div key={nominee.candidateId._id} className={`flex items-center space-x-4 p-4 rounded-lg border ${
+                                  isWinner ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-muted/30 border-border/40'
+                                }`}>
+                                  {/* Posición */}
+                                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                    index === 0 ? 'bg-yellow-500 text-yellow-900' :
+                                    index === 1 ? 'bg-gray-400 text-gray-900' :
+                                    index === 2 ? 'bg-orange-600 text-white' :
+                                    'bg-muted text-muted-foreground'
+                                  }`}>
+                                    {index + 1}
+                                  </div>
+
+                                  {/* Foto del candidato */}
+                                  <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-muted/30">
+                                    {nominee.candidateId.photo ? (
+                                      <img 
+                                        src={nominee.candidateId.photo} 
+                                        alt={nominee.candidateId.name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                        👤
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Información del candidato */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center space-x-2">
+                                      <h4 className="font-semibold text-foreground truncate">{nominee.candidateId.name}</h4>
+                                      {isWinner && (
+                                        <span className="px-2 py-1 bg-yellow-500 text-yellow-900 text-xs font-bold rounded-full">
+                                          🏆 GANADOR
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      Nominado el {new Date(nominee.nominatedAt).toLocaleDateString('es-ES')}
+                                    </p>
+                                  </div>
+
+                                  {/* Estadísticas de votos */}
+                                  <div className="flex-shrink-0 text-right">
+                                    <div className="text-lg font-bold text-foreground">{votes.toLocaleString()}</div>
+                                    <div className="text-sm text-muted-foreground">{percentage.toFixed(1)}%</div>
+                                    <div className="text-xs text-muted-foreground">votos</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Detalles de Votación */}
+                      {selectedWeekData.results.totalVotes > 0 && (
+                        <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                          <h3 className="text-lg lg:text-xl font-semibold text-foreground mb-4 lg:mb-6">Detalles de Votación</h3>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                            <div>
+                              <h4 className="font-medium text-foreground mb-3">Período de Votación</h4>
+                              <div className="space-y-2 text-sm text-muted-foreground">
+                                <div>Inicio: {new Date(selectedWeekData.votingStartDate).toLocaleString('es-ES')}</div>
+                                <div>Fin: {new Date(selectedWeekData.votingEndDate).toLocaleString('es-ES')}</div>
+                              </div>
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-foreground mb-3">Configuración</h4>
+                              <div className="space-y-2 text-sm text-muted-foreground">
+                                <div>Máx. votos por usuario: {selectedWeekData.settings.maxVotesPerUser}</div>
+                                <div>Votos múltiples: {selectedWeekData.settings.allowMultipleVotes ? 'Sí' : 'No'}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">🗳️</div>
+                  <p className="text-lg font-medium text-foreground mb-2">Selecciona una semana</p>
+                  <p className="text-muted-foreground">Elige una semana para ver las estadísticas de votación</p>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
