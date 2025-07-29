@@ -3,6 +3,7 @@ import Week from '@/lib/models/Week';
 import Season from '@/lib/models/Season';
 import Candidate from '@/lib/models/Candidate';
 import Vote from '@/lib/models/Vote';
+import mongoose from 'mongoose';
 
 export class WeekService {
   static async getWeeksBySeason(seasonId: string) {
@@ -152,14 +153,9 @@ export class WeekService {
   static async updateWeekResults(weekId: string) {
     await dbConnect();
     
-    const week = await Week.findById(weekId);
-    if (!week) {
-      throw new Error('Semana no encontrada');
-    }
-
     // Obtener resultados de votación usando agregación
     const results = await Vote.aggregate([
-      { $match: { weekId: week._id, isValid: true } },
+      { $match: { weekId: new mongoose.Types.ObjectId(weekId), isValid: true } },
       {
         $group: {
           _id: '$candidateId',
@@ -172,18 +168,25 @@ export class WeekService {
 
     const totalVotes = results.reduce((sum, r) => sum + r.totalVotes, 0);
 
-    // Actualizar estadísticas de la semana
-    week.results.totalVotes = totalVotes;
-    week.results.votingStats = results.map((r: any, index: number) => ({
-      candidateId: r._id,
-      votes: r.totalVotes,
-      percentage: totalVotes > 0 ? Math.round((r.totalVotes / totalVotes) * 100) : 0
-    }));
+    // Preparar datos de actualización
+    const updateData: any = {
+      'results.totalVotes': totalVotes,
+      'results.votingStats': results.map((r: any) => ({
+        candidateId: r._id,
+        votes: r.totalVotes,
+        percentage: totalVotes > 0 ? Math.round((r.totalVotes / totalVotes) * 100) : 0
+      }))
+    };
 
     if (results.length > 0) {
-      week.results.winner = {
+      updateData['results.winner'] = {
         candidateId: results[0]._id,
         votes: results[0].totalVotes
+      };
+    } else {
+      updateData['results.winner'] = {
+        candidateId: null,
+        votes: 0
       };
     }
 
@@ -195,7 +198,18 @@ export class WeekService {
       });
     }
 
-    return await week.save();
+    // Actualizar la semana usando findOneAndUpdate para evitar problemas de concurrencia
+    const updatedWeek = await Week.findOneAndUpdate(
+      { _id: weekId },
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedWeek) {
+      throw new Error('Semana no encontrada');
+    }
+
+    return updatedWeek;
   }
 
   static async resetWeekVotes(weekId: string) {
@@ -234,14 +248,10 @@ export class WeekService {
   static async getWeekResults(weekId: string) {
     await dbConnect();
     
-    const week = await Week.findById(weekId).populate('nominees.candidateId');
-    if (!week) {
-      throw new Error('Semana no encontrada');
-    }
-
-    // Actualizar resultados en tiempo real
-    await this.updateWeekResults(weekId);
+    // Actualizar resultados en tiempo real y obtener la semana actualizada
+    const updatedWeek = await this.updateWeekResults(weekId);
     
+    // Retornar la semana con los nominados poblados
     return await Week.findById(weekId).populate('nominees.candidateId');
   }
 
