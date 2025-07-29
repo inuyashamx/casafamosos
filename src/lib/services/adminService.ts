@@ -231,7 +231,7 @@ export class AdminService {
     sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
     
     const users = await User.find(searchFilter)
-      .select('name email totalVotes isActive isBlocked blockReason blockedAt lastVoteDate createdAt')
+      .select('name email image totalVotes isActive isBlocked blockReason blockedAt lastVoteDate createdAt')
       .sort(sortOptions)
       .limit(limit)
       .skip((page - 1) * limit);

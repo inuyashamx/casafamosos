@@ -3306,7 +3306,20 @@ export default function AdminPage() {
                             <tr key={user._id} className="hover:bg-muted/20 transition-colors">
                               <td className="p-4">
                                 <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                  {user.image ? (
+                                    <img 
+                                      src={user.image} 
+                                      alt={user.name}
+                                      className="w-8 h-8 rounded-full object-cover"
+                                      onError={(e) => {
+                                        // Si la imagen falla, mostrar la inicial
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        target.nextElementSibling?.classList.remove('hidden');
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div className={`w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center ${user.image ? 'hidden' : ''}`}>
                                     <span className="text-primary font-medium text-sm">
                                       {user.name.charAt(0).toUpperCase()}
                                     </span>
