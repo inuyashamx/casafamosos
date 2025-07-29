@@ -1806,17 +1806,7 @@ export default function AdminPage() {
                         </svg>
                       </button>
                     )}
-                    <button 
-                      onClick={() => setActiveTab('weeks')}
-                      className="w-full flex items-center justify-between bg-primary text-primary-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-primary/90 transition-colors group">
-                      <div className="flex items-center space-x-2 lg:space-x-3">
-                        <span className="text-lg lg:text-xl">📅</span>
-                        <span className="text-sm lg:text-base">Gestionar Semana Actual</span>
-                      </div>
-                      <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
+
                     <button 
                       onClick={() => setActiveTab('nominees')}
                       className="w-full flex items-center justify-between bg-accent text-accent-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-accent/90 transition-colors group">
