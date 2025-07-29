@@ -41,6 +41,7 @@ export default function Home() {
   const [userPoints, setUserPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // Contador regresivo
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -76,23 +77,31 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Cargar puntos del usuario
+  // Cargar puntos del usuario y verificar si es admin
   useEffect(() => {
-    const fetchUserPoints = async () => {
+    const fetchUserData = async () => {
       if (!session) return;
       
       try {
-        const response = await fetch('/api/vote?action=points');
-        if (response.ok) {
-          const data = await response.json();
-          setUserPoints(data.availablePoints);
+        // Cargar puntos
+        const pointsResponse = await fetch('/api/vote?action=points');
+        if (pointsResponse.ok) {
+          const pointsData = await pointsResponse.json();
+          setUserPoints(pointsData.availablePoints);
+        }
+
+        // Verificar si es admin
+        const adminResponse = await fetch('/api/admin?action=checkAdmin');
+        if (adminResponse.ok) {
+          const adminData = await adminResponse.json();
+          setIsAdmin(adminData.isAdmin || false);
         }
       } catch (err) {
-        console.error('Error fetching user points:', err);
+        console.error('Error fetching user data:', err);
       }
     };
 
-    fetchUserPoints();
+    fetchUserData();
   }, [session]);
 
   // Actualizar contador regresivo
@@ -211,27 +220,18 @@ export default function Home() {
                       </div>
 
                       <div className="py-2">
-                        <button
-                          onClick={() => {
-                            setShowUserMenu(false);
-                            window.location.href = '/dashboard';
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors flex items-center space-x-2"
-                        >
-                          <span>👤</span>
-                          <span>Mi Perfil</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setShowUserMenu(false);
-                            // Aquí iría la lógica para ver historial de votos
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors flex items-center space-x-2"
-                        >
-                          <span>📊</span>
-                          <span>Mis Votos</span>
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              window.location.href = '/admin';
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors flex items-center space-x-2"
+                          >
+                            <span>👑</span>
+                            <span>Panel Admin</span>
+                          </button>
+                        )}
 
                         <div className="border-t border-border/20 mt-2 pt-2">
                           <button

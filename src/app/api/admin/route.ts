@@ -50,6 +50,9 @@ export async function GET(request: NextRequest) {
         const users = await AdminService.getUsersManagement(page, limit, search, sortBy, sortOrder);
         return NextResponse.json(users);
 
+      case 'checkAdmin':
+        return NextResponse.json({ isAdmin: true });
+
       default:
         return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
     }
