@@ -3,6 +3,61 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
+// Tipos para las temporadas
+interface Season {
+  _id: string;
+  name: string;
+  year: number;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  status: 'scheduled' | 'active' | 'completed' | 'cancelled';
+  isActive: boolean;
+  defaultDailyPoints: number;
+  settings: {
+    maxNomineesPerWeek: number;
+    votingEndTime: string;
+    votingDays: number[];
+  };
+  stats: {
+    totalWeeks: number;
+    totalCandidates: number;
+    totalVotes: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SeasonStats {
+  season: {
+    id: string;
+    name: string;
+    year: number;
+    status: string;
+    isActive: boolean;
+    startDate: string;
+    endDate: string;
+  };
+  candidates: {
+    total: number;
+    active: number;
+    eliminated: number;
+    winner: number;
+  };
+  weeks: {
+    total: number;
+    active: number;
+    completed: number;
+    scheduled: number;
+  };
+  votes: {
+    totalVotes: number;
+    totalPoints: number;
+    uniqueVoters: number;
+    uniqueCandidates: number;
+  };
+}
+
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -18,6 +73,24 @@ export default function AdminPage() {
   const [selectedSeason, setSelectedSeason] = useState('2025');
   const [selectedWeek, setSelectedWeek] = useState(null);
 
+  // Estados para temporadas (reales)
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [loadingSeasons, setLoadingSeasons] = useState(true);
+  const [seasonStats, setSeasonStats] = useState<{ [key: string]: SeasonStats }>({});
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Estados para formulario de temporada
+  const [seasonForm, setSeasonForm] = useState({
+    name: '',
+    year: new Date().getFullYear(),
+    description: '',
+    startDate: '',
+    endDate: '',
+    defaultDailyPoints: 60,
+  });
+  const [submittingSeason, setSubmittingSeason] = useState(false);
+
   const [stats, setStats] = useState({
     totalUsers: 1247,
     activeUsers: 342,
@@ -31,8 +104,8 @@ export default function AdminPage() {
     weeklyVotes: 3420,
   });
 
-  // Mock data
-  const seasons = [
+  // Mock data (se mantiene para otras secciones)
+  const mockSeasons = [
     { id: '2025', name: 'Casa Famosos 2025', year: 2025, status: 'active', startDate: '2025-01-15', endDate: '2025-06-15' },
     { id: '2024', name: 'Casa Famosos 2024', year: 2024, status: 'completed', startDate: '2024-01-15', endDate: '2024-06-15' }
   ];
@@ -56,8 +129,195 @@ export default function AdminPage() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/');
+    } else if (status === 'authenticated' && session && !(session.user as any)?.isAdmin) {
+      // Si está autenticado pero no es admin, redirigir
+      router.push('/');
     }
-  }, [status, router]);
+  }, [status, session, router]);
+
+  // Cargar temporadas al montar el componente
+  useEffect(() => {
+    if (status === 'authenticated') {
+      loadSeasons();
+    }
+  }, [status]);
+
+  // Función para cargar temporadas
+  const loadSeasons = async () => {
+    try {
+      setLoadingSeasons(true);
+      setError(null);
+      const response = await fetch('/api/seasons');
+      if (!response.ok) {
+        throw new Error('Error al cargar temporadas');
+      }
+      const data = await response.json();
+      setSeasons(data);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error cargando temporadas:', err);
+    } finally {
+      setLoadingSeasons(false);
+    }
+  };
+
+  // Función para cargar estadísticas de una temporada
+  const loadSeasonStats = async (seasonId: string) => {
+    try {
+      setLoadingStats(true);
+      const response = await fetch(`/api/seasons?id=${seasonId}&action=stats`);
+      if (!response.ok) {
+        throw new Error('Error al cargar estadísticas');
+      }
+      const stats = await response.json();
+      setSeasonStats(prev => ({ ...prev, [seasonId]: stats }));
+    } catch (err: any) {
+      console.error('Error cargando estadísticas:', err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // Función para crear temporada
+  const createSeason = async () => {
+    try {
+      setSubmittingSeason(true);
+      setError(null);
+      
+      const response = await fetch('/api/seasons', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(seasonForm),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al crear temporada');
+      }
+
+      const newSeason = await response.json();
+      setSeasons(prev => [newSeason, ...prev]);
+      setShowSeasonForm(false);
+      setSeasonForm({
+        name: '',
+        year: new Date().getFullYear(),
+        description: '',
+        startDate: '',
+        endDate: '',
+        defaultDailyPoints: 60,
+      });
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error creando temporada:', err);
+    } finally {
+      setSubmittingSeason(false);
+    }
+  };
+
+  // Función para activar temporada
+  const activateSeason = async (seasonId: string) => {
+    try {
+      setError(null);
+      const response = await fetch('/api/seasons', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'activate',
+          seasonId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al activar temporada');
+      }
+
+      await loadSeasons(); // Recargar para actualizar estados
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error activando temporada:', err);
+    }
+  };
+
+  // Función para completar temporada
+  const completeSeason = async (seasonId: string) => {
+    try {
+      setError(null);
+      const response = await fetch('/api/seasons', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'complete',
+          seasonId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al completar temporada');
+      }
+
+      await loadSeasons(); // Recargar para actualizar estados
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error completando temporada:', err);
+    }
+  };
+
+  // Función para eliminar temporada
+  const deleteSeason = async (seasonId: string) => {
+    try {
+      setError(null);
+      const response = await fetch(`/api/seasons?id=${seasonId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar temporada');
+      }
+
+      setSeasons(prev => prev.filter(s => s._id !== seasonId));
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error eliminando temporada:', err);
+    }
+  };
+
+  // Función para convertir usuario en admin (solo desarrollo)
+  const makeAdmin = async () => {
+    try {
+      setError(null);
+      const response = await fetch('/api/admin/make-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: session?.user?.email,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al convertir en admin');
+      }
+
+      const result = await response.json();
+      alert(result.message);
+      // Recargar la página para actualizar la sesión
+      window.location.reload();
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error convirtiendo en admin:', err);
+    }
+  };
 
   if (status === 'loading') {
     return (
@@ -69,6 +329,27 @@ export default function AdminPage() {
 
   if (!session) {
     return null;
+  }
+
+  // Verificar si el usuario es admin
+  const isAdmin = (session.user as any)?.isAdmin;
+  
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🚫</div>
+          <h1 className="text-xl font-semibold text-foreground mb-2">Acceso Denegado</h1>
+          <p className="text-muted-foreground">No tienes permisos de administrador para acceder a esta página.</p>
+          <button 
+            onClick={() => router.push('/')}
+            className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Volver al Inicio
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const tabs = [
@@ -164,7 +445,7 @@ export default function AdminPage() {
             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
           >
             {seasons.map(season => (
-              <option key={season.id} value={season.id}>
+              <option key={season._id} value={season._id}>
                 {season.name}
               </option>
             ))}
@@ -206,7 +487,9 @@ export default function AdminPage() {
               <p className="text-sm font-medium text-foreground truncate">
                 {session.user?.name}
               </p>
-              <p className="text-xs text-muted-foreground">Administrador</p>
+              <p className="text-xs text-muted-foreground">
+                {isAdmin ? '👑 Administrador' : 'Usuario'}
+              </p>
             </div>
             <button
               onClick={() => router.push('/')}
@@ -252,7 +535,7 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="text-xs lg:text-sm text-muted-foreground hidden md:block">
-              {seasons.find(s => s.id === selectedSeason)?.name || 'Casa Famosos 2025'}
+              {seasons.find(s => s._id === selectedSeason)?.name || 'Casa Famosos 2025'}
             </div>
           </div>
         </header>
@@ -331,6 +614,20 @@ export default function AdminPage() {
                 <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
                   <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Acciones Rápidas</h3>
                   <div className="space-y-2 lg:space-y-3">
+                    {/* Botón temporal para convertir en admin (solo desarrollo) */}
+                    {!isAdmin && (
+                      <button 
+                        onClick={makeAdmin}
+                        className="w-full flex items-center justify-between bg-yellow-500 text-yellow-900 p-3 lg:p-4 rounded-lg font-medium hover:bg-yellow-600 transition-colors group">
+                        <div className="flex items-center space-x-2 lg:space-x-3">
+                          <span className="text-lg lg:text-xl">👑</span>
+                          <span className="text-sm lg:text-base">Convertir en Admin</span>
+                        </div>
+                        <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    )}
                     <button 
                       onClick={() => setActiveTab('weeks')}
                       className="w-full flex items-center justify-between bg-primary text-primary-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-primary/90 transition-colors group">
@@ -404,6 +701,22 @@ export default function AdminPage() {
           {/* Temporadas Tab */}
           {activeTab === 'seasons' && (
             <div className="space-y-6 lg:space-y-8">
+              {/* Error Display */}
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-destructive">⚠️</span>
+                    <span className="text-destructive font-medium">{error}</span>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="ml-auto text-destructive hover:text-destructive/80"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
                 <div>
                   <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Temporadas</h3>
@@ -418,55 +731,112 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                {seasons.map((season) => (
-                  <div key={season.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-semibold text-foreground text-base lg:text-lg">{season.name}</h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            season.status === 'active' 
-                              ? 'bg-green-500/10 text-green-500' 
-                              : 'bg-muted text-muted-foreground'
-                          }`}>
-                            {season.status === 'active' ? '🟢 Activa' : '⚪ Completada'}
-                          </span>
-                        </div>
-                        <p className="text-muted-foreground text-sm">
-                          {new Date(season.startDate).toLocaleDateString('es-ES')} - {new Date(season.endDate).toLocaleDateString('es-ES')}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="bg-muted/30 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-foreground">12</div>
-                        <div className="text-xs text-muted-foreground">Candidatos</div>
-                      </div>
-                      <div className="bg-muted/30 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-foreground">4</div>
-                        <div className="text-xs text-muted-foreground">Semanas</div>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
-                        Editar
-                      </button>
-                      {season.status === 'active' ? (
-                        <button className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors">
-                          Completar
-                        </button>
-                      ) : (
-                        <button className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
-                          Activar
-                        </button>
-                      )}
-                    </div>
+              {/* Loading State */}
+              {loadingSeasons ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Cargando temporadas...</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : seasons.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">🏆</div>
+                  <p className="text-lg font-medium text-foreground mb-2">No hay temporadas</p>
+                  <p className="text-muted-foreground">Crea la primera temporada para comenzar</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  {seasons.map((season) => {
+                    const stats = seasonStats[season._id];
+                    return (
+                      <div key={season._id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <h4 className="font-semibold text-foreground text-base lg:text-lg">{season.name}</h4>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                season.status === 'active' 
+                                  ? 'bg-green-500/10 text-green-500' 
+                                  : season.status === 'completed'
+                                    ? 'bg-muted text-muted-foreground'
+                                    : 'bg-blue-500/10 text-blue-500'
+                              }`}>
+                                {season.status === 'active' ? '🟢 Activa' : season.status === 'completed' ? '✅ Completada' : '⏳ Programada'}
+                              </span>
+                            </div>
+                            <p className="text-muted-foreground text-sm">
+                              {new Date(season.startDate).toLocaleDateString('es-ES')} - {new Date(season.endDate).toLocaleDateString('es-ES')}
+                            </p>
+                            {season.description && (
+                              <p className="text-muted-foreground text-xs mt-1">{season.description}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="bg-muted/30 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-foreground">
+                              {stats ? stats.candidates.total : season.stats.totalCandidates}
+                            </div>
+                            <div className="text-xs text-muted-foreground">Candidatos</div>
+                          </div>
+                          <div className="bg-muted/30 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-foreground">
+                              {stats ? stats.weeks.total : season.stats.totalWeeks}
+                            </div>
+                            <div className="text-xs text-muted-foreground">Semanas</div>
+                          </div>
+                        </div>
+
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => loadSeasonStats(season._id)}
+                            className="flex-1 bg-muted text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors"
+                          >
+                            {loadingStats ? 'Cargando...' : 'Ver Stats'}
+                          </button>
+                          {season.status === 'active' ? (
+                            <button 
+                              onClick={() => handleConfirmAction(
+                                'Completar Temporada',
+                                `¿Estás seguro de que quieres completar la temporada "${season.name}"? Esta acción no se puede deshacer.`,
+                                () => completeSeason(season._id)
+                              )}
+                              className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors"
+                            >
+                              Completar
+                            </button>
+                          ) : season.status === 'scheduled' || season.status === 'completed' ? (
+                            <button 
+                              onClick={() => handleConfirmAction(
+                                'Activar Temporada',
+                                `¿Estás seguro de que quieres activar la temporada "${season.name}"? Esto desactivará la temporada actual.`,
+                                () => activateSeason(season._id)
+                              )}
+                              className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
+                            >
+                              Activar
+                            </button>
+                          ) : null}
+                          {season.status !== 'active' && (
+                            <button 
+                              onClick={() => handleConfirmAction(
+                                'Eliminar Temporada',
+                                `¿Estás seguro de que quieres eliminar la temporada "${season.name}"? Esta acción eliminará todos los datos asociados y no se puede deshacer.`,
+                                () => deleteSeason(season._id)
+                              )}
+                              className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors"
+                            >
+                              Eliminar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Season Form Modal */}
               {showSeasonForm && (
@@ -477,26 +847,32 @@ export default function AdminPage() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-2">
-                          Nombre de la Temporada
+                          Nombre de la Temporada *
                         </label>
                         <input
                           type="text"
                           placeholder="Casa Famosos 2025"
+                          value={seasonForm.name}
+                          onChange={(e) => setSeasonForm(prev => ({ ...prev, name: e.target.value }))}
                           className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          required
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Año
+                            Año *
                           </label>
                           <input
                             type="number"
                             placeholder="2025"
                             min="2020"
                             max="2030"
+                            value={seasonForm.year}
+                            onChange={(e) => setSeasonForm(prev => ({ ...prev, year: parseInt(e.target.value) }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                            required
                           />
                         </div>
                         <div>
@@ -507,6 +883,8 @@ export default function AdminPage() {
                             type="number"
                             placeholder="60"
                             min="1"
+                            value={seasonForm.defaultDailyPoints}
+                            onChange={(e) => setSeasonForm(prev => ({ ...prev, defaultDailyPoints: parseInt(e.target.value) }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                           />
                         </div>
@@ -515,20 +893,26 @@ export default function AdminPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Fecha de Inicio
+                            Fecha de Inicio *
                           </label>
                           <input
                             type="date"
+                            value={seasonForm.startDate}
+                            onChange={(e) => setSeasonForm(prev => ({ ...prev, startDate: e.target.value }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                            required
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Fecha de Fin
+                            Fecha de Fin *
                           </label>
                           <input
                             type="date"
+                            value={seasonForm.endDate}
+                            onChange={(e) => setSeasonForm(prev => ({ ...prev, endDate: e.target.value }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                            required
                           />
                         </div>
                       </div>
@@ -540,6 +924,8 @@ export default function AdminPage() {
                         <textarea
                           placeholder="Descripción de la temporada..."
                           rows={3}
+                          value={seasonForm.description}
+                          onChange={(e) => setSeasonForm(prev => ({ ...prev, description: e.target.value }))}
                           className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none resize-none"
                         ></textarea>
                       </div>
@@ -548,18 +934,24 @@ export default function AdminPage() {
                     <div className="flex space-x-3 mt-6">
                       <button
                         onClick={() => setShowSeasonForm(false)}
-                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                        disabled={submittingSeason}
+                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         Cancelar
                       </button>
                       <button
-                        onClick={() => {
-                          setShowSeasonForm(false);
-                          // Aquí iría la lógica para crear la temporada
-                        }}
-                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                        onClick={createSeason}
+                        disabled={submittingSeason || !seasonForm.name || !seasonForm.startDate || !seasonForm.endDate}
+                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
                       >
-                        Crear Temporada
+                        {submittingSeason ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Creando...</span>
+                          </>
+                        ) : (
+                          <span>Crear Temporada</span>
+                        )}
                       </button>
                     </div>
                   </div>
