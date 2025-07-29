@@ -247,7 +247,7 @@ export default function VotePage() {
         </div>
       </header>
 
-      <div className="px-4 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Error Display */}
         {error && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">

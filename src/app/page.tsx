@@ -278,7 +278,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <div className="px-4 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Status Banner */}
         {loading ? (
           <div className="bg-card/50 rounded-xl p-4 border border-border/20 text-center">
