@@ -99,6 +99,17 @@ export async function POST(request: NextRequest) {
         const user = await AdminService.toggleUserStatus(userId);
         return NextResponse.json({ user });
 
+      case 'blockUser':
+        const { userId: blockUserId, reason } = body;
+        const authCheck = await checkAdminAuth();
+        const blockedUser = await AdminService.blockUser(blockUserId, reason, (authCheck.user as any).id);
+        return NextResponse.json({ user: blockedUser });
+
+      case 'unblockUser':
+        const { userId: unblockUserId } = body;
+        const unblockedUser = await AdminService.unblockUser(unblockUserId);
+        return NextResponse.json({ user: unblockedUser });
+
       default:
         return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
     }

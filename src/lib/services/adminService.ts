@@ -177,7 +177,7 @@ export class AdminService {
     await dbConnect();
     
     const users = await User.find({})
-      .select('name email totalVotes isActive createdAt')
+      .select('name email totalVotes isActive isBlocked blockReason blockedAt createdAt')
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);
@@ -202,6 +202,40 @@ export class AdminService {
     if (!user) throw new Error('Usuario no encontrado');
     
     user.isActive = !user.isActive;
+    await user.save();
+    
+    return user;
+  }
+
+  static async blockUser(userId: string, reason: string, blockedBy: string) {
+    await dbConnect();
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('Usuario no encontrado');
+    
+    user.isBlocked = true;
+    user.blockReason = reason;
+    user.blockedAt = new Date();
+    user.blockedBy = blockedBy;
+    user.isActive = false; // Usuario bloqueado no puede estar activo
+    
+    await user.save();
+    
+    return user;
+  }
+
+  static async unblockUser(userId: string) {
+    await dbConnect();
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('Usuario no encontrado');
+    
+    user.isBlocked = false;
+    user.blockReason = null;
+    user.blockedAt = null;
+    user.blockedBy = null;
+    user.isActive = true; // Usuario desbloqueado puede estar activo
+    
     await user.save();
     
     return user;

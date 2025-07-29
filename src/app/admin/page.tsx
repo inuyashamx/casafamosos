@@ -199,6 +199,14 @@ export default function AdminPage() {
   const [selectedNominees, setSelectedNominees] = useState<string[]>([]);
   const [submittingNominees, setSubmittingNominees] = useState(false);
 
+  // Estados para usuarios
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockingUser, setBlockingUser] = useState<any>(null);
+  const [blockReason, setBlockReason] = useState('');
+  const [submittingBlock, setSubmittingBlock] = useState(false);
+
   const [stats, setStats] = useState({
     totalUsers: 1247,
     activeUsers: 342,
@@ -308,6 +316,13 @@ export default function AdminPage() {
       setSelectedSeason(seasonToSelect);
     }
   }, [seasons, selectedSeason]);
+
+  // Cargar usuarios cuando se active la pestaña de usuarios
+  useEffect(() => {
+    if (activeTab === 'users') {
+      loadUsers();
+    }
+  }, [activeTab]);
 
   // Función para cargar temporadas
   const loadSeasons = async () => {
@@ -1152,6 +1167,102 @@ export default function AdminPage() {
     }
   };
 
+  // Función para cargar usuarios
+  const loadUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      setError(null);
+      const response = await fetch('/api/admin?action=users');
+      if (!response.ok) {
+        throw new Error('Error al cargar usuarios');
+      }
+      const data = await response.json();
+      setUsers(data.users);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error cargando usuarios:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Función para bloquear usuario
+  const blockUser = async () => {
+    if (!blockReason.trim()) {
+      showToast('error', 'Debes especificar una razón para el bloqueo');
+      return;
+    }
+
+    try {
+      setSubmittingBlock(true);
+      setError(null);
+      
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'blockUser',
+          userId: blockingUser._id,
+          reason: blockReason.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al bloquear usuario');
+      }
+
+      await loadUsers();
+      setShowBlockModal(false);
+      setBlockingUser(null);
+      setBlockReason('');
+      showToast('success', `Usuario ${blockingUser.name} bloqueado correctamente`);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error bloqueando usuario:', err);
+    } finally {
+      setSubmittingBlock(false);
+    }
+  };
+
+  // Función para desbloquear usuario
+  const unblockUser = async (userId: string, userName: string) => {
+    try {
+      setError(null);
+      
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'unblockUser',
+          userId: userId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al desbloquear usuario');
+      }
+
+      await loadUsers();
+      showToast('success', `Usuario ${userName} desbloqueado correctamente`);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error desbloqueando usuario:', err);
+    }
+  };
+
+  // Función para abrir modal de bloqueo
+  const openBlockModal = (user: any) => {
+    setBlockingUser(user);
+    setBlockReason('');
+    setShowBlockModal(true);
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1192,6 +1303,7 @@ export default function AdminPage() {
     { id: 'candidates', label: 'Candidatos', icon: '👥' },
     { id: 'nominees', label: 'Nominados', icon: '🎯' },
     { id: 'votes', label: 'Votaciones', icon: '🗳️' },
+    { id: 'users', label: 'Usuarios', icon: '👤' },
   ];
 
   const handleConfirmAction = (title: string, message: string, onConfirm: () => void) => {
@@ -1258,6 +1370,51 @@ export default function AdminPage() {
                 className="flex-1 bg-destructive text-destructive-foreground py-2 px-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors"
               >
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Bloqueo de Usuario */}
+      {showBlockModal && blockingUser && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Bloquear Usuario</h3>
+            <p className="text-muted-foreground mb-4">
+              ¿Estás seguro de que quieres bloquear a <strong>{blockingUser.name}</strong>?
+            </p>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Razón del bloqueo *
+              </label>
+              <textarea
+                value={blockReason}
+                onChange={(e) => setBlockReason(e.target.value)}
+                placeholder="Especifica la razón del bloqueo..."
+                className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none resize-none"
+                rows={3}
+                required
+              />
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowBlockModal(false);
+                  setBlockingUser(null);
+                  setBlockReason('');
+                }}
+                className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                disabled={submittingBlock}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={blockUser}
+                disabled={submittingBlock || !blockReason.trim()}
+                className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingBlock ? 'Bloqueando...' : 'Bloquear'}
               </button>
             </div>
           </div>
@@ -2812,8 +2969,125 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* Usuarios Tab */}
+          {activeTab === 'users' && (
+            <div className="space-y-6 lg:space-y-8">
+              {/* Error Display */}
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-destructive">⚠️</span>
+                    <span className="text-destructive font-medium">{error}</span>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="ml-auto text-destructive hover:text-destructive/80"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                <div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Usuarios</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">Administra los usuarios del sistema</p>
+                </div>
+                <button 
+                  onClick={loadUsers}
+                  disabled={loadingUsers}
+                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{loadingUsers ? '⏳' : '🔄'}</span>
+                  <span>{loadingUsers ? 'Cargando...' : 'Actualizar'}</span>
+                </button>
+              </div>
+
+              {/* Loading State */}
+              {loadingUsers ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Cargando usuarios...</p>
+                  </div>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">👤</div>
+                  <p className="text-lg font-medium text-foreground mb-2">No hay usuarios</p>
+                  <p className="text-muted-foreground">No se encontraron usuarios en el sistema</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  {users.map((user) => (
+                    <div key={user._id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h4 className="font-semibold text-foreground text-base lg:text-lg">{user.name}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              user.isBlocked
+                                ? 'bg-red-500/10 text-red-500'
+                                : user.isActive
+                                  ? 'bg-green-500/10 text-green-500'
+                                  : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {user.isBlocked ? '🚫 Bloqueado' : user.isActive ? '🟢 Activo' : '⚪ Inactivo'}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground text-sm">{user.email}</p>
+                          {user.isBlocked && user.blockReason && (
+                            <div className="mt-2 p-2 bg-red-500/10 rounded-lg">
+                              <p className="text-xs text-red-500 font-medium">Razón: {user.blockReason}</p>
+                              {user.blockedAt && (
+                                <p className="text-xs text-red-500/80">Bloqueado el {new Date(user.blockedAt).toLocaleDateString('es-ES')}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-foreground">{user.totalVotes.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Votos Totales</div>
+                        </div>
+                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-foreground">{new Date(user.createdAt).toLocaleDateString('es-ES')}</div>
+                          <div className="text-xs text-muted-foreground">Fecha Registro</div>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-2">
+                        {user.isBlocked ? (
+                          <button 
+                            onClick={() => handleConfirmAction(
+                              'Desbloquear Usuario',
+                              `¿Estás seguro de que quieres desbloquear a ${user.name}?`,
+                              () => unblockUser(user._id, user.name)
+                            )}
+                            className="flex-1 bg-green-500/10 text-green-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-500/20 transition-colors"
+                          >
+                            🔓 Desbloquear
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => openBlockModal(user)}
+                            className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
+                          >
+                            🚫 Bloquear
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Otras pestañas */}
-          {activeTab !== 'dashboard' && activeTab !== 'seasons' && activeTab !== 'weeks' && activeTab !== 'candidates' && activeTab !== 'nominees' && activeTab !== 'votes' && (
+          {activeTab !== 'dashboard' && activeTab !== 'seasons' && activeTab !== 'weeks' && activeTab !== 'candidates' && activeTab !== 'nominees' && activeTab !== 'votes' && activeTab !== 'users' && (
             <div className="text-center text-muted-foreground py-12">
               <div className="text-4xl lg:text-6xl mb-4">🚧</div>
               <p className="text-lg">Sección en construcción...</p>
