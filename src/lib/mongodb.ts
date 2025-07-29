@@ -14,7 +14,16 @@ async function dbConnect() {
   }
 
   try {
-    await mongoose.connect(MONGODB_URI);
+    const options = {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      bufferCommands: true, // Cambiar a true para evitar errores
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    };
+
+    await mongoose.connect(MONGODB_URI, options);
     isConnected = true;
     console.log('MongoDB connected successfully');
   } catch (error) {

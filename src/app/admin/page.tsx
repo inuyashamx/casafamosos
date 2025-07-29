@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
@@ -247,7 +247,7 @@ export default function AdminPage() {
   const [loadingDashboardStats, setLoadingDashboardStats] = useState(false);
 
   // Función para cargar estadísticas del dashboard
-  const loadDashboardStats = async () => {
+  const loadDashboardStats = useCallback(async () => {
     try {
       setLoadingDashboardStats(true);
       const seasonId = selectedSeason || '';
@@ -265,9 +265,26 @@ export default function AdminPage() {
     } finally {
       setLoadingDashboardStats(false);
     }
-  };
+  }, [selectedSeason]);
 
-
+  // Función para cargar temporadas
+  const loadSeasons = useCallback(async () => {
+    try {
+      setLoadingSeasons(true);
+      setError(null);
+      const response = await fetch('/api/seasons');
+      if (!response.ok) {
+        throw new Error('Error al cargar temporadas');
+      }
+      const data = await response.json();
+      setSeasons(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error cargando temporadas');
+      console.error('Error cargando temporadas:', err);
+    } finally {
+      setLoadingSeasons(false);
+    }
+  }, []);
 
   // Función para guardar selecciones en localStorage
   const saveSelectionsToStorage = (seasonId: string, weekId: string) => {
@@ -301,16 +318,8 @@ export default function AdminPage() {
   useEffect(() => {
     if (status === 'authenticated' && session && (session.user as { isAdmin?: boolean })?.isAdmin) {
       loadSeasons();
-      loadDashboardStats();
     }
-  }, [status, session, loadDashboardStats]);
-
-  // Cargar temporadas al montar el componente
-  useEffect(() => {
-    if (status === 'authenticated') {
-      loadSeasons();
-    }
-  }, [status]);
+  }, [status, session, loadSeasons]);
 
   // Cargar semanas cuando cambie la temporada seleccionada
   useEffect(() => {
@@ -359,31 +368,19 @@ export default function AdminPage() {
     }
   }, [activeTab]);
 
-  // Cargar estadísticas del dashboard cuando cambie la temporada o se active la pestaña
+  // Cargar estadísticas del dashboard cuando se active la pestaña
   useEffect(() => {
     if (activeTab === 'dashboard') {
       loadDashboardStats();
     }
-  }, [selectedSeason, activeTab]);
+  }, [activeTab]);
 
-  // Función para cargar temporadas
-  const loadSeasons = async () => {
-    try {
-      setLoadingSeasons(true);
-      setError(null);
-      const response = await fetch('/api/seasons');
-      if (!response.ok) {
-        throw new Error('Error al cargar temporadas');
-      }
-      const data = await response.json();
-      setSeasons(data);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error cargando temporadas');
-      console.error('Error cargando temporadas:', err);
-    } finally {
-      setLoadingSeasons(false);
+  // Cargar estadísticas del dashboard cuando cambie la temporada seleccionada
+  useEffect(() => {
+    if (activeTab === 'dashboard' && selectedSeason) {
+      loadDashboardStats();
     }
-  };
+  }, [selectedSeason]);
 
   // Función para cargar estadísticas de una temporada
   const loadSeasonStats = async (seasonId: string) => {
