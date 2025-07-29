@@ -97,6 +97,41 @@ interface Week {
   updatedAt: string;
 }
 
+interface Candidate {
+  _id: string;
+  seasonId: string;
+  name: string;
+  photo?: string;
+  bio?: string;
+  age?: number;
+  profession?: string;
+  city?: string;
+  socialMedia?: {
+    instagram?: string;
+    twitter?: string;
+    tiktok?: string;
+    youtube?: string;
+  };
+  status: 'active' | 'eliminated' | 'winner' | 'suspended';
+  eliminationInfo: {
+    isEliminated: boolean;
+    eliminatedWeek?: number;
+    eliminatedDate?: string;
+    eliminationReason?: string;
+  };
+  stats: {
+    totalVotes: number;
+    weeklyVotes: number;
+    timesNominated: number;
+    weeksInHouse: number;
+    averageVotes: number;
+    position: number;
+  };
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -110,7 +145,6 @@ export default function AdminPage() {
   
   // Estados para formularios
   const [showSeasonForm, setShowSeasonForm] = useState(false);
-  const [showCandidateForm, setShowCandidateForm] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState('');
   const [selectedWeek, setSelectedWeek] = useState(null);
 
@@ -146,6 +180,22 @@ export default function AdminPage() {
     votingEndDate: '',
   });
   const [submittingWeek, setSubmittingWeek] = useState(false);
+
+  // Estados para candidatos
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(true);
+  const [showCandidateForm, setShowCandidateForm] = useState(false);
+  const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
+  const [isCandidateEditMode, setIsCandidateEditMode] = useState(false);
+  const [candidateForm, setCandidateForm] = useState({
+    name: '',
+    photo: '',
+    bio: '',
+    age: undefined as number | undefined,
+    profession: '',
+    city: '',
+  });
+  const [submittingCandidate, setSubmittingCandidate] = useState(false);
 
   const [stats, setStats] = useState({
     totalUsers: 1247,
@@ -203,6 +253,13 @@ export default function AdminPage() {
   useEffect(() => {
     if (selectedSeason && seasons.length > 0) {
       loadWeeks(selectedSeason);
+    }
+  }, [selectedSeason, seasons]);
+
+  // Cargar candidatos cuando cambie la temporada seleccionada
+  useEffect(() => {
+    if (selectedSeason && seasons.length > 0) {
+      loadCandidates(selectedSeason);
     }
   }, [selectedSeason, seasons]);
 
@@ -747,6 +804,159 @@ export default function AdminPage() {
     }
   };
 
+  // Función para cargar candidatos de una temporada
+  const loadCandidates = async (seasonId: string) => {
+    try {
+      setLoadingCandidates(true);
+      setError(null);
+      const response = await fetch(`/api/candidates?seasonId=${seasonId}`);
+      if (!response.ok) {
+        throw new Error('Error al cargar candidatos');
+      }
+      const data = await response.json();
+      setCandidates(data);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error cargando candidatos:', err);
+    } finally {
+      setLoadingCandidates(false);
+    }
+  };
+
+  // Función para crear candidato
+  const createCandidate = async () => {
+    try {
+      setSubmittingCandidate(true);
+      setError(null);
+      
+      const response = await fetch('/api/candidates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          seasonId: selectedSeason,
+          ...candidateForm,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al crear candidato');
+      }
+
+      const newCandidate = await response.json();
+      setCandidates(prev => [...prev, newCandidate]);
+      setShowCandidateForm(false);
+      setCandidateForm({
+        name: '',
+        photo: '',
+        bio: '',
+        age: undefined,
+        profession: '',
+        city: '',
+      });
+      showToast('success', 'Candidato creado correctamente');
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error creando candidato:', err);
+    } finally {
+      setSubmittingCandidate(false);
+    }
+  };
+
+  // Función para editar candidato
+  const editCandidate = async () => {
+    if (!editingCandidate) return;
+    
+    try {
+      setSubmittingCandidate(true);
+      setError(null);
+      
+      const response = await fetch('/api/candidates', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          candidateId: editingCandidate._id,
+          ...candidateForm,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar candidato');
+      }
+
+      const updatedCandidate = await response.json();
+      setCandidates(prev => prev.map(c => c._id === editingCandidate._id ? updatedCandidate : c));
+      setShowCandidateForm(false);
+      setEditingCandidate(null);
+      setIsCandidateEditMode(false);
+      setCandidateForm({
+        name: '',
+        photo: '',
+        bio: '',
+        age: undefined,
+        profession: '',
+        city: '',
+      });
+      showToast('success', 'Candidato actualizado correctamente');
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error actualizando candidato:', err);
+    } finally {
+      setSubmittingCandidate(false);
+    }
+  };
+
+  // Función para eliminar candidato
+  const deleteCandidate = async (candidateId: string) => {
+    try {
+      setError(null);
+      const response = await fetch(`/api/candidates?id=${candidateId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar candidato');
+      }
+
+      const result = await response.json();
+      setCandidates(prev => prev.filter(c => c._id !== candidateId));
+      showToast('success', result.message || 'Candidato eliminado correctamente');
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error eliminando candidato:', err);
+    }
+  };
+
+  // Función para abrir formulario de edición de candidato
+  const openEditCandidateForm = (candidate: Candidate) => {
+    setEditingCandidate(candidate);
+    setIsCandidateEditMode(true);
+    setCandidateForm({
+      name: candidate.name,
+      photo: candidate.photo || '',
+      bio: candidate.bio || '',
+      age: candidate.age,
+      profession: candidate.profession || '',
+      city: candidate.city || '',
+    });
+    setShowCandidateForm(true);
+  };
+
+  // Función para manejar envío de formulario de candidato
+  const handleCandidateSubmit = async () => {
+    if (isCandidateEditMode) {
+      await editCandidate();
+    } else {
+      await createCandidate();
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1208,36 +1418,36 @@ export default function AdminPage() {
                   <p className="text-muted-foreground">Crea la primera temporada para comenzar</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   {seasons.map((season) => {
                     const stats = seasonStats[season._id];
                     return (
                       <div key={season._id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <h4 className="font-semibold text-foreground text-base lg:text-lg">{season.name}</h4>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                season.status === 'active' 
-                                  ? 'bg-green-500/10 text-green-500' 
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-semibold text-foreground text-base lg:text-lg">{season.name}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            season.status === 'active' 
+                              ? 'bg-green-500/10 text-green-500' 
                                   : season.status === 'completed'
                                     ? 'bg-muted text-muted-foreground'
                                     : 'bg-blue-500/10 text-blue-500'
-                              }`}>
+                          }`}>
                                 {season.status === 'active' ? '🟢 Activa' : season.status === 'completed' ? '✅ Completada' : '⏳ Programada'}
-                              </span>
-                            </div>
-                            <p className="text-muted-foreground text-sm">
-                              {new Date(season.startDate).toLocaleDateString('es-ES')} - {new Date(season.endDate).toLocaleDateString('es-ES')}
-                            </p>
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-sm">
+                          {new Date(season.startDate).toLocaleDateString('es-ES')} - {new Date(season.endDate).toLocaleDateString('es-ES')}
+                        </p>
                             {season.description && (
                               <p className="text-muted-foreground text-xs mt-1">{season.description}</p>
                             )}
-                          </div>
-                        </div>
+                      </div>
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div className="bg-muted/30 rounded-lg p-3 text-center">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
                             <div className="text-lg font-bold text-foreground">
                               {stats ? stats.candidates.total : season.stats.totalCandidates}
                             </div>
@@ -1249,8 +1459,8 @@ export default function AdminPage() {
                                 </div>
                               )}
                             </div>
-                          </div>
-                          <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      </div>
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
                             <div className="text-lg font-bold text-foreground">
                               {stats ? stats.weeks.total : season.stats.totalWeeks}
                             </div>
@@ -1262,8 +1472,8 @@ export default function AdminPage() {
                                 </div>
                               )}
                             </div>
-                          </div>
-                        </div>
+                      </div>
+                    </div>
                         
                         {/* Estadísticas adicionales cuando están cargadas */}
                         {stats && (
@@ -1283,7 +1493,7 @@ export default function AdminPage() {
                           </div>
                         )}
 
-                        <div className="flex space-x-2">
+                    <div className="flex space-x-2">
                           <button 
                             onClick={() => loadSeasonStats(season._id)}
                             className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
@@ -1300,12 +1510,12 @@ export default function AdminPage() {
                             onClick={() => openEditForm(season)}
                             className="flex-1 bg-blue-500/10 text-blue-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors"
                           >
-                            Editar
-                          </button>
+                        Editar
+                      </button>
                         </div>
                         
                         <div className="flex space-x-2 mt-2">
-                          {season.status === 'active' ? (
+                      {season.status === 'active' ? (
                             <button 
                               onClick={() => handleConfirmAction(
                                 'Completar Temporada',
@@ -1314,8 +1524,8 @@ export default function AdminPage() {
                               )}
                               className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors"
                             >
-                              Completar
-                            </button>
+                          Completar
+                        </button>
                           ) : season.status === 'scheduled' || season.status === 'completed' ? (
                             <button 
                               onClick={() => handleConfirmAction(
@@ -1325,8 +1535,8 @@ export default function AdminPage() {
                               )}
                               className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
                             >
-                              Activar
-                            </button>
+                          Activar
+                        </button>
                           ) : null}
                           {season.status !== 'active' && (
                             <button 
@@ -1335,12 +1545,12 @@ export default function AdminPage() {
                             >
                               🗑️ Eliminar
                             </button>
-                          )}
-                        </div>
-                      </div>
+                      )}
+                    </div>
+                  </div>
                     );
                   })}
-                </div>
+              </div>
               )}
 
               {/* Season Form Modal */}
@@ -1548,47 +1758,47 @@ export default function AdminPage() {
                   <p className="text-muted-foreground">Crea la primera semana para comenzar</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                  {weeks.map((week) => (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                {weeks.map((week) => (
                     <div key={week._id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
                             <h4 className="font-semibold text-foreground text-base lg:text-lg">Semana {week.weekNumber}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              week.status === 'active' || week.status === 'voting'
-                                ? 'bg-green-500/10 text-green-500'
-                                : week.status === 'completed'
-                                  ? 'bg-muted text-muted-foreground'
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            week.status === 'active' || week.status === 'voting'
+                              ? 'bg-green-500/10 text-green-500'
+                              : week.status === 'completed'
+                                ? 'bg-muted text-muted-foreground'
                                   : 'bg-blue-500/10 text-blue-500'
-                            }`}>
+                          }`}>
                               {week.status === 'active' || week.status === 'voting' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground text-sm">
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-sm">
                             Votación: {new Date(week.votingStartDate).toLocaleDateString('es-ES')} - {new Date(week.votingEndDate).toLocaleDateString('es-ES')}
-                          </p>
-                        </div>
+                        </p>
                       </div>
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
                           <div className="text-lg font-bold text-foreground">{week.nominees.length}</div>
-                          <div className="text-xs text-muted-foreground">Nominados</div>
-                        </div>
-                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                        <div className="text-xs text-muted-foreground">Nominados</div>
+                      </div>
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
                           <div className="text-lg font-bold text-foreground">{week.results.totalVotes.toLocaleString()}</div>
                           <div className="text-xs text-muted-foreground">Votos</div>
-                        </div>
                       </div>
+                    </div>
 
-                      <div className="flex space-x-2">
+                    <div className="flex space-x-2">
                         <button 
                           onClick={() => openEditWeekForm(week)}
                           className="flex-1 bg-blue-500/10 text-blue-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors"
                         >
                           Editar
-                        </button>
+                      </button>
                         {week.status === 'voting' && (
                           <button 
                             onClick={() => handleConfirmAction(
@@ -1599,7 +1809,7 @@ export default function AdminPage() {
                             className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors"
                           >
                             Cerrar
-                          </button>
+                        </button>
                         )}
                         {week.status === 'completed' && canOpenWeek(week) && (
                           <button 
@@ -1611,7 +1821,7 @@ export default function AdminPage() {
                             className="flex-1 bg-green-500/10 text-green-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-500/20 transition-colors"
                           >
                             Abrir
-                          </button>
+                        </button>
                         )}
                         {week.status === 'completed' && !canOpenWeek(week) && (
                           <button 
@@ -1643,12 +1853,12 @@ export default function AdminPage() {
                             className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
                           >
                             🗑️ Eliminar
-                          </button>
-                        )}
-                      </div>
+                        </button>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
               )}
 
               {/* Week Form Modal */}
@@ -1666,7 +1876,7 @@ export default function AdminPage() {
                         </label>
                         <div className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2 text-foreground">
                           {isWeekEditMode ? `Semana ${weekForm.weekNumber}` : `Semana ${getNextWeekNumber(selectedSeason)}`}
-                        </div>
+                      </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           Se asigna automáticamente el siguiente número disponible
                         </p>
@@ -1748,86 +1958,171 @@ export default function AdminPage() {
           {/* Candidatos Tab */}
           {activeTab === 'candidates' && (
             <div className="space-y-6 lg:space-y-8">
+              {/* Error Display */}
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-destructive">⚠️</span>
+                    <span className="text-destructive font-medium">{error}</span>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="ml-auto text-destructive hover:text-destructive/80"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
                 <div>
                   <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Candidatos</h3>
-                  <p className="text-muted-foreground text-sm lg:text-base">Administra los candidatos del programa</p>
+                  <p className="text-muted-foreground text-sm lg:text-base">
+                    Administra los candidatos de {seasons.find(s => s._id === selectedSeason)?.name || 'la temporada'}
+                  </p>
                 </div>
                 <button 
                   onClick={() => setShowCandidateForm(true)}
-                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2"
+                  disabled={!selectedSeason || seasons.length === 0}
+                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>+</span>
                   <span>Nuevo Candidato</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                {mockCandidates.map((candidate: any) => (
-                  <div key={candidate.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-semibold text-foreground text-base lg:text-lg">{candidate.name}</h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            candidate.status === 'active'
-                              ? 'bg-green-500/10 text-green-500'
-                              : 'bg-muted text-muted-foreground'
-                          }`}>
-                            {candidate.status === 'active' ? '🟢 Activo' : '⚪ Eliminado'}
-                          </span>
-                        </div>
-                        <p className="text-muted-foreground text-sm">
-                          {candidate.profession}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="bg-muted/30 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-foreground">{candidate.age}</div>
-                        <div className="text-xs text-muted-foreground">Edad</div>
-                      </div>
-                      <div className="bg-muted/30 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-foreground">{candidate.eliminatedWeek ? `Eliminado en Semana ${candidate.eliminatedWeek}` : 'No eliminado'}</div>
-                        <div className="text-xs text-muted-foreground">Eliminado</div>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
-                        Editar
-                      </button>
-                      {candidate.status === 'active' ? (
-                        <button className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors">
-                          Eliminar
-                        </button>
-                      ) : (
-                        <button className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
-                          Activar
-                        </button>
-                      )}
-                    </div>
+              {/* Loading State */}
+              {loadingCandidates ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Cargando candidatos...</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : candidates.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">👥</div>
+                  <p className="text-lg font-medium text-foreground mb-2">No hay candidatos</p>
+                  <p className="text-muted-foreground">Crea el primer candidato para comenzar</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  {candidates.map((candidate) => (
+                    <div key={candidate._id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h4 className="font-semibold text-foreground text-base lg:text-lg">{candidate.name}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              candidate.status === 'active'
+                                ? 'bg-green-500/10 text-green-500'
+                                : candidate.status === 'eliminated'
+                                  ? 'bg-red-500/10 text-red-500'
+                                  : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {candidate.status === 'active' ? '🟢 Activo' : candidate.status === 'eliminated' ? '🔴 Eliminado' : '⚪ Inactivo'}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground text-sm">
+                            {candidate.profession || 'Sin profesión especificada'}
+                          </p>
+                          {candidate.bio && (
+                            <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{candidate.bio}</p>
+                          )}
+                        </div>
+                        {candidate.photo && (
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-muted/30 flex-shrink-0">
+                            <img 
+                              src={candidate.photo} 
+                              alt={candidate.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-foreground">{candidate.age || 'N/A'}</div>
+                          <div className="text-xs text-muted-foreground">Edad</div>
+                        </div>
+                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-foreground">{candidate.stats.totalVotes.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Votos Totales</div>
+                        </div>
+                      </div>
+
+                      {candidate.eliminationInfo.isEliminated && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+                          <div className="text-sm text-red-600">
+                            <strong>Eliminado:</strong> Semana {candidate.eliminationInfo.eliminatedWeek}
+                            {candidate.eliminationInfo.eliminationReason && (
+                              <div className="text-xs mt-1">Razón: {candidate.eliminationInfo.eliminationReason}</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => openEditCandidateForm(candidate)}
+                          className="flex-1 bg-blue-500/10 text-blue-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors"
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          onClick={() => handleConfirmAction(
+                            'Eliminar Candidato',
+                            `¿Estás seguro de que quieres eliminar a "${candidate.name}"? Esta acción eliminará todos los datos asociados y no se puede deshacer.`,
+                            () => deleteCandidate(candidate._id)
+                          )}
+                          className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Candidate Form Modal */}
               {showCandidateForm && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                   <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Nuevo Candidato</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
+                      {isCandidateEditMode ? 'Editar Candidato' : 'Nuevo Candidato'}
+                    </h3>
                     
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-2">
-                          Nombre del Candidato
+                          Nombre del Candidato *
                         </label>
                         <input
                           type="text"
                           placeholder="Ana García"
+                          value={candidateForm.name}
+                          onChange={(e) => setCandidateForm(prev => ({ ...prev, name: e.target.value }))}
                           className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          required
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                          Descripción (Bio)
+                        </label>
+                        <textarea
+                          placeholder="Breve descripción del candidato..."
+                          rows={3}
+                          value={candidateForm.bio}
+                          onChange={(e) => setCandidateForm(prev => ({ ...prev, bio: e.target.value }))}
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none resize-none"
+                        ></textarea>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -1840,6 +2135,8 @@ export default function AdminPage() {
                             placeholder="28"
                             min="18"
                             max="100"
+                            value={candidateForm.age || ''}
+                            onChange={(e) => setCandidateForm(prev => ({ ...prev, age: e.target.value ? parseInt(e.target.value) : undefined }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                           />
                         </div>
@@ -1850,6 +2147,8 @@ export default function AdminPage() {
                           <input
                             type="text"
                             placeholder="Actriz"
+                            value={candidateForm.profession}
+                            onChange={(e) => setCandidateForm(prev => ({ ...prev, profession: e.target.value }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                           />
                         </div>
@@ -1858,45 +2157,64 @@ export default function AdminPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Foto (URL)
+                            Ciudad
                           </label>
                           <input
-                            type="url"
-                            placeholder="https://example.com/photo.jpg"
+                            type="text"
+                            placeholder="Madrid"
+                            value={candidateForm.city}
+                            onChange={(e) => setCandidateForm(prev => ({ ...prev, city: e.target.value }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Eliminado en Semana
+                            Foto (URL)
                           </label>
-                          <select
+                          <input
+                            type="url"
+                            placeholder="https://example.com/photo.jpg"
+                            value={candidateForm.photo}
+                            onChange={(e) => setCandidateForm(prev => ({ ...prev, photo: e.target.value }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                          >
-                            <option value="">No eliminado</option>
-                            {mockWeeks.map((w: any) => (
-                              <option key={w.id} value={w.id}>Semana {w.number}</option>
-                            ))}
-                          </select>
+                          />
                         </div>
                       </div>
                     </div>
 
                     <div className="flex space-x-3 mt-6">
                       <button
-                        onClick={() => setShowCandidateForm(false)}
-                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                        onClick={() => {
+                          setShowCandidateForm(false);
+                          setEditingCandidate(null);
+                          setIsCandidateEditMode(false);
+                          setCandidateForm({
+                            name: '',
+                            photo: '',
+                            bio: '',
+                            age: undefined,
+                            profession: '',
+                            city: '',
+                          });
+                        }}
+                        disabled={submittingCandidate}
+                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         Cancelar
                       </button>
                       <button
-                        onClick={() => {
-                          setShowCandidateForm(false);
-                          // Aquí iría la lógica para crear el candidato
-                        }}
-                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                        onClick={handleCandidateSubmit}
+                        disabled={submittingCandidate || !candidateForm.name}
+                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
                       >
-                        Crear Candidato
+                        {submittingCandidate ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>{isCandidateEditMode ? 'Actualizando...' : 'Creando...'}</span>
+                          </>
+                        ) : (
+                          <span>{isCandidateEditMode ? 'Actualizar Candidato' : 'Crear Candidato'}</span>
+                        )}
                       </button>
                     </div>
                   </div>
