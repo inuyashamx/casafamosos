@@ -293,7 +293,7 @@ export default function Home() {
             <h3 className="text-lg font-semibold text-foreground mb-2">No hay temporada activa</h3>
             <p className="text-muted-foreground">Actualmente no hay ninguna temporada en curso. Vuelve más tarde.</p>
           </div>
-        ) : !votingData?.week ? (
+                ) : !votingData?.week ? (
           <div className="bg-muted/30 border border-border/40 rounded-xl p-8 text-center">
             <div className="text-4xl mb-4">📅</div>
             <h3 className="text-lg font-semibold text-foreground mb-2">No hay votación activa</h3>
@@ -302,26 +302,14 @@ export default function Home() {
             </p>
             <p className="text-muted-foreground mt-2">No hay ninguna semana de votación activa en este momento.</p>
           </div>
-        ) : votingData?.week?.isActive ? (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <div>
-                <h3 className="text-green-500 font-bold">Votación Activa</h3>
-                <p className="text-green-500/80 text-sm">
-                  {votingData.week.name} - {votingData.nominees.length} nominados
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
+        ) : !votingData?.week?.isActive ? (
           <div className="bg-muted/20 border border-border/20 rounded-xl p-4 text-center">
             <h3 className="text-muted-foreground font-medium">No hay votación activa</h3>
             <p className="text-muted-foreground/80 text-sm mt-1">
               Espera a que se publiquen los próximos nominados
             </p>
           </div>
-        )}
+        ) : null}
 
         {/* Countdown Timer */}
         {votingData?.week?.isActive && (
