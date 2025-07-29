@@ -49,7 +49,7 @@ export default function Home() {
   useEffect(() => {
     const fetchVotingData = async () => {
       try {
-        const response = await fetch('/api/vote?action=nominees');
+        const response = await fetch('/api/public/vote');
         if (response.ok) {
           const data = await response.json();
           setVotingData(data);
@@ -147,10 +147,13 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/vote?action=nominees');
+      const response = await fetch('/api/public/vote');
       if (response.ok) {
         const data = await response.json();
         setVotingData(data);
+        if (data.week?.votingEndDate) {
+          updateCountdown(data.week.votingEndDate);
+        }
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Error al cargar datos');
@@ -283,6 +286,21 @@ export default function Home() {
                 Reintentar
               </button>
             </div>
+          </div>
+        ) : !votingData?.season ? (
+          <div className="bg-muted/30 border border-border/40 rounded-xl p-8 text-center">
+            <div className="text-4xl mb-4">🏠</div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No hay temporada activa</h3>
+            <p className="text-muted-foreground">Actualmente no hay ninguna temporada en curso. Vuelve más tarde.</p>
+          </div>
+        ) : !votingData?.week ? (
+          <div className="bg-muted/30 border border-border/40 rounded-xl p-8 text-center">
+            <div className="text-4xl mb-4">📅</div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No hay votación activa</h3>
+            <p className="text-muted-foreground">
+              Temporada: {votingData.season.name} ({votingData.season.year})
+            </p>
+            <p className="text-muted-foreground mt-2">No hay ninguna semana de votación activa en este momento.</p>
           </div>
         ) : votingData?.week?.isActive ? (
           <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
