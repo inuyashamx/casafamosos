@@ -58,6 +58,45 @@ interface SeasonStats {
   };
 }
 
+interface Week {
+  _id: string;
+  seasonId: string;
+  weekNumber: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  votingStartDate: string;
+  votingEndDate: string;
+  status: 'scheduled' | 'active' | 'voting' | 'completed' | 'cancelled';
+  isVotingActive: boolean;
+  nominees: Array<{
+    candidateId: {
+      _id: string;
+      name: string;
+      photo?: string;
+    };
+    nominatedAt: string;
+  }>;
+  results: {
+    totalVotes: number;
+    votingStats: Array<{
+      candidateId: string;
+      votes: number;
+      percentage: number;
+    }>;
+    winner: {
+      candidateId: string;
+      votes: number;
+    };
+  };
+  settings: {
+    maxVotesPerUser: number;
+    allowMultipleVotes: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -69,8 +108,7 @@ export default function AdminPage() {
   // Estados para formularios
   const [showSeasonForm, setShowSeasonForm] = useState(false);
   const [showCandidateForm, setShowCandidateForm] = useState(false);
-  const [showWeekForm, setShowWeekForm] = useState(false);
-  const [selectedSeason, setSelectedSeason] = useState('2025');
+  const [selectedSeason, setSelectedSeason] = useState('');
   const [selectedWeek, setSelectedWeek] = useState(null);
 
   // Estados para temporadas (reales)
@@ -93,6 +131,19 @@ export default function AdminPage() {
   const [editingSeason, setEditingSeason] = useState<Season | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // Estados para semanas
+  const [weeks, setWeeks] = useState<Week[]>([]);
+  const [loadingWeeks, setLoadingWeeks] = useState(true);
+  const [showWeekForm, setShowWeekForm] = useState(false);
+  const [editingWeek, setEditingWeek] = useState<Week | null>(null);
+  const [isWeekEditMode, setIsWeekEditMode] = useState(false);
+  const [weekForm, setWeekForm] = useState({
+    weekNumber: 1,
+    votingStartDate: '',
+    votingEndDate: '',
+  });
+  const [submittingWeek, setSubmittingWeek] = useState(false);
+
   const [stats, setStats] = useState({
     totalUsers: 1247,
     activeUsers: 342,
@@ -112,7 +163,7 @@ export default function AdminPage() {
     { id: '2024', name: 'Casa Famosos 2024', year: 2024, status: 'completed', startDate: '2024-01-15', endDate: '2024-06-15' }
   ];
 
-  const weeks = [
+  const mockWeeks = [
     { id: 1, number: 1, startDate: '2025-01-15', endDate: '2025-01-21', status: 'completed', nominees: 4 },
     { id: 2, number: 2, startDate: '2025-01-22', endDate: '2025-01-28', status: 'completed', nominees: 4 },
     { id: 3, number: 3, startDate: '2025-01-29', endDate: '2025-02-04', status: 'completed', nominees: 3 },
@@ -120,7 +171,8 @@ export default function AdminPage() {
     { id: 5, number: 5, startDate: '2025-02-12', endDate: '2025-02-18', status: 'scheduled', nominees: 0 },
   ];
 
-  const candidates = [
+  // Mock data para candidatos (se eliminará cuando se implemente el módulo completo)
+  const mockCandidates = [
     { id: 1, name: 'Ana García', photo: '', age: 28, profession: 'Actriz', status: 'active', nominated: true, eliminatedWeek: null },
     { id: 2, name: 'Carlos López', photo: '', age: 32, profession: 'Cantante', status: 'active', nominated: true, eliminatedWeek: null },
     { id: 3, name: 'Sofia Herrera', photo: '', age: 25, profession: 'Influencer', status: 'active', nominated: false, eliminatedWeek: null },
@@ -143,6 +195,13 @@ export default function AdminPage() {
       loadSeasons();
     }
   }, [status]);
+
+  // Cargar semanas cuando cambie la temporada seleccionada
+  useEffect(() => {
+    if (selectedSeason && seasons.length > 0) {
+      loadWeeks(selectedSeason);
+    }
+  }, [selectedSeason, seasons]);
 
   // Función para cargar temporadas
   const loadSeasons = async () => {
@@ -424,6 +483,185 @@ export default function AdminPage() {
     } catch (err: any) {
       setError(err.message);
       console.error('Error convirtiendo en admin:', err);
+    }
+  };
+
+  // Función para cargar semanas de una temporada
+  const loadWeeks = async (seasonId: string) => {
+    try {
+      setLoadingWeeks(true);
+      setError(null);
+      const response = await fetch(`/api/weeks?seasonId=${seasonId}`);
+      if (!response.ok) {
+        throw new Error('Error al cargar semanas');
+      }
+      const data = await response.json();
+      setWeeks(data);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error cargando semanas:', err);
+    } finally {
+      setLoadingWeeks(false);
+    }
+  };
+
+  // Función para obtener el siguiente número de semana automáticamente
+  const getNextWeekNumber = (seasonId: string) => {
+    const seasonWeeks = weeks.filter(w => w.seasonId === seasonId);
+    if (seasonWeeks.length === 0) return 1;
+    return Math.max(...seasonWeeks.map(w => w.weekNumber)) + 1;
+  };
+
+  // Función para crear semana
+  const createWeek = async () => {
+    try {
+      setSubmittingWeek(true);
+      setError(null);
+      
+      const nextWeekNumber = getNextWeekNumber(selectedSeason);
+      
+      const response = await fetch('/api/weeks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          seasonId: selectedSeason,
+          weekNumber: nextWeekNumber,
+          votingStartDate: weekForm.votingStartDate,
+          votingEndDate: weekForm.votingEndDate,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al crear semana');
+      }
+
+      const newWeek = await response.json();
+      setWeeks(prev => [...prev, newWeek]);
+      setShowWeekForm(false);
+      setWeekForm({
+        weekNumber: 1,
+        votingStartDate: '',
+        votingEndDate: '',
+      });
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error creando semana:', err);
+    } finally {
+      setSubmittingWeek(false);
+    }
+  };
+
+  // Función para editar semana
+  const editWeek = async () => {
+    if (!editingWeek) return;
+    
+    try {
+      setSubmittingWeek(true);
+      setError(null);
+      
+      const response = await fetch('/api/weeks', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          weekId: editingWeek._id,
+          votingStartDate: weekForm.votingStartDate,
+          votingEndDate: weekForm.votingEndDate,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar semana');
+      }
+
+      const updatedWeek = await response.json();
+      setWeeks(prev => prev.map(w => w._id === editingWeek._id ? updatedWeek : w));
+      setShowWeekForm(false);
+      setEditingWeek(null);
+      setIsWeekEditMode(false);
+      setWeekForm({
+        weekNumber: 1,
+        votingStartDate: '',
+        votingEndDate: '',
+      });
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error actualizando semana:', err);
+    } finally {
+      setSubmittingWeek(false);
+    }
+  };
+
+  // Función para abrir formulario de edición de semana
+  const openEditWeekForm = (week: Week) => {
+    setEditingWeek(week);
+    setIsWeekEditMode(true);
+    setWeekForm({
+      weekNumber: week.weekNumber,
+      votingStartDate: week.votingStartDate.split('T')[0],
+      votingEndDate: week.votingEndDate.split('T')[0],
+    });
+    setShowWeekForm(true);
+  };
+
+  // Función para cerrar semana
+  const closeWeek = async (weekId: string) => {
+    try {
+      setError(null);
+      const response = await fetch('/api/weeks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'endVoting',
+          weekId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al cerrar semana');
+      }
+
+      await loadWeeks(selectedSeason);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error cerrando semana:', err);
+    }
+  };
+
+  // Función para eliminar semana
+  const deleteWeek = async (weekId: string) => {
+    try {
+      setError(null);
+      const response = await fetch(`/api/weeks?id=${weekId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar semana');
+      }
+
+      setWeeks(prev => prev.filter(w => w._id !== weekId));
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error eliminando semana:', err);
+    }
+  };
+
+  // Función para manejar envío de formulario de semana
+  const handleWeekSubmit = async () => {
+    if (isWeekEditMode) {
+      await editWeek();
+    } else {
+      await createWeek();
     }
   };
 
@@ -1130,82 +1368,156 @@ export default function AdminPage() {
           {/* Semanas Tab */}
           {activeTab === 'weeks' && (
             <div className="space-y-6 lg:space-y-8">
+              {/* Error Display */}
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-destructive">⚠️</span>
+                    <span className="text-destructive font-medium">{error}</span>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="ml-auto text-destructive hover:text-destructive/80"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Selector de Temporada */}
+              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
+                <div className="flex items-center space-x-4">
+                  <select
+                    value={selectedSeason}
+                    onChange={(e) => setSelectedSeason(e.target.value)}
+                    className="flex-1 bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                  >
+                    {seasons.map(season => (
+                      <option key={season._id} value={season._id}>
+                        {season.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-muted-foreground">
+                    {seasons.find(s => s._id === selectedSeason)?.name || 'Selecciona una temporada'}
+                  </span>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
                 <div>
                   <h3 className="text-lg lg:text-xl font-semibold text-foreground">Gestión de Semanas</h3>
-                  <p className="text-muted-foreground text-sm lg:text-base">Administra las semanas de votación de la temporada</p>
+                  <p className="text-muted-foreground text-sm lg:text-base">
+                    Administra las semanas de votación de {seasons.find(s => s._id === selectedSeason)?.name || 'la temporada'}
+                  </p>
                 </div>
                 <button 
                   onClick={() => setShowWeekForm(true)}
-                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2"
+                  disabled={!selectedSeason || seasons.length === 0}
+                  className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>+</span>
                   <span>Nueva Semana</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                {weeks.map((week) => (
-                  <div key={week.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-semibold text-foreground text-base lg:text-lg">Semana {week.number}</h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            week.status === 'active' || week.status === 'voting'
-                              ? 'bg-green-500/10 text-green-500'
-                              : week.status === 'completed'
-                                ? 'bg-muted text-muted-foreground'
-                                : 'bg-muted/50 text-muted-foreground'
-                          }`}>
-                            {week.status === 'active' || week.status === 'voting' ? '🟢 Activa' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
-                          </span>
-                        </div>
-                        <p className="text-muted-foreground text-sm">
-                          {new Date(week.startDate).toLocaleDateString('es-ES')} - {new Date(week.endDate).toLocaleDateString('es-ES')}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="bg-muted/30 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-foreground">{week.nominees}</div>
-                        <div className="text-xs text-muted-foreground">Nominados</div>
-                      </div>
-                      <div className="bg-muted/30 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-foreground">{week.status === 'completed' ? 'Cerrada' : week.status === 'voting' ? 'Votando' : 'Pendiente'}</div>
-                        <div className="text-xs text-muted-foreground">Estado</div>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
-                        Ver Nominados
-                      </button>
-                      {week.status === 'voting' ? (
-                        <button className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors">
-                          Cerrar Semana
-                        </button>
-                      ) : week.status === 'scheduled' ? (
-                        <button className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
-                          Activar
-                        </button>
-                      ) : null}
-                      {week.status !== 'voting' && (
-                        <button className="flex-1 bg-muted/20 text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/40 transition-colors">
-                          Eliminar
-                        </button>
-                      )}
-                    </div>
+              {/* Loading State */}
+              {loadingWeeks ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Cargando semanas...</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : weeks.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">📅</div>
+                  <p className="text-lg font-medium text-foreground mb-2">No hay semanas</p>
+                  <p className="text-muted-foreground">Crea la primera semana para comenzar</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  {weeks.map((week) => (
+                    <div key={week._id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h4 className="font-semibold text-foreground text-base lg:text-lg">Semana {week.weekNumber}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              week.status === 'active' || week.status === 'voting'
+                                ? 'bg-green-500/10 text-green-500'
+                                : week.status === 'completed'
+                                  ? 'bg-muted text-muted-foreground'
+                                  : 'bg-blue-500/10 text-blue-500'
+                            }`}>
+                              {week.status === 'active' || week.status === 'voting' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground text-sm">
+                            Votación: {new Date(week.votingStartDate).toLocaleDateString('es-ES')} - {new Date(week.votingEndDate).toLocaleDateString('es-ES')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-foreground">{week.nominees.length}</div>
+                          <div className="text-xs text-muted-foreground">Nominados</div>
+                        </div>
+                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-foreground">{week.results.totalVotes.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Votos</div>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => openEditWeekForm(week)}
+                          className="flex-1 bg-blue-500/10 text-blue-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors"
+                        >
+                          Editar
+                        </button>
+                        {week.status === 'voting' && (
+                          <button 
+                            onClick={() => handleConfirmAction(
+                              'Cerrar Semana',
+                              `¿Estás seguro de que quieres cerrar la semana ${week.weekNumber}? Esta acción finalizará la votación y no se puede deshacer.`,
+                              () => closeWeek(week._id)
+                            )}
+                            className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors"
+                          >
+                            Cerrar
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="flex space-x-2 mt-2">
+                        {week.status !== 'voting' && week.status !== 'completed' && (
+                          <button 
+                            onClick={() => handleConfirmAction(
+                              'Eliminar Semana',
+                              `¿Estás seguro de que quieres eliminar la semana ${week.weekNumber}? Esta acción eliminará todos los datos asociados y no se puede deshacer.`,
+                              () => deleteWeek(week._id)
+                            )}
+                            className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
+                          >
+                            🗑️ Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Week Form Modal */}
               {showWeekForm && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                   <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Nueva Semana</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
+                      {isWeekEditMode ? 'Editar Semana' : 'Nueva Semana'}
+                    </h3>
                     
                     <div className="space-y-4">
                       <div>
@@ -1214,70 +1526,82 @@ export default function AdminPage() {
                         </label>
                         <input
                           type="number"
-                          placeholder="1"
-                          min="1"
-                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          value={weekForm.weekNumber}
+                          disabled={isWeekEditMode}
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
                         />
+                        {!isWeekEditMode && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Se asignará automáticamente el siguiente número disponible
+                          </p>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Fecha de Inicio
+                            Inicio de Votación *
                           </label>
                           <input
-                            type="date"
+                            type="datetime-local"
+                            value={weekForm.votingStartDate}
+                            onChange={(e) => setWeekForm(prev => ({ ...prev, votingStartDate: e.target.value }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                            required
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Fecha de Fin
+                            Fin de Votación *
                           </label>
                           <input
-                            type="date"
+                            type="datetime-local"
+                            value={weekForm.votingEndDate}
+                            onChange={(e) => setWeekForm(prev => ({ ...prev, votingEndDate: e.target.value }))}
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                            required
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Inicio de Votación
-                          </label>
-                          <input
-                            type="datetime-local"
-                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Fin de Votación
-                          </label>
-                          <input
-                            type="datetime-local"
-                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                          />
-                        </div>
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                        <p className="text-sm text-blue-600">
+                          <strong>Nota:</strong> Solo necesitas configurar las fechas de inicio y fin de votación. 
+                          El número de semana se asigna automáticamente según la temporada seleccionada.
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex space-x-3 mt-6">
                       <button
-                        onClick={() => setShowWeekForm(false)}
-                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                        onClick={() => {
+                          setShowWeekForm(false);
+                          setEditingWeek(null);
+                          setIsWeekEditMode(false);
+                          setWeekForm({
+                            weekNumber: 1,
+                            votingStartDate: '',
+                            votingEndDate: '',
+                          });
+                        }}
+                        disabled={submittingWeek}
+                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         Cancelar
                       </button>
                       <button
-                        onClick={() => {
-                          setShowWeekForm(false);
-                          // Aquí iría la lógica para crear la semana
-                        }}
-                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                        onClick={handleWeekSubmit}
+                        disabled={submittingWeek || !weekForm.votingStartDate || !weekForm.votingEndDate}
+                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
                       >
-                        Crear Semana
+                        {submittingWeek ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>{isWeekEditMode ? 'Actualizando...' : 'Creando...'}</span>
+                          </>
+                        ) : (
+                          <span>{isWeekEditMode ? 'Actualizar Semana' : 'Crear Semana'}</span>
+                        )}
                       </button>
                     </div>
                   </div>
