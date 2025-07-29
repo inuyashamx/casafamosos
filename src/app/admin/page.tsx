@@ -2592,6 +2592,7 @@ export default function AdminPage() {
                           </div>
                         )}
                     </div>
+                    
 
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="bg-muted/30 rounded-lg p-3 text-center">
