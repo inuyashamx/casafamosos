@@ -127,6 +127,32 @@ export class AdminService {
     return { success: true, message: 'Votos semanales reseteados' };
   }
 
+  static async resetWeekVotes(weekId: string) {
+    await dbConnect();
+    
+    // Obtener la semana
+    const week = await Week.findById(weekId);
+    if (!week) {
+      throw new Error('Semana no encontrada');
+    }
+    
+    // Resetear los resultados de votación de la semana
+    await Week.findByIdAndUpdate(weekId, {
+      'results.totalVotes': 0,
+      'results.votingStats': [],
+      'results.winner': null
+    });
+    
+    // Resetear votos semanales de los candidatos nominados en esta semana
+    const nomineeIds = week.nominees.map((nominee: any) => nominee.candidateId);
+    await Candidate.updateMany(
+      { _id: { $in: nomineeIds } },
+      { weeklyVotes: 0 }
+    );
+    
+    return { success: true, message: `Votos de la semana ${week.weekNumber} reseteados` };
+  }
+
   static async getDashboardStats(seasonId: string) {
     await dbConnect();
     

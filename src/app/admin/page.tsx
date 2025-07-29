@@ -1204,6 +1204,45 @@ export default function AdminPage() {
     }
   };
 
+  // Función para resetear votos de una semana específica
+  const resetWeekVotes = async () => {
+    if (!selectedWeek) {
+      setError('Debes seleccionar una semana');
+      return;
+    }
+
+    try {
+      setError(null);
+      const selectedWeekData = weeks.find(w => w._id === selectedWeek);
+      if (!selectedWeekData) {
+        setError('Semana no encontrada');
+        return;
+      }
+
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'resetWeekVotes',
+          weekId: selectedWeek,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al resetear votos de la semana');
+      }
+
+      await loadWeeks(selectedSeason);
+      showToast('success', `Votos de la Semana ${selectedWeekData.weekNumber} reseteados correctamente`);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error reseteando votos de la semana:', err);
+    }
+  };
+
   // Función para cargar usuarios
   const loadUsers = async (page = 1, search = '', sortBy = 'createdAt', sortOrder = 'desc') => {
     try {
@@ -2952,6 +2991,29 @@ export default function AdminPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Botón de Resetear Votaciones */}
+              {selectedWeek && (
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Acciones de Votación</h3>
+                  <button 
+                    onClick={() => handleConfirmAction(
+                      'Resetear Votaciones',
+                      `¿Estás seguro de que quieres resetear todos los votos de la semana seleccionada? Esta acción no se puede deshacer y eliminará todos los votos registrados.`,
+                      resetWeekVotes
+                    )}
+                    className="w-full flex items-center justify-between bg-destructive text-destructive-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors group"
+                  >
+                    <div className="flex items-center space-x-2 lg:space-x-3">
+                      <span className="text-lg lg:text-xl">🔄</span>
+                      <span className="text-sm lg:text-base">Resetear Votaciones de la Semana</span>
+                    </div>
+                    <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
 
               {selectedWeek ? (
                 (() => {

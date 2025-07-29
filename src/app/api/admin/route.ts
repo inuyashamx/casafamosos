@@ -101,6 +101,10 @@ export async function POST(request: NextRequest) {
         const resetResult = await AdminService.resetWeeklyVotes(body.seasonId);
         return NextResponse.json(resetResult);
 
+      case 'resetWeekVotes':
+        const resetWeekResult = await AdminService.resetWeekVotes(body.weekId);
+        return NextResponse.json(resetWeekResult);
+
       case 'toggleUserStatus':
         const { userId } = body;
         const user = await AdminService.toggleUserStatus(userId);
