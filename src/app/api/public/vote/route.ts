@@ -21,8 +21,15 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Obtener nominados de la semana activa
-    const activeWeek = await WeekService.getActiveWeek(activeSeason._id.toString());
+    // Obtener la semana actual basándose en las fechas, sin importar el estado
+    const now = new Date();
+    let activeWeek = await WeekService.getCurrentWeekByDate(activeSeason._id.toString(), now);
+    
+    // Si no hay semana actual, buscar cualquier semana con nominados
+    if (!activeWeek) {
+      activeWeek = await WeekService.getNextScheduledWeekWithNominees(activeSeason._id.toString());
+    }
+    
     if (!activeWeek) {
       return NextResponse.json({ 
         nominees: [], 
@@ -44,7 +51,7 @@ export async function GET(request: NextRequest) {
       .filter((nominee: any) => nominee.candidateId) // Filtrar nominados válidos
       .map((nominee: any) => {
         const candidate = nominee.candidateId;
-        const stats = weekWithResults.results.votingStats.find(
+        const stats = weekWithResults.results?.votingStats?.find(
           (stat: any) => stat.candidateId.toString() === candidate._id.toString()
         );
 
@@ -65,6 +72,7 @@ export async function GET(request: NextRequest) {
         name: weekWithResults.name,
         votingEndDate: weekWithResults.votingEndDate,
         isActive: weekWithResults.isVotingActive,
+        status: weekWithResults.status,
       },
       season: {
         id: activeSeason._id,

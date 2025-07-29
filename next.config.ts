@@ -23,6 +23,18 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.lacasadelosfamososmexico.tv',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'st1.uvnimg.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };

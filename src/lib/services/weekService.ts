@@ -14,11 +14,50 @@ export class WeekService {
   static async getActiveWeek(seasonId: string) {
     await dbConnect();
     const now = new Date();
+    
+    // Primero intentar activar automáticamente semanas que deberían estar activas
+    await this.activateScheduledWeeks(seasonId);
+    
     return await Week.findOne({
       seasonId,
       isVotingActive: true,
       status: 'voting'
     }).populate('nominees.candidateId');
+  }
+
+  static async activateScheduledWeeks(seasonId: string) {
+    const now = new Date();
+    
+    // Buscar semanas programadas que deberían estar activas
+    const weeksToActivate = await Week.find({
+      seasonId,
+      status: 'scheduled',
+      votingStartDate: { $lte: now },
+      votingEndDate: { $gte: now }
+    });
+
+    // Activar cada semana que cumpla las condiciones
+    for (const week of weeksToActivate) {
+      // Desactivar otras semanas de votación en la misma temporada
+      await Week.updateMany(
+        { seasonId, isVotingActive: true },
+        { isVotingActive: false, status: 'completed' }
+      );
+      
+      // Activar esta semana
+      week.isVotingActive = true;
+      week.status = 'voting';
+      await week.save();
+    }
+  }
+
+  static async getNextScheduledWeekWithNominees(seasonId: string) {
+    await dbConnect();
+    return await Week.findOne({
+      seasonId,
+      status: 'scheduled',
+      'nominees.0': { $exists: true } // Verificar que tenga al menos un nominado
+    }).populate('nominees.candidateId').sort({ weekNumber: 1 });
   }
 
   static async getCurrentWeek(seasonId: string) {
@@ -28,6 +67,15 @@ export class WeekService {
       seasonId,
       startDate: { $lte: now },
       endDate: { $gte: now }
+    }).populate('nominees.candidateId');
+  }
+
+  static async getCurrentWeekByDate(seasonId: string, date: Date) {
+    await dbConnect();
+    return await Week.findOne({
+      seasonId,
+      votingStartDate: { $lte: date },
+      votingEndDate: { $gte: date }
     }).populate('nominees.candidateId');
   }
 

@@ -19,6 +19,7 @@ interface WeekData {
   name: string;
   votingEndDate: string;
   isActive: boolean;
+  status?: string;
 }
 
 interface SeasonData {
@@ -317,13 +318,6 @@ export default function Home() {
             </p>
             <p className="text-muted-foreground mt-2">No hay ninguna semana de votación activa en este momento.</p>
           </div>
-        ) : !votingData?.week?.isActive ? (
-          <div className="bg-muted/20 border border-border/20 rounded-xl p-4 text-center">
-            <h3 className="text-muted-foreground font-medium">No hay votación activa</h3>
-            <p className="text-muted-foreground/80 text-sm mt-1">
-              Espera a que se publiquen los próximos nominados
-            </p>
-          </div>
         ) : null}
 
         {/* Countdown Timer */}
@@ -354,7 +348,7 @@ export default function Home() {
         )}
 
         {/* Vote Button */}
-        {votingData?.week?.isActive && (
+        {votingData?.week && (
           <button
             onClick={handleVoteClick}
             className="w-full bg-gradient-to-r from-primary to-accent text-white py-4 rounded-xl font-bold text-lg glow hover:scale-105 transition-all duration-200 shadow-lg"
@@ -367,7 +361,7 @@ export default function Home() {
         {votingData?.nominees && votingData.nominees.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground">Nominados Actuales</h2>
+              <h2 className="text-xl font-bold text-foreground">Nominados</h2>
               <button
                 onClick={handleRefresh}
                 className="text-primary hover:text-primary/80 transition-colors"
