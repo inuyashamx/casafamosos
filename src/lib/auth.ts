@@ -4,7 +4,20 @@ import GoogleProvider from "next-auth/providers/google";
 import clientPromise from "./mongodb-adapter";
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: {
+    ...MongoDBAdapter(clientPromise),
+    createUser: async (data: any) => {
+      const client = await clientPromise;
+      const db = client.db();
+      const user = {
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      const result = await db.collection('users').insertOne(user);
+      return { ...user, id: result.insertedId.toString() };
+    }
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
