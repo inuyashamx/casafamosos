@@ -1,6 +1,5 @@
 import { NextAuthOptions } from "next-auth";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import clientPromise from "./mongodb-adapter";
 
@@ -10,25 +9,11 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-    CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
-      },
-      async authorize(credentials) {
-        // Aquí implementarías la lógica de autenticación con credenciales
-        // Por ahora retornamos null para usar solo Google
-        return null;
-      }
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   session: {
     strategy: "jwt",
-  },
-  pages: {
-    signIn: "/auth/signin",
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -45,6 +30,20 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).isAdmin = token.isAdmin as boolean;
       }
       return session;
+    },
+    async signIn({ user, account, profile }) {
+      // Permitir solo autenticación con Google
+      if (account?.provider === "google") {
+        return true;
+      }
+      return false;
+    },
+
+    async redirect({ url, baseUrl }) {
+      // Manejar redirecciones
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
   },
 }; 
