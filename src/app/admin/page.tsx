@@ -90,6 +90,8 @@ export default function AdminPage() {
     defaultDailyPoints: 60,
   });
   const [submittingSeason, setSubmittingSeason] = useState(false);
+  const [editingSeason, setEditingSeason] = useState<Season | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [stats, setStats] = useState({
     totalUsers: 1247,
@@ -175,6 +177,15 @@ export default function AdminPage() {
       console.error('Error cargando estadísticas:', err);
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  // Función para crear o editar temporada
+  const handleSeasonSubmit = async () => {
+    if (isEditMode) {
+      await editSeason();
+    } else {
+      await createSeason();
     }
   };
 
@@ -268,6 +279,103 @@ export default function AdminPage() {
       setError(err.message);
       console.error('Error completando temporada:', err);
     }
+  };
+
+  // Función para editar temporada
+  const editSeason = async () => {
+    if (!editingSeason) return;
+    
+    try {
+      setSubmittingSeason(true);
+      setError(null);
+      
+      const response = await fetch('/api/seasons', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          seasonId: editingSeason._id,
+          name: seasonForm.name,
+          year: seasonForm.year,
+          description: seasonForm.description,
+          startDate: seasonForm.startDate,
+          endDate: seasonForm.endDate,
+          defaultDailyPoints: seasonForm.defaultDailyPoints,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar temporada');
+      }
+
+      const updatedSeason = await response.json();
+      setSeasons(prev => prev.map(s => s._id === editingSeason._id ? updatedSeason : s));
+      setShowSeasonForm(false);
+      setEditingSeason(null);
+      setIsEditMode(false);
+      setSeasonForm({
+        name: '',
+        year: new Date().getFullYear(),
+        description: '',
+        startDate: '',
+        endDate: '',
+        defaultDailyPoints: 60,
+      });
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error actualizando temporada:', err);
+    } finally {
+      setSubmittingSeason(false);
+    }
+  };
+
+  // Función para abrir formulario de edición
+  const openEditForm = (season: Season) => {
+    setEditingSeason(season);
+    setIsEditMode(true);
+    setSeasonForm({
+      name: season.name,
+      year: season.year,
+      description: season.description || '',
+      startDate: season.startDate.split('T')[0], // Convertir a formato date
+      endDate: season.endDate.split('T')[0],
+      defaultDailyPoints: season.defaultDailyPoints,
+    });
+    setShowSeasonForm(true);
+  };
+
+  // Función para obtener información de eliminación
+  const getDeleteInfo = async (seasonId: string) => {
+    try {
+      const response = await fetch(`/api/seasons?id=${seasonId}&action=stats`);
+      if (!response.ok) {
+        throw new Error('Error al obtener información de la temporada');
+      }
+      const stats = await response.json();
+      return stats;
+    } catch (err) {
+      console.error('Error obteniendo información de eliminación:', err);
+      return null;
+    }
+  };
+
+  // Función para eliminar temporada con información detallada
+  const deleteSeasonWithInfo = async (seasonId: string, seasonName: string) => {
+    const stats = await getDeleteInfo(seasonId);
+    
+    let deleteMessage = `¿Estás seguro de que quieres eliminar la temporada "${seasonName}"?\n\n⚠️ Esta acción eliminará PERMANENTEMENTE:\n• La temporada completa\n• Todas las semanas asociadas\n• Todos los candidatos de la temporada\n• Todos los votos registrados\n• Todas las nominaciones\n\nEsta acción NO SE PUEDE DESHACER.`;
+    
+    if (stats) {
+      deleteMessage += `\n\n📊 Datos que se eliminarán:\n• ${stats.candidates.total} candidatos (${stats.candidates.active} activos, ${stats.candidates.eliminated} eliminados)\n• ${stats.weeks.total} semanas (${stats.weeks.completed} completadas, ${stats.weeks.active} activas)\n• ${stats.votes.totalVotes.toLocaleString()} votos totales\n• ${stats.votes.uniqueVoters} votantes únicos`;
+    }
+    
+    handleConfirmAction(
+      'Eliminar Temporada',
+      deleteMessage,
+      () => deleteSeason(seasonId)
+    );
   };
 
   // Función para eliminar temporada
@@ -376,9 +484,11 @@ export default function AdminPage() {
       {/* Modal de Confirmación */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-xl p-6 max-w-md w-full border border-border/40">
-            <h3 className="text-lg font-semibold text-foreground mb-2">{confirmAction.title}</h3>
-            <p className="text-muted-foreground mb-6">{confirmAction.message}</p>
+          <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-foreground mb-4">{confirmAction.title}</h3>
+            <div className="text-muted-foreground mb-6 whitespace-pre-line leading-relaxed">
+              {confirmAction.message}
+            </div>
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowConfirmModal(false)}
@@ -796,6 +906,15 @@ export default function AdminPage() {
                           >
                             {loadingStats ? 'Cargando...' : 'Ver Stats'}
                           </button>
+                          <button 
+                            onClick={() => openEditForm(season)}
+                            className="flex-1 bg-blue-500/10 text-blue-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors"
+                          >
+                            Editar
+                          </button>
+                        </div>
+                        
+                        <div className="flex space-x-2 mt-2">
                           {season.status === 'active' ? (
                             <button 
                               onClick={() => handleConfirmAction(
@@ -821,14 +940,10 @@ export default function AdminPage() {
                           ) : null}
                           {season.status !== 'active' && (
                             <button 
-                              onClick={() => handleConfirmAction(
-                                'Eliminar Temporada',
-                                `¿Estás seguro de que quieres eliminar la temporada "${season.name}"? Esta acción eliminará todos los datos asociados y no se puede deshacer.`,
-                                () => deleteSeason(season._id)
-                              )}
-                              className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors"
+                              onClick={() => deleteSeasonWithInfo(season._id, season.name)}
+                              className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
                             >
-                              Eliminar
+                              🗑️ Eliminar
                             </button>
                           )}
                         </div>
@@ -842,7 +957,9 @@ export default function AdminPage() {
               {showSeasonForm && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                   <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Nueva Temporada</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
+                      {isEditMode ? 'Editar Temporada' : 'Nueva Temporada'}
+                    </h3>
                     
                     <div className="space-y-4">
                       <div>
@@ -933,24 +1050,36 @@ export default function AdminPage() {
 
                     <div className="flex space-x-3 mt-6">
                       <button
-                        onClick={() => setShowSeasonForm(false)}
+                        onClick={() => {
+                          setShowSeasonForm(false);
+                          setEditingSeason(null);
+                          setIsEditMode(false);
+                          setSeasonForm({
+                            name: '',
+                            year: new Date().getFullYear(),
+                            description: '',
+                            startDate: '',
+                            endDate: '',
+                            defaultDailyPoints: 60,
+                          });
+                        }}
                         disabled={submittingSeason}
                         className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         Cancelar
                       </button>
                       <button
-                        onClick={createSeason}
+                        onClick={handleSeasonSubmit}
                         disabled={submittingSeason || !seasonForm.name || !seasonForm.startDate || !seasonForm.endDate}
                         className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
                       >
                         {submittingSeason ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Creando...</span>
+                            <span>{isEditMode ? 'Actualizando...' : 'Creando...'}</span>
                           </>
                         ) : (
-                          <span>Crear Temporada</span>
+                          <span>{isEditMode ? 'Actualizar Temporada' : 'Crear Temporada'}</span>
                         )}
                       </button>
                     </div>
