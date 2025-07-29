@@ -1306,7 +1306,7 @@ export default function AdminPage() {
           </label>
           <select
             value={selectedSeason}
-            onChange={(e) => setSelectedSeason(e.target.value)}
+            onChange={(e) => handleSeasonChange(e.target.value)}
             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
           >
             {seasons.map(season => (
@@ -1737,7 +1737,7 @@ export default function AdminPage() {
                               className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
                             >
                               🗑️ Eliminar
-                            </button>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1900,41 +1900,6 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
-
-              {/* Selectores de Temporada y Semana */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
-                  <select
-                    value={selectedSeason}
-                    onChange={(e) => handleSeasonChange(e.target.value)}
-                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                  >
-                    {seasons.map(season => (
-                      <option key={season._id} value={season._id}>
-                        {season.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
-                  <select
-                    value={selectedWeek}
-                    onChange={(e) => handleWeekChange(e.target.value)}
-                    disabled={!selectedSeason || weeks.length === 0}
-                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Selecciona una semana</option>
-                    {weeks.map(week => (
-                      <option key={week._id} value={week._id}>
-                        Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
                 <div>
@@ -2184,39 +2149,22 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Selectores de Temporada y Semana */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
-                  <select
-                    value={selectedSeason}
-                    onChange={(e) => handleSeasonChange(e.target.value)}
-                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                  >
-                    {seasons.map(season => (
-                      <option key={season._id} value={season._id}>
-                        {season.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
-                  <select
-                    value={selectedWeek}
-                    onChange={(e) => handleWeekChange(e.target.value)}
-                    disabled={!selectedSeason || weeks.length === 0}
-                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Selecciona una semana</option>
-                    {weeks.map(week => (
-                      <option key={week._id} value={week._id}>
-                        Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Selector de Semana */}
+              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
+                <select
+                  value={selectedWeek}
+                  onChange={(e) => handleWeekChange(e.target.value)}
+                  disabled={!selectedSeason || weeks.length === 0}
+                  className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Selecciona una semana</option>
+                  {weeks.map(week => (
+                    <option key={week._id} value={week._id}>
+                      Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
@@ -2251,30 +2199,30 @@ export default function AdminPage() {
                   <p className="text-muted-foreground">Crea el primer candidato para comenzar</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                  {candidates.map((candidate) => (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                {candidates.map((candidate) => (
                     <div key={candidate._id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h4 className="font-semibold text-foreground text-base lg:text-lg">{candidate.name}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              candidate.status === 'active'
-                                ? 'bg-green-500/10 text-green-500'
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-semibold text-foreground text-base lg:text-lg">{candidate.name}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            candidate.status === 'active'
+                              ? 'bg-green-500/10 text-green-500'
                                 : candidate.status === 'eliminated'
                                   ? 'bg-red-500/10 text-red-500'
-                                  : 'bg-muted text-muted-foreground'
-                            }`}>
+                              : 'bg-muted text-muted-foreground'
+                          }`}>
                               {candidate.status === 'active' ? '🟢 Activo' : candidate.status === 'eliminated' ? '🔴 Eliminado' : '⚪ Inactivo'}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground text-sm">
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-sm">
                             {candidate.bio ? 'Con descripción' : 'Sin descripción'}
-                          </p>
+                        </p>
                           {candidate.bio && (
                             <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{candidate.bio}</p>
                           )}
-                        </div>
+                      </div>
                         {candidate.photo && (
                           <div className="w-12 h-12 rounded-full overflow-hidden bg-muted/30 flex-shrink-0">
                             <img 
@@ -2287,18 +2235,18 @@ export default function AdminPage() {
                             />
                           </div>
                         )}
-                      </div>
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
                           <div className="text-lg font-bold text-foreground">{candidate.stats.timesNominated}</div>
                           <div className="text-xs text-muted-foreground">Nominaciones</div>
-                        </div>
-                        <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      </div>
+                      <div className="bg-muted/30 rounded-lg p-3 text-center">
                           <div className="text-lg font-bold text-foreground">{candidate.stats.totalVotes.toLocaleString()}</div>
                           <div className="text-xs text-muted-foreground">Votos Totales</div>
-                        </div>
                       </div>
+                    </div>
 
                       {candidate.eliminationInfo.isEliminated && (
                         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
@@ -2311,14 +2259,14 @@ export default function AdminPage() {
                         </div>
                       )}
 
-                      <div className="flex space-x-2">
+                    <div className="flex space-x-2">
                         <button 
                           onClick={() => openEditCandidateForm(candidate)}
                           className="flex-1 bg-blue-500/10 text-blue-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors"
                         >
-                          Editar
-                        </button>
-                        {candidate.status === 'active' ? (
+                        Editar
+                      </button>
+                      {candidate.status === 'active' ? (
                           <button 
                             onClick={() => handleConfirmAction(
                               'Eliminar de la Competencia',
@@ -2328,8 +2276,8 @@ export default function AdminPage() {
                             className="flex-1 bg-orange-500/10 text-orange-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-orange-500/20 transition-colors"
                           >
                             🚫 Eliminar de Competencia
-                          </button>
-                        ) : (
+                        </button>
+                      ) : (
                           <button 
                             onClick={() => handleConfirmAction(
                               'Borrar del Sistema',
@@ -2339,12 +2287,12 @@ export default function AdminPage() {
                             className="flex-1 bg-red-500/10 text-red-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors"
                           >
                             🗑️ Borrar del Sistema
-                          </button>
-                        )}
-                      </div>
+                        </button>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
               )}
 
               {/* Candidate Form Modal */}
@@ -2370,10 +2318,10 @@ export default function AdminPage() {
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
                           Descripción (Bio)
-                        </label>
+                          </label>
                         <textarea
                           placeholder="Breve descripción del candidato..."
                           rows={3}
@@ -2383,17 +2331,17 @@ export default function AdminPage() {
                         ></textarea>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-2">
-                          Foto (URL)
-                        </label>
-                        <input
-                          type="url"
-                          placeholder="https://example.com/photo.jpg"
+                        <div>
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
+                            Foto (URL)
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://example.com/photo.jpg"
                           value={candidateForm.photo}
                           onChange={(e) => setCandidateForm(prev => ({ ...prev, photo: e.target.value }))}
-                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
-                        />
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          />
                       </div>
                     </div>
 
@@ -2505,17 +2453,17 @@ export default function AdminPage() {
                     <span>🎯</span>
                     <span>Seleccionar Nominados</span>
                   </button>
-                  <button 
-                    onClick={() => handleConfirmAction(
-                      'Resetear Nominaciones',
-                      '¿Estás seguro de que quieres resetear todas las nominaciones de la temporada actual? Esta acción no se puede deshacer.',
+                <button 
+                  onClick={() => handleConfirmAction(
+                    'Resetear Nominaciones',
+                    '¿Estás seguro de que quieres resetear todas las nominaciones de la temporada actual? Esta acción no se puede deshacer.',
                       () => resetSeasonNominations()
-                    )}
-                    className="bg-destructive text-destructive-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <span>🔄</span>
-                    <span>Resetear Nominaciones</span>
-                  </button>
+                  )}
+                  className="bg-destructive text-destructive-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <span>🔄</span>
+                  <span>Resetear Nominaciones</span>
+                </button>
                 </div>
               </div>
 
@@ -2546,14 +2494,14 @@ export default function AdminPage() {
                         </div>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                           week.status === 'voting' || week.status === 'active'
-                            ? 'bg-green-500/10 text-green-500'
+                              ? 'bg-green-500/10 text-green-500'
                             : week.status === 'completed'
                               ? 'bg-muted text-muted-foreground'
                               : 'bg-blue-500/10 text-blue-500'
-                        }`}>
+                          }`}>
                           {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
-                        </span>
-                      </div>
+                          </span>
+                        </div>
 
                       {week.nominees.length === 0 ? (
                         <div className="text-center py-8 bg-muted/20 rounded-lg">
@@ -2607,7 +2555,7 @@ export default function AdminPage() {
                     <h3 className="text-lg font-semibold text-foreground mb-4">Seleccionar Nominados</h3>
                     
                     <div className="mb-4">
-                      <p className="text-muted-foreground text-sm">
+                        <p className="text-muted-foreground text-sm">
                         Selecciona los candidatos que quieres nominar para la semana seleccionada. 
                         Solo se muestran candidatos activos de la temporada seleccionada.
                       </p>
@@ -2615,8 +2563,8 @@ export default function AdminPage() {
                         <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                           <p className="text-sm text-blue-600">
                             <strong>Semana seleccionada:</strong> {weeks.find(w => w._id === selectedWeek)?.weekNumber}
-                          </p>
-                        </div>
+                        </p>
+                      </div>
                       )}
                     </div>
 
@@ -2654,14 +2602,14 @@ export default function AdminPage() {
                                         e.currentTarget.style.display = 'none';
                                       }}
                                     />
-                                  </div>
+                      </div>
                                 )}
                                 <div>
                                   <p className="font-medium text-foreground">{candidate.name}</p>
                                   {candidate.bio && (
                                     <p className="text-xs text-muted-foreground line-clamp-1">{candidate.bio}</p>
                                   )}
-                                </div>
+                    </div>
                               </div>
                             </label>
                           ))}
@@ -2692,10 +2640,10 @@ export default function AdminPage() {
                         ) : (
                           <span>Agregar {selectedNominees.length} Nominado(s)</span>
                         )}
-                      </button>
+                        </button>
                     </div>
                   </div>
-                </div>
+              </div>
               )}
             </div>
           )}
