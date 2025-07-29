@@ -195,9 +195,22 @@ export default function Home() {
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center hover:bg-primary/30 transition-colors"
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-primary/30 transition-colors overflow-hidden"
                 >
-                  <span className="text-primary text-sm font-bold">
+                  {session.user?.image ? (
+                    <img 
+                      src={session.user.image} 
+                      alt={session.user.name || 'Usuario'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Si la imagen falla, mostrar la inicial
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <span className={`text-primary text-sm font-bold ${session.user?.image ? 'hidden' : ''}`}>
                     {session.user?.name?.[0] || 'U'}
                   </span>
                 </button>
