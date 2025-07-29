@@ -1677,8 +1677,21 @@ export default function AdminPage() {
         {/* User Info */}
         <div className="p-3 lg:p-4 border-t border-border/40">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-              <span className="text-primary text-sm font-bold">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+              {session.user?.image ? (
+                <img 
+                  src={session.user.image} 
+                  alt={session.user.name || 'Usuario'}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Si la imagen falla, mostrar la inicial
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
+              <span className={`text-primary text-sm font-bold ${session.user?.image ? 'hidden' : ''}`}>
                 {session.user?.name?.[0] || 'A'}
               </span>
             </div>
