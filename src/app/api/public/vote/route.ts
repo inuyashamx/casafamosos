@@ -39,20 +39,23 @@ export async function GET(request: NextRequest) {
     // Obtener resultados actualizados
     const weekWithResults = await WeekService.getWeekResults(activeWeek._id.toString());
     
-    const nominees = weekWithResults.nominees.map((nominee: any) => {
-      const candidate = nominee.candidateId;
-      const stats = weekWithResults.results.votingStats.find(
-        (stat: any) => stat.candidateId.toString() === candidate._id.toString()
-      );
+    // Solo mostrar candidatos que estén realmente en week.nominees
+    const nominees = weekWithResults.nominees
+      .filter((nominee: any) => nominee.candidateId) // Filtrar nominados válidos
+      .map((nominee: any) => {
+        const candidate = nominee.candidateId;
+        const stats = weekWithResults.results.votingStats.find(
+          (stat: any) => stat.candidateId.toString() === candidate._id.toString()
+        );
 
-      return {
-        id: candidate._id,
-        name: candidate.name,
-        photo: candidate.photo,
-        votes: stats?.votes || 0,
-        percentage: stats?.percentage || 0,
-      };
-    });
+        return {
+          id: candidate._id,
+          name: candidate.name,
+          photo: candidate.photo,
+          votes: stats?.votes || 0,
+          percentage: stats?.percentage || 0,
+        };
+      });
 
     return NextResponse.json({
       nominees,
