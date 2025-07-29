@@ -2889,7 +2889,7 @@ export default function AdminPage() {
               {/* Modal de Selección de Nominados */}
               {showNomineesModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                  <div className="bg-card rounded-xl p-6 max-w-2xl w-full border border-border/40 max-h-[90vh] overflow-y-auto">
+                  <div className="bg-card rounded-xl p-6 max-w-2xl w-full border border-border/40 max-h-[90vh] flex flex-col">
                     <h3 className="text-lg font-semibold text-foreground mb-4">Seleccionar Nominados</h3>
                     
                     <div className="mb-4">
@@ -2906,16 +2906,31 @@ export default function AdminPage() {
                       )}
                     </div>
 
-                    {candidates.filter(c => c.status === 'active').length === 0 ? (
-                      <div className="text-center py-8">
-                        <div className="text-2xl mb-2">👥</div>
-                        <p className="text-muted-foreground">No hay candidatos activos para nominar</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 max-h-96 overflow-y-auto">
-                        {candidates
-                          .filter(c => c.status === 'active')
-                          .map((candidate) => (
+                    {(() => {
+                      // Obtener candidatos que no están ya nominados en la semana seleccionada
+                      const selectedWeekData = weeks.find(w => w._id === selectedWeek);
+                      const alreadyNominatedIds = selectedWeekData?.nominees.map(n => n.candidateId._id) || [];
+                      const availableCandidates = candidates.filter(c => 
+                        c.status === 'active' && !alreadyNominatedIds.includes(c._id)
+                      );
+
+                      if (availableCandidates.length === 0) {
+                        return (
+                          <div className="text-center py-8">
+                            <div className="text-2xl mb-2">👥</div>
+                            <p className="text-muted-foreground">
+                              {alreadyNominatedIds.length > 0 
+                                ? 'Todos los candidatos activos ya están nominados en esta semana' 
+                                : 'No hay candidatos activos para nominar'
+                              }
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 flex-1 overflow-y-auto">
+                          {availableCandidates.map((candidate) => (
                             <label key={candidate._id} className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                               <input
                                 type="checkbox"
@@ -2940,21 +2955,22 @@ export default function AdminPage() {
                                         e.currentTarget.style.display = 'none';
                                       }}
                                     />
-                      </div>
+                                  </div>
                                 )}
                                 <div>
                                   <p className="font-medium text-foreground">{candidate.name}</p>
                                   {candidate.bio && (
                                     <p className="text-xs text-muted-foreground line-clamp-1">{candidate.bio}</p>
                                   )}
-                    </div>
+                                </div>
                               </div>
                             </label>
                           ))}
-                      </div>
-                    )}
+                        </div>
+                      );
+                    })()}
 
-                    <div className="flex space-x-3">
+                    <div className="flex space-x-3 mt-auto">
                       <button
                         onClick={() => {
                           setShowNomineesModal(false);
@@ -2978,10 +2994,10 @@ export default function AdminPage() {
                         ) : (
                           <span>Agregar {selectedNominees.length} Nominado(s)</span>
                         )}
-                        </button>
+                      </button>
                     </div>
                   </div>
-              </div>
+                </div>
               )}
             </div>
           )}
