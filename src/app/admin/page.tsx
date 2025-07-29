@@ -1858,6 +1858,17 @@ export default function AdminPage() {
                       </svg>
                     </button>
                     <button 
+                      onClick={() => window.open('/', '_blank')}
+                      className="w-full flex items-center justify-between bg-blue-500 text-white p-3 lg:p-4 rounded-lg font-medium hover:bg-blue-600 transition-colors group">
+                      <div className="flex items-center space-x-2 lg:space-x-3">
+                        <span className="text-lg lg:text-xl">🌐</span>
+                        <span className="text-sm lg:text-base">Ver Página Votación</span>
+                      </div>
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                    <button 
                       onClick={() => handleConfirmAction(
                         'Resetear Votos Semanales',
                         '¿Estás seguro de que quieres resetear todos los votos de la semana actual? Esta acción no se puede deshacer.',
