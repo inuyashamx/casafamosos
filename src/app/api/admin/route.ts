@@ -10,7 +10,7 @@ async function checkAdminAuth() {
     return { error: 'No autorizado', status: 401 };
   }
 
-  const user = await User.findById((session.user as any).id);
+  const user = await User.findById((session.user as { id: string }).id);
   if (!user?.isAdmin) {
     return { error: 'Acceso denegado - Se requieren permisos de administrador', status: 403 };
   }
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       case 'blockUser':
         const { userId: blockUserId, reason } = body;
         const authCheck = await checkAdminAuth();
-        const blockedUser = await AdminService.blockUser(blockUserId, reason, (authCheck.user as any).id);
+        const blockedUser = await AdminService.blockUser(blockUserId, reason, (authCheck.user as { id: string }).id);
         return NextResponse.json({ user: blockedUser });
 
       case 'unblockUser':
@@ -137,10 +137,10 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error en POST /api/admin:', error);
     return NextResponse.json({ 
-      error: error.message || 'Error interno del servidor' 
+      error: error instanceof Error ? error.message : 'Error interno del servidor' 
     }, { status: 500 });
   }
 } 

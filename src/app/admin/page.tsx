@@ -200,10 +200,27 @@ export default function AdminPage() {
   const [submittingNominees, setSubmittingNominees] = useState(false);
 
   // Estados para usuarios
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<Array<{
+    _id: string;
+    name: string;
+    email: string;
+    image?: string;
+    isAdmin: boolean;
+    isActive: boolean;
+    isBlocked: boolean;
+    blockReason?: string;
+    totalVotes: number;
+    lastVoteDate?: string;
+    createdAt: string;
+  }>>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
-  const [blockingUser, setBlockingUser] = useState<any>(null);
+  const [blockingUser, setBlockingUser] = useState<{
+    _id: string;
+    name: string;
+    email: string;
+    image?: string;
+  } | null>(null);
   const [blockReason, setBlockReason] = useState('');
   const [submittingBlock, setSubmittingBlock] = useState(false);
   
@@ -250,27 +267,7 @@ export default function AdminPage() {
     }
   };
 
-  // Mock data (se mantiene para otras secciones)
-  const mockSeasons = [
-    { id: '2025', name: 'Casa Famosos 2025', year: 2025, status: 'active', startDate: '2025-01-15', endDate: '2025-06-15' },
-    { id: '2024', name: 'Casa Famosos 2024', year: 2024, status: 'completed', startDate: '2024-01-15', endDate: '2024-06-15' }
-  ];
 
-  const mockWeeks = [
-    { id: 1, number: 1, startDate: '2025-01-15', endDate: '2025-01-21', status: 'completed', nominees: 4 },
-    { id: 2, number: 2, startDate: '2025-01-22', endDate: '2025-01-28', status: 'completed', nominees: 4 },
-    { id: 3, number: 3, startDate: '2025-01-29', endDate: '2025-02-04', status: 'completed', nominees: 3 },
-    { id: 4, number: 4, startDate: '2025-02-05', endDate: '2025-02-11', status: 'active', nominees: 4 },
-    { id: 5, number: 5, startDate: '2025-02-12', endDate: '2025-02-18', status: 'scheduled', nominees: 0 },
-  ];
-
-  // Mock data para candidatos (se eliminará cuando se implemente el módulo completo)
-  const mockCandidates = [
-    { id: 1, name: 'Ana García', photo: '', age: 28, profession: 'Actriz', status: 'active', nominated: true, eliminatedWeek: null },
-    { id: 2, name: 'Carlos López', photo: '', age: 32, profession: 'Cantante', status: 'active', nominated: true, eliminatedWeek: null },
-    { id: 3, name: 'Sofia Herrera', photo: '', age: 25, profession: 'Influencer', status: 'active', nominated: false, eliminatedWeek: null },
-    { id: 4, name: 'Diego Martín', photo: '', age: 30, profession: 'Actor', status: 'eliminated', nominated: false, eliminatedWeek: 2 },
-  ];
 
   // Función para guardar selecciones en localStorage
   const saveSelectionsToStorage = (seasonId: string, weekId: string) => {
@@ -294,11 +291,19 @@ export default function AdminPage() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/');
-    } else if (status === 'authenticated' && session && !(session.user as any)?.isAdmin) {
+    } else if (status === 'authenticated' && session && !(session.user as { isAdmin?: boolean })?.isAdmin) {
       // Si está autenticado pero no es admin, redirigir
       router.push('/');
     }
   }, [status, session, router]);
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    if (status === 'authenticated' && session && (session.user as { isAdmin?: boolean })?.isAdmin) {
+      loadSeasons();
+      loadDashboardStats();
+    }
+  }, [status, session, loadDashboardStats]);
 
   // Cargar temporadas al montar el componente
   useEffect(() => {
@@ -372,8 +377,8 @@ export default function AdminPage() {
       }
       const data = await response.json();
       setSeasons(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error cargando temporadas');
       console.error('Error cargando temporadas:', err);
     } finally {
       setLoadingSeasons(false);
@@ -390,7 +395,7 @@ export default function AdminPage() {
       }
       const stats = await response.json();
       setSeasonStats(prev => ({ ...prev, [seasonId]: stats }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error cargando estadísticas:', err);
     } finally {
       setLoadingStats(prev => ({ ...prev, [seasonId]: false }));
@@ -437,8 +442,8 @@ export default function AdminPage() {
         defaultDailyPoints: 60,
       });
       showToast('success', 'Temporada creada correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error creando temporada:', err);
     } finally {
       setSubmittingSeason(false);
@@ -467,8 +472,8 @@ export default function AdminPage() {
 
       await loadSeasons(); // Recargar para actualizar estados
       showToast('success', 'Temporada activada correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error activando temporada:', err);
     }
   };
@@ -495,8 +500,8 @@ export default function AdminPage() {
 
       await loadSeasons(); // Recargar para actualizar estados
       showToast('success', 'Temporada completada correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error completando temporada:', err);
     }
   };
@@ -544,8 +549,8 @@ export default function AdminPage() {
         defaultDailyPoints: 60,
       });
       showToast('success', 'Temporada actualizada correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error actualizando temporada:', err);
     } finally {
       setSubmittingSeason(false);
@@ -613,8 +618,8 @@ export default function AdminPage() {
       }
 
       setSeasons(prev => prev.filter(s => s._id !== seasonId));
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error eliminando temporada:', err);
     }
   };
@@ -642,8 +647,8 @@ export default function AdminPage() {
       showToast('success', result.message);
       // Recargar la página para actualizar la sesión
       setTimeout(() => window.location.reload(), 1500);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error convirtiendo en admin:', err);
     }
   };
@@ -659,8 +664,8 @@ export default function AdminPage() {
       }
       const data = await response.json();
       setWeeks(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error cargando semanas:', err);
     } finally {
       setLoadingWeeks(false);
@@ -722,8 +727,8 @@ export default function AdminPage() {
         votingEndDate: '',
       });
       showToast('success', 'Semana creada correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error creando semana:', err);
     } finally {
       setSubmittingWeek(false);
@@ -779,8 +784,8 @@ export default function AdminPage() {
         votingEndDate: '',
       });
       showToast('success', 'Semana actualizada correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error actualizando semana:', err);
     } finally {
       setSubmittingWeek(false);
@@ -821,8 +826,8 @@ export default function AdminPage() {
 
       await loadWeeks(selectedSeason);
       showToast('success', 'Semana cerrada correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error cerrando semana:', err);
     }
   };
@@ -849,8 +854,8 @@ export default function AdminPage() {
 
       await loadWeeks(selectedSeason);
       showToast('success', 'Semana abierta correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error abriendo semana:', err);
     }
   };
@@ -873,8 +878,8 @@ export default function AdminPage() {
       
       // Mostrar mensaje de éxito
       showToast('success', result.message || 'Semana eliminada correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error eliminando semana:', err);
     }
   };
@@ -906,8 +911,8 @@ export default function AdminPage() {
       }
       const data = await response.json();
       setCandidates(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error cargando candidatos:', err);
     } finally {
       setLoadingCandidates(false);
@@ -945,8 +950,8 @@ export default function AdminPage() {
         bio: '',
       });
       showToast('success', 'Candidato creado correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error creando candidato:', err);
     } finally {
       setSubmittingCandidate(false);
@@ -988,8 +993,8 @@ export default function AdminPage() {
         bio: '',
       });
       showToast('success', 'Candidato actualizado correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error actualizando candidato:', err);
     } finally {
       setSubmittingCandidate(false);
@@ -1021,8 +1026,8 @@ export default function AdminPage() {
       const updatedCandidate = await response.json();
       setCandidates(prev => prev.map(c => c._id === candidateId ? updatedCandidate : c));
       showToast('success', 'Candidato eliminado de la competencia correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error eliminando candidato de la competencia:', err);
     }
   };
@@ -1043,8 +1048,8 @@ export default function AdminPage() {
       const result = await response.json();
       setCandidates(prev => prev.filter(c => c._id !== candidateId));
       showToast('success', result.message || 'Candidato eliminado correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error eliminando candidato:', err);
     }
   };
@@ -1072,8 +1077,6 @@ export default function AdminPage() {
 
   // Función para abrir modal de selección de nominados
   const openNomineesModal = () => {
-    // Obtener candidatos activos de la temporada seleccionada
-    const activeCandidates = candidates.filter(c => c.status === 'active');
     setSelectedNominees([]);
     setShowNomineesModal(true);
   };
@@ -1124,8 +1127,8 @@ export default function AdminPage() {
       setShowNomineesModal(false);
       setSelectedNominees([]);
       showToast('success', `${selectedNominees.length} candidato(s) agregado(s) como nominado(s)`);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error agregando nominados:', err);
     } finally {
       setSubmittingNominees(false);
@@ -1155,8 +1158,8 @@ export default function AdminPage() {
 
       await loadWeeks(selectedSeason);
       showToast('success', 'Nominado removido correctamente');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error removiendo nominado:', err);
     }
   };
@@ -1198,8 +1201,8 @@ export default function AdminPage() {
 
       await loadWeeks(selectedSeason);
       showToast('success', 'Todas las nominaciones han sido reseteadas');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error reseteando nominaciones:', err);
     }
   };
@@ -1237,8 +1240,8 @@ export default function AdminPage() {
 
       await loadWeeks(selectedSeason);
       showToast('success', `Votos de la Semana ${selectedWeekData.weekNumber} reseteados correctamente`);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error reseteando votos de la semana:', err);
     }
   };
@@ -1267,8 +1270,8 @@ export default function AdminPage() {
       setUserTotal(data.pagination.total);
       setUserPages(data.pagination.pages);
       setUserPage(data.pagination.page);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error cargando usuarios:', err);
     } finally {
       setLoadingUsers(false);
@@ -1298,7 +1301,7 @@ export default function AdminPage() {
         },
         body: JSON.stringify({
           action: 'blockUser',
-          userId: blockingUser._id,
+          userId: blockingUser!._id,
           reason: blockReason.trim(),
         }),
       });
@@ -1312,9 +1315,9 @@ export default function AdminPage() {
       setShowBlockModal(false);
       setBlockingUser(null);
       setBlockReason('');
-      showToast('success', `Usuario ${blockingUser.name} bloqueado correctamente`);
-    } catch (err: any) {
-      setError(err.message);
+      showToast('success', `Usuario ${blockingUser!.name} bloqueado correctamente`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error bloqueando usuario:', err);
     } finally {
       setSubmittingBlock(false);
@@ -1344,14 +1347,19 @@ export default function AdminPage() {
 
       await loadUsers();
       showToast('success', `Usuario ${userName} desbloqueado correctamente`);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error desbloqueando usuario:', err);
     }
   };
 
   // Función para abrir modal de bloqueo
-  const openBlockModal = (user: any) => {
+  const openBlockModal = (user: {
+    _id: string;
+    name: string;
+    email: string;
+    image?: string;
+  }) => {
     setBlockingUser(user);
     setBlockReason('');
     setShowBlockModal(true);
@@ -1380,8 +1388,8 @@ export default function AdminPage() {
 
       await loadUsers(userPage, userSearch, userSortBy, userSortOrder);
       showToast('success', `Estado de admin de ${userName} actualizado correctamente`);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error cambiando estado de admin:', err);
     }
   };
@@ -1409,8 +1417,8 @@ export default function AdminPage() {
 
       await loadUsers(userPage, userSearch, userSortBy, userSortOrder);
       showToast('success', `Usuario ${userName} eliminado correctamente`);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error eliminando usuario:', err);
     }
   };
@@ -1451,7 +1459,7 @@ export default function AdminPage() {
   }
 
   // Verificar si el usuario es admin
-  const isAdmin = (session.user as any)?.isAdmin;
+  const isAdmin = (session.user as { isAdmin?: boolean })?.isAdmin;
   
   if (!isAdmin) {
     return (
