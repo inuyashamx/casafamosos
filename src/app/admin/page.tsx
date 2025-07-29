@@ -146,7 +146,7 @@ export default function AdminPage() {
   // Estados para formularios
   const [showSeasonForm, setShowSeasonForm] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState('');
-  const [selectedWeek, setSelectedWeek] = useState(null);
+  const [selectedWeek, setSelectedWeek] = useState<string>('');
 
   // Estados para temporadas (reales)
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -194,6 +194,11 @@ export default function AdminPage() {
   });
   const [submittingCandidate, setSubmittingCandidate] = useState(false);
 
+  // Estados para nominados
+  const [showNomineesModal, setShowNomineesModal] = useState(false);
+  const [selectedNominees, setSelectedNominees] = useState<string[]>([]);
+  const [submittingNominees, setSubmittingNominees] = useState(false);
+
   const [stats, setStats] = useState({
     totalUsers: 1247,
     activeUsers: 342,
@@ -229,6 +234,24 @@ export default function AdminPage() {
     { id: 4, name: 'Diego Martín', photo: '', age: 30, profession: 'Actor', status: 'eliminated', nominated: false, eliminatedWeek: 2 },
   ];
 
+  // Función para guardar selecciones en localStorage
+  const saveSelectionsToStorage = (seasonId: string, weekId: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('admin_selectedSeason', seasonId);
+      localStorage.setItem('admin_selectedWeek', weekId);
+    }
+  };
+
+  // Función para cargar selecciones de localStorage
+  const loadSelectionsFromStorage = () => {
+    if (typeof window !== 'undefined') {
+      const savedSeason = localStorage.getItem('admin_selectedSeason');
+      const savedWeek = localStorage.getItem('admin_selectedWeek');
+      return { season: savedSeason, week: savedWeek };
+    }
+    return { season: null, week: null };
+  };
+
   // Redirigir si no está logueado o no es admin
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -260,10 +283,27 @@ export default function AdminPage() {
     }
   }, [selectedSeason, seasons]);
 
+  // Establecer la semana seleccionada cuando se carguen las semanas
+  useEffect(() => {
+    if (weeks.length > 0 && !selectedWeek) {
+      const savedSelections = loadSelectionsFromStorage();
+      const weekToSelect = savedSelections.week && weeks.find(w => w._id === savedSelections.week)
+        ? savedSelections.week
+        : weeks[0]._id;
+      
+      setSelectedWeek(weekToSelect);
+    }
+  }, [weeks, selectedWeek]);
+
   // Establecer la primera temporada como seleccionada cuando se carguen
   useEffect(() => {
     if (seasons.length > 0 && !selectedSeason) {
-      setSelectedSeason(seasons[0]._id);
+      const savedSelections = loadSelectionsFromStorage();
+      const seasonToSelect = savedSelections.season && seasons.find(s => s._id === savedSelections.season) 
+        ? savedSelections.season 
+        : seasons[0]._id;
+      
+      setSelectedSeason(seasonToSelect);
     }
   }, [seasons, selectedSeason]);
 
@@ -973,6 +1013,140 @@ export default function AdminPage() {
       await editCandidate();
     } else {
       await createCandidate();
+    }
+  };
+
+  // Función para abrir modal de selección de nominados
+  const openNomineesModal = () => {
+    // Obtener candidatos activos de la temporada seleccionada
+    const activeCandidates = candidates.filter(c => c.status === 'active');
+    setSelectedNominees([]);
+    setShowNomineesModal(true);
+  };
+
+  // Función para agregar nominados a la semana
+  const addNomineesToWeek = async () => {
+    if (!selectedNominees.length) {
+      showToast('warning', 'Debes seleccionar al menos un candidato');
+      return;
+    }
+
+    try {
+      setSubmittingNominees(true);
+      setError(null);
+
+      // Usar la semana seleccionada o buscar una activa
+      const weekToUse = selectedWeek && weeks.find(w => w._id === selectedWeek)
+        ? weeks.find(w => w._id === selectedWeek)
+        : weeks.find(w => w.status === 'voting' || w.status === 'active');
+      
+      if (!weekToUse) {
+        showToast('error', 'No hay una semana seleccionada o activa para agregar nominados');
+        return;
+      }
+
+      // Agregar cada candidato seleccionado como nominado
+      for (const candidateId of selectedNominees) {
+        const response = await fetch('/api/weeks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'addNominee',
+            weekId: weekToUse._id,
+            candidateId,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al agregar nominado');
+        }
+      }
+
+      // Recargar semanas para mostrar los cambios
+      await loadWeeks(selectedSeason);
+      setShowNomineesModal(false);
+      setSelectedNominees([]);
+      showToast('success', `${selectedNominees.length} candidato(s) agregado(s) como nominado(s)`);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error agregando nominados:', err);
+    } finally {
+      setSubmittingNominees(false);
+    }
+  };
+
+  // Función para remover nominado de una semana
+  const removeNominee = async (weekId: string, candidateId: string) => {
+    try {
+      setError(null);
+      const response = await fetch('/api/weeks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'removeNominee',
+          weekId,
+          candidateId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al remover nominado');
+      }
+
+      await loadWeeks(selectedSeason);
+      showToast('success', 'Nominado removido correctamente');
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error removiendo nominado:', err);
+    }
+  };
+
+  // Función para manejar cambio de temporada
+  const handleSeasonChange = (seasonId: string) => {
+    setSelectedSeason(seasonId);
+    setSelectedWeek(''); // Resetear semana al cambiar temporada
+    saveSelectionsToStorage(seasonId, '');
+  };
+
+  // Función para manejar cambio de semana
+  const handleWeekChange = (weekId: string) => {
+    setSelectedWeek(weekId);
+    saveSelectionsToStorage(selectedSeason, weekId);
+  };
+
+  // Función para resetear nominaciones de la temporada
+  const resetSeasonNominations = async () => {
+    try {
+      setError(null);
+      
+      // Remover todos los nominados de todas las semanas de la temporada
+      for (const week of weeks) {
+        for (const nominee of week.nominees) {
+          await fetch('/api/weeks', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              action: 'removeNominee',
+              weekId: week._id,
+              candidateId: nominee.candidateId._id,
+            }),
+          });
+        }
+      }
+
+      await loadWeeks(selectedSeason);
+      showToast('success', 'Todas las nominaciones han sido reseteadas');
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error reseteando nominaciones:', err);
     }
   };
 
@@ -1727,18 +1901,35 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Selector de Temporada */}
-              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
-                <div className="flex items-center space-x-4">
+              {/* Selectores de Temporada y Semana */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
                   <select
                     value={selectedSeason}
-                    onChange={(e) => setSelectedSeason(e.target.value)}
-                    className="flex-1 bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                    onChange={(e) => handleSeasonChange(e.target.value)}
+                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                   >
                     {seasons.map(season => (
                       <option key={season._id} value={season._id}>
                         {season.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
+                  <select
+                    value={selectedWeek}
+                    onChange={(e) => handleWeekChange(e.target.value)}
+                    disabled={!selectedSeason || weeks.length === 0}
+                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Selecciona una semana</option>
+                    {weeks.map(week => (
+                      <option key={week._id} value={week._id}>
+                        Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
                       </option>
                     ))}
                   </select>
@@ -1993,18 +2184,35 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Selector de Temporada */}
-              <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
-                <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
-                <div className="flex items-center space-x-4">
+              {/* Selectores de Temporada y Semana */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
                   <select
                     value={selectedSeason}
-                    onChange={(e) => setSelectedSeason(e.target.value)}
-                    className="flex-1 bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                    onChange={(e) => handleSeasonChange(e.target.value)}
+                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                   >
                     {seasons.map(season => (
                       <option key={season._id} value={season._id}>
                         {season.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
+                  <select
+                    value={selectedWeek}
+                    onChange={(e) => handleWeekChange(e.target.value)}
+                    disabled={!selectedSeason || weeks.length === 0}
+                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Selecciona una semana</option>
+                    {weeks.map(week => (
+                      <option key={week._id} value={week._id}>
+                        Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
                       </option>
                     ))}
                   </select>
@@ -2230,79 +2438,265 @@ export default function AdminPage() {
           {/* Nominados Tab */}
           {activeTab === 'nominees' && (
             <div className="space-y-6 lg:space-y-8">
+              {/* Error Display */}
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-destructive">⚠️</span>
+                    <span className="text-destructive font-medium">{error}</span>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="ml-auto text-destructive hover:text-destructive/80"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Selectores de Temporada y Semana */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Temporada Seleccionada</h3>
+                  <select
+                    value={selectedSeason}
+                    onChange={(e) => handleSeasonChange(e.target.value)}
+                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                  >
+                    {seasons.map(season => (
+                      <option key={season._id} value={season._id}>
+                        {season.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                  <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Semana Seleccionada</h3>
+                  <select
+                    value={selectedWeek}
+                    onChange={(e) => handleWeekChange(e.target.value)}
+                    disabled={!selectedSeason || weeks.length === 0}
+                    className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Selecciona una semana</option>
+                    {weeks.map(week => (
+                      <option key={week._id} value={week._id}>
+                        Semana {week.weekNumber} - {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
                 <div>
                   <h3 className="text-lg lg:text-xl font-semibold text-foreground">Control de Nominaciones</h3>
-                  <p className="text-muted-foreground text-sm lg:text-base">Gestiona las nominaciones de los candidatos</p>
+                  <p className="text-muted-foreground text-sm lg:text-base">
+                    Gestiona las nominaciones de {seasons.find(s => s._id === selectedSeason)?.name || 'la temporada'}
+                  </p>
                 </div>
-                <button 
-                  onClick={() => handleConfirmAction(
-                    'Resetear Nominaciones',
-                    '¿Estás seguro de que quieres resetear todas las nominaciones de la temporada actual? Esta acción no se puede deshacer.',
-                    () => showToast('success', 'Nominaciones reseteadas correctamente')
-                  )}
-                  className="bg-destructive text-destructive-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <span>🔄</span>
-                  <span>Resetear Nominaciones</span>
-                </button>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={openNomineesModal}
+                    disabled={!selectedSeason || !selectedWeek || seasons.length === 0 || candidates.length === 0}
+                    className="bg-primary text-primary-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span>🎯</span>
+                    <span>Seleccionar Nominados</span>
+                  </button>
+                  <button 
+                    onClick={() => handleConfirmAction(
+                      'Resetear Nominaciones',
+                      '¿Estás seguro de que quieres resetear todas las nominaciones de la temporada actual? Esta acción no se puede deshacer.',
+                      () => resetSeasonNominations()
+                    )}
+                    className="bg-destructive text-destructive-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <span>🔄</span>
+                    <span>Resetear Nominaciones</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                {mockCandidates.map((candidate: any) => (
-                  <div key={candidate.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-semibold text-foreground text-base lg:text-lg">{candidate.name}</h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            candidate.status === 'active'
-                              ? 'bg-green-500/10 text-green-500'
-                              : 'bg-muted text-muted-foreground'
-                          }`}>
-                            {candidate.status === 'active' ? '🟢 Activo' : '⚪ Eliminado'}
-                          </span>
+              {/* Loading State */}
+              {loadingWeeks ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Cargando semanas...</p>
+                  </div>
+                </div>
+              ) : weeks.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">📅</div>
+                  <p className="text-lg font-medium text-foreground mb-2">No hay semanas</p>
+                  <p className="text-muted-foreground">Crea semanas primero para gestionar nominaciones</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {(selectedWeek ? weeks.filter(w => w._id === selectedWeek) : weeks).map((week) => (
+                    <div key={week._id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-lg font-semibold text-foreground">Semana {week.weekNumber}</h4>
+                          <p className="text-muted-foreground text-sm">
+                            {new Date(week.votingStartDate).toLocaleDateString('es-ES')} - {new Date(week.votingEndDate).toLocaleDateString('es-ES')}
+                          </p>
                         </div>
-                        <p className="text-muted-foreground text-sm">
-                          {candidate.profession}
-                        </p>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          week.status === 'voting' || week.status === 'active'
+                            ? 'bg-green-500/10 text-green-500'
+                            : week.status === 'completed'
+                              ? 'bg-muted text-muted-foreground'
+                              : 'bg-blue-500/10 text-blue-500'
+                        }`}>
+                          {week.status === 'voting' || week.status === 'active' ? '🟢 Votando' : week.status === 'completed' ? '✅ Cerrada' : '⏳ Programada'}
+                        </span>
                       </div>
+
+                      {week.nominees.length === 0 ? (
+                        <div className="text-center py-8 bg-muted/20 rounded-lg">
+                          <div className="text-2xl mb-2">🎯</div>
+                          <p className="text-muted-foreground">No hay nominados en esta semana</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {week.nominees.map((nominee) => (
+                            <div key={nominee.candidateId._id} className="bg-muted/30 rounded-lg p-4 flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                {nominee.candidateId.photo && (
+                                  <div className="w-10 h-10 rounded-full overflow-hidden bg-muted/50 flex-shrink-0">
+                                    <img 
+                                      src={nominee.candidateId.photo} 
+                                      alt={nominee.candidateId.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-medium text-foreground">{nominee.candidateId.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Nominado el {new Date(nominee.nominatedAt).toLocaleDateString('es-ES')}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => removeNominee(week._id, nominee.candidateId._id)}
+                                className="text-red-500 hover:text-red-700 transition-colors"
+                                title="Remover nominado"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Modal de Selección de Nominados */}
+              {showNomineesModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-card rounded-xl p-6 max-w-2xl w-full border border-border/40 max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Seleccionar Nominados</h3>
+                    
+                    <div className="mb-4">
+                      <p className="text-muted-foreground text-sm">
+                        Selecciona los candidatos que quieres nominar para la semana seleccionada. 
+                        Solo se muestran candidatos activos de la temporada seleccionada.
+                      </p>
+                      {selectedWeek && (
+                        <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                          <p className="text-sm text-blue-600">
+                            <strong>Semana seleccionada:</strong> {weeks.find(w => w._id === selectedWeek)?.weekNumber}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="bg-muted/30 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-foreground">{candidate.nominated ? 'Nominado' : 'No Nominado'}</div>
-                        <div className="text-xs text-muted-foreground">Nominación</div>
+                    {candidates.filter(c => c.status === 'active').length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="text-2xl mb-2">👥</div>
+                        <p className="text-muted-foreground">No hay candidatos activos para nominar</p>
                       </div>
-                      <div className="bg-muted/30 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-foreground">{candidate.eliminatedWeek ? `Eliminado en Semana ${candidate.eliminatedWeek}` : 'No eliminado'}</div>
-                        <div className="text-xs text-muted-foreground">Eliminado</div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 max-h-96 overflow-y-auto">
+                        {candidates
+                          .filter(c => c.status === 'active')
+                          .map((candidate) => (
+                            <label key={candidate._id} className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={selectedNominees.includes(candidate._id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedNominees(prev => [...prev, candidate._id]);
+                                  } else {
+                                    setSelectedNominees(prev => prev.filter(id => id !== candidate._id));
+                                  }
+                                }}
+                                className="rounded border-border text-primary focus:ring-primary"
+                              />
+                              <div className="flex items-center space-x-3 flex-1">
+                                {candidate.photo && (
+                                  <div className="w-8 h-8 rounded-full overflow-hidden bg-muted/50 flex-shrink-0">
+                                    <img 
+                                      src={candidate.photo} 
+                                      alt={candidate.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-medium text-foreground">{candidate.name}</p>
+                                  {candidate.bio && (
+                                    <p className="text-xs text-muted-foreground line-clamp-1">{candidate.bio}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </label>
+                          ))}
                       </div>
-                    </div>
+                    )}
 
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-muted text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/80 hover:text-foreground transition-colors">
-                        Editar Nominación
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          setShowNomineesModal(false);
+                          setSelectedNominees([]);
+                        }}
+                        disabled={submittingNominees}
+                        className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
+                      >
+                        Cancelar
                       </button>
-                      {candidate.status === 'active' && !candidate.nominated && (
-                        <button className="flex-1 bg-primary/10 text-primary py-2 px-3 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
-                          Nominar
-                        </button>
-                      )}
-                      {candidate.status === 'active' && candidate.nominated && (
-                        <button className="flex-1 bg-destructive/10 text-destructive py-2 px-3 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors">
-                          Desnominar
-                        </button>
-                      )}
-                      {candidate.status === 'active' && candidate.nominated && (
-                        <button className="flex-1 bg-muted/20 text-muted-foreground py-2 px-3 rounded-lg text-sm font-medium hover:bg-muted/40 transition-colors">
-                          Eliminar Nominación
-                        </button>
-                      )}
+                      <button
+                        onClick={addNomineesToWeek}
+                        disabled={submittingNominees || selectedNominees.length === 0}
+                        className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                      >
+                        {submittingNominees ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Agregando...</span>
+                          </>
+                        ) : (
+                          <span>Agregar {selectedNominees.length} Nominado(s)</span>
+                        )}
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
