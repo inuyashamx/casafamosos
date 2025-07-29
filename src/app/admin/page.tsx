@@ -105,6 +105,9 @@ export default function AdminPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState({ title: '', message: '', onConfirm: () => {} });
   
+  // Estados para notificaciones toast
+  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
+  
   // Estados para formularios
   const [showSeasonForm, setShowSeasonForm] = useState(false);
   const [showCandidateForm, setShowCandidateForm] = useState(false);
@@ -203,6 +206,13 @@ export default function AdminPage() {
     }
   }, [selectedSeason, seasons]);
 
+  // Establecer la primera temporada como seleccionada cuando se carguen
+  useEffect(() => {
+    if (seasons.length > 0 && !selectedSeason) {
+      setSelectedSeason(seasons[0]._id);
+    }
+  }, [seasons, selectedSeason]);
+
   // Función para cargar temporadas
   const loadSeasons = async () => {
     try {
@@ -278,6 +288,7 @@ export default function AdminPage() {
         endDate: '',
         defaultDailyPoints: 60,
       });
+      showToast('success', 'Temporada creada correctamente');
     } catch (err: any) {
       setError(err.message);
       console.error('Error creando temporada:', err);
@@ -307,6 +318,7 @@ export default function AdminPage() {
       }
 
       await loadSeasons(); // Recargar para actualizar estados
+      showToast('success', 'Temporada activada correctamente');
     } catch (err: any) {
       setError(err.message);
       console.error('Error activando temporada:', err);
@@ -334,6 +346,7 @@ export default function AdminPage() {
       }
 
       await loadSeasons(); // Recargar para actualizar estados
+      showToast('success', 'Temporada completada correctamente');
     } catch (err: any) {
       setError(err.message);
       console.error('Error completando temporada:', err);
@@ -382,6 +395,7 @@ export default function AdminPage() {
         endDate: '',
         defaultDailyPoints: 60,
       });
+      showToast('success', 'Temporada actualizada correctamente');
     } catch (err: any) {
       setError(err.message);
       console.error('Error actualizando temporada:', err);
@@ -477,9 +491,9 @@ export default function AdminPage() {
       }
 
       const result = await response.json();
-      alert(result.message);
+      showToast('success', result.message);
       // Recargar la página para actualizar la sesión
-      window.location.reload();
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
       setError(err.message);
       console.error('Error convirtiendo en admin:', err);
@@ -520,6 +534,17 @@ export default function AdminPage() {
       
       const nextWeekNumber = getNextWeekNumber(selectedSeason);
       
+      // Calcular automáticamente las fechas de inicio y fin basándose en las fechas de votación
+      const votingStartDate = new Date(weekForm.votingStartDate);
+      const votingEndDate = new Date(weekForm.votingEndDate);
+      
+      // La semana comienza 2 días antes del inicio de votación y termina 1 día después del fin de votación
+      const startDate = new Date(votingStartDate);
+      startDate.setDate(startDate.getDate() - 2);
+      
+      const endDate = new Date(votingEndDate);
+      endDate.setDate(endDate.getDate() + 1);
+      
       const response = await fetch('/api/weeks', {
         method: 'POST',
         headers: {
@@ -528,6 +553,8 @@ export default function AdminPage() {
         body: JSON.stringify({
           seasonId: selectedSeason,
           weekNumber: nextWeekNumber,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
           votingStartDate: weekForm.votingStartDate,
           votingEndDate: weekForm.votingEndDate,
         }),
@@ -546,6 +573,7 @@ export default function AdminPage() {
         votingStartDate: '',
         votingEndDate: '',
       });
+      showToast('success', 'Semana creada correctamente');
     } catch (err: any) {
       setError(err.message);
       console.error('Error creando semana:', err);
@@ -562,6 +590,17 @@ export default function AdminPage() {
       setSubmittingWeek(true);
       setError(null);
       
+      // Calcular automáticamente las fechas de inicio y fin basándose en las fechas de votación
+      const votingStartDate = new Date(weekForm.votingStartDate);
+      const votingEndDate = new Date(weekForm.votingEndDate);
+      
+      // La semana comienza 2 días antes del inicio de votación y termina 1 día después del fin de votación
+      const startDate = new Date(votingStartDate);
+      startDate.setDate(startDate.getDate() - 2);
+      
+      const endDate = new Date(votingEndDate);
+      endDate.setDate(endDate.getDate() + 1);
+      
       const response = await fetch('/api/weeks', {
         method: 'PUT',
         headers: {
@@ -569,6 +608,8 @@ export default function AdminPage() {
         },
         body: JSON.stringify({
           weekId: editingWeek._id,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
           votingStartDate: weekForm.votingStartDate,
           votingEndDate: weekForm.votingEndDate,
         }),
@@ -589,6 +630,7 @@ export default function AdminPage() {
         votingStartDate: '',
         votingEndDate: '',
       });
+      showToast('success', 'Semana actualizada correctamente');
     } catch (err: any) {
       setError(err.message);
       console.error('Error actualizando semana:', err);
@@ -603,8 +645,8 @@ export default function AdminPage() {
     setIsWeekEditMode(true);
     setWeekForm({
       weekNumber: week.weekNumber,
-      votingStartDate: week.votingStartDate.split('T')[0],
-      votingEndDate: week.votingEndDate.split('T')[0],
+      votingStartDate: week.votingStartDate.slice(0, 16), // Formato datetime-local
+      votingEndDate: week.votingEndDate.slice(0, 16), // Formato datetime-local
     });
     setShowWeekForm(true);
   };
@@ -630,9 +672,38 @@ export default function AdminPage() {
       }
 
       await loadWeeks(selectedSeason);
+      showToast('success', 'Semana cerrada correctamente');
     } catch (err: any) {
       setError(err.message);
       console.error('Error cerrando semana:', err);
+    }
+  };
+
+  // Función para abrir semana
+  const openWeek = async (weekId: string) => {
+    try {
+      setError(null);
+      const response = await fetch('/api/weeks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'startVoting',
+          weekId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al abrir semana');
+      }
+
+      await loadWeeks(selectedSeason);
+      showToast('success', 'Semana abierta correctamente');
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error abriendo semana:', err);
     }
   };
 
@@ -649,11 +720,22 @@ export default function AdminPage() {
         throw new Error(errorData.error || 'Error al eliminar semana');
       }
 
+      const result = await response.json();
       setWeeks(prev => prev.filter(w => w._id !== weekId));
+      
+      // Mostrar mensaje de éxito
+      showToast('success', result.message || 'Semana eliminada correctamente');
     } catch (err: any) {
       setError(err.message);
       console.error('Error eliminando semana:', err);
     }
+  };
+
+  // Función para verificar si una semana puede ser abierta
+  const canOpenWeek = (week: Week) => {
+    const now = new Date();
+    const votingEndDate = new Date(week.votingEndDate);
+    return votingEndDate > now;
   };
 
   // Función para manejar envío de formulario de semana
@@ -717,8 +799,40 @@ export default function AdminPage() {
     setShowConfirmModal(false);
   };
 
+  // Función para mostrar notificaciones toast
+  const showToast = (type: 'success' | 'error' | 'warning', message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000); // Auto-hide después de 4 segundos
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Toast Notifications */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right-2">
+          <div className={`rounded-lg p-4 shadow-lg border-l-4 ${
+            toast.type === 'success' 
+              ? 'bg-green-50 border-green-500 text-green-800' 
+              : toast.type === 'error'
+                ? 'bg-red-50 border-red-500 text-red-800'
+                : 'bg-yellow-50 border-yellow-500 text-yellow-800'
+          }`}>
+            <div className="flex items-center space-x-2">
+              <span className="text-lg">
+                {toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : '⚠️'}
+              </span>
+              <span className="font-medium">{toast.message}</span>
+              <button 
+                onClick={() => setToast(null)}
+                className="ml-2 text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Confirmación */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1002,7 +1116,7 @@ export default function AdminPage() {
                       onClick={() => handleConfirmAction(
                         'Resetear Votos Semanales',
                         '¿Estás seguro de que quieres resetear todos los votos de la semana actual? Esta acción no se puede deshacer.',
-                        () => alert('Votos reseteados')
+                        () => showToast('success', 'Votos reseteados correctamente')
                       )}
                       className="w-full flex items-center justify-between bg-destructive text-destructive-foreground p-3 lg:p-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors group">
                       <div className="flex items-center space-x-2 lg:space-x-3">
@@ -1399,9 +1513,6 @@ export default function AdminPage() {
                       </option>
                     ))}
                   </select>
-                  <span className="text-sm text-muted-foreground">
-                    {seasons.find(s => s._id === selectedSeason)?.name || 'Selecciona una temporada'}
-                  </span>
                 </div>
               </div>
 
@@ -1490,10 +1601,39 @@ export default function AdminPage() {
                             Cerrar
                           </button>
                         )}
+                        {week.status === 'completed' && canOpenWeek(week) && (
+                          <button 
+                            onClick={() => handleConfirmAction(
+                              'Abrir Semana',
+                              `¿Estás seguro de que quieres abrir la semana ${week.weekNumber} para votación? Esta acción cerrará cualquier otra semana activa.`,
+                              () => openWeek(week._id)
+                            )}
+                            className="flex-1 bg-green-500/10 text-green-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-500/20 transition-colors"
+                          >
+                            Abrir
+                          </button>
+                        )}
+                        {week.status === 'completed' && !canOpenWeek(week) && (
+                          <button 
+                            disabled
+                            className="flex-1 bg-gray-500/10 text-gray-500 py-2 px-3 rounded-lg text-sm font-medium cursor-not-allowed"
+                            title="No se puede abrir una semana cuya fecha de votación ya pasó"
+                          >
+                            Fecha Pasada
+                          </button>
+                        )}
                       </div>
                       
                       <div className="flex space-x-2 mt-2">
-                        {week.status !== 'voting' && week.status !== 'completed' && (
+                        {week.isVotingActive ? (
+                          <button 
+                            disabled
+                            className="flex-1 bg-gray-500/10 text-gray-500 py-2 px-3 rounded-lg text-sm font-medium cursor-not-allowed"
+                            title="No se puede eliminar una semana con votación activa"
+                          >
+                            🚫 No se puede eliminar
+                          </button>
+                        ) : (
                           <button 
                             onClick={() => handleConfirmAction(
                               'Eliminar Semana',
@@ -1524,17 +1664,12 @@ export default function AdminPage() {
                         <label className="block text-sm font-medium text-muted-foreground mb-2">
                           Número de Semana
                         </label>
-                        <input
-                          type="number"
-                          value={weekForm.weekNumber}
-                          disabled={isWeekEditMode}
-                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
-                        />
-                        {!isWeekEditMode && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Se asignará automáticamente el siguiente número disponible
-                          </p>
-                        )}
+                        <div className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2 text-foreground">
+                          {isWeekEditMode ? `Semana ${weekForm.weekNumber}` : `Semana ${getNextWeekNumber(selectedSeason)}`}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Se asigna automáticamente el siguiente número disponible
+                        </p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -1628,7 +1763,7 @@ export default function AdminPage() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                {candidates.map((candidate) => (
+                {mockCandidates.map((candidate: any) => (
                   <div key={candidate.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
@@ -1739,7 +1874,7 @@ export default function AdminPage() {
                             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                           >
                             <option value="">No eliminado</option>
-                            {weeks.map(w => (
+                            {mockWeeks.map((w: any) => (
                               <option key={w.id} value={w.id}>Semana {w.number}</option>
                             ))}
                           </select>
@@ -1782,7 +1917,7 @@ export default function AdminPage() {
                   onClick={() => handleConfirmAction(
                     'Resetear Nominaciones',
                     '¿Estás seguro de que quieres resetear todas las nominaciones de la temporada actual? Esta acción no se puede deshacer.',
-                    () => alert('Nominaciones reseteadas')
+                    () => showToast('success', 'Nominaciones reseteadas correctamente')
                   )}
                   className="bg-destructive text-destructive-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2"
                 >
@@ -1792,7 +1927,7 @@ export default function AdminPage() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                {candidates.map((candidate) => (
+                {mockCandidates.map((candidate: any) => (
                   <div key={candidate.id} className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
@@ -1861,7 +1996,7 @@ export default function AdminPage() {
                   onClick={() => handleConfirmAction(
                     'Resetear Votaciones',
                     '¿Estás seguro de que quieres resetear todas las votaciones de la temporada? Esta acción no se puede deshacer.',
-                    () => alert('Votaciones reseteadas')
+                    () => showToast('success', 'Votaciones reseteadas correctamente')
                   )}
                   className="bg-destructive text-destructive-foreground px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center space-x-2"
                 >
@@ -1924,7 +2059,7 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-card divide-y divide-border">
-                        {weeks.map((week) => (
+                        {mockWeeks.map((week: any) => (
                           <tr key={week.id}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                               Semana {week.number}
@@ -1943,7 +2078,7 @@ export default function AdminPage() {
                                 onClick={() => handleConfirmAction(
                                   'Cerrar Semana',
                                   `¿Estás seguro de que quieres cerrar la semana ${week.number}? Esta acción no se puede deshacer.`,
-                                  () => alert(`Semana ${week.number} cerrada`)
+                                  () => showToast('success', `Semana ${week.number} cerrada correctamente`)
                                 )}
                                 className="text-red-500 hover:text-red-700 mr-2"
                               >
@@ -1953,7 +2088,7 @@ export default function AdminPage() {
                                 onClick={() => handleConfirmAction(
                                   'Eliminar Semana',
                                   `¿Estás seguro de que quieres eliminar la semana ${week.number}? Esta acción no se puede deshacer.`,
-                                  () => alert(`Semana ${week.number} eliminada`)
+                                  () => showToast('success', `Semana ${week.number} eliminada correctamente`)
                                 )}
                                 className="text-red-500 hover:text-red-700"
                               >
