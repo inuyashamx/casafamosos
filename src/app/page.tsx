@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Chat from '@/components/Chat';
 
@@ -34,6 +35,7 @@ interface VotingData {
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -140,7 +142,7 @@ export default function Home() {
       setShowLoginModal(true);
     } else {
       // Redirigir a página de votación
-      window.location.href = '/vote';
+      router.push('/vote');
     }
   };
 

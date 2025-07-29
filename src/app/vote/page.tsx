@@ -2,207 +2,381 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
-// Mock data - esto vendrá de la API
-const mockNominees = [
-  { id: '1', name: 'Ana García', photo: '/api/placeholder/150/150', currentVotes: 1250 },
-  { id: '2', name: 'Carlos López', photo: '/api/placeholder/150/150', currentVotes: 980 },
-  { id: '3', name: 'María Rodríguez', photo: '/api/placeholder/150/150', currentVotes: 750 },
-  { id: '4', name: 'Diego Martín', photo: '/api/placeholder/150/150', currentVotes: 570 },
-];
+interface Nominee {
+  id: string;
+  name: string;
+  photo: string;
+  votes: number;
+  percentage: number;
+}
+
+interface WeekData {
+  id: string;
+  weekNumber: number;
+  name: string;
+  votingEndDate: string;
+  isActive: boolean;
+}
+
+interface SeasonData {
+  id: string;
+  name: string;
+  year: number;
+}
+
+interface VotingData {
+  nominees: Nominee[];
+  week: WeekData;
+  season: SeasonData;
+}
+
+interface UserVotes {
+  [candidateId: string]: number;
+}
 
 export default function VotePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [availablePoints, setAvailablePoints] = useState(60);
-  const [votes, setVotes] = useState<{ [key: string]: number }>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [votingData, setVotingData] = useState<VotingData | null>(null);
+  const [userPoints, setUserPoints] = useState(0);
+  const [userVotes, setUserVotes] = useState<UserVotes>({});
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Redirigir si no está logueado
+  // Verificar autenticación
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (status === 'loading') return;
+    
+    if (!session) {
       router.push('/');
+      return;
     }
-  }, [status, router]);
+  }, [session, status, router]);
 
-  const usedPoints = Object.values(votes).reduce((sum, points) => sum + points, 0);
-  const remainingPoints = availablePoints - usedPoints;
+  // Cargar datos de votación
+  useEffect(() => {
+    const fetchVotingData = async () => {
+      try {
+        const response = await fetch('/api/public/vote');
+        if (response.ok) {
+          const data = await response.json();
+          setVotingData(data);
+          
+          // Inicializar votos del usuario en 0
+          const initialVotes: UserVotes = {};
+          data.nominees.forEach((nominee: Nominee) => {
+            initialVotes[nominee.id] = 0;
+          });
+          setUserVotes(initialVotes);
+        } else {
+          const errorData = await response.json();
+          setError(errorData.message || 'Error al cargar datos');
+        }
+      } catch (err) {
+        console.error('Error fetching voting data:', err);
+        setError('Error de conexión');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleVoteChange = (candidateId: string, points: number) => {
-    const newVotes = { ...votes };
-    const currentVote = newVotes[candidateId] || 0;
-    const difference = points - currentVote;
+    const fetchUserPoints = async () => {
+      if (!session) return;
+      
+      try {
+        const response = await fetch('/api/vote?action=points');
+        if (response.ok) {
+          const data = await response.json();
+          setUserPoints(data.availablePoints);
+        }
+      } catch (err) {
+        console.error('Error fetching user points:', err);
+      }
+    };
 
-    // Verificar que no exceda los puntos disponibles
-    if (difference > remainingPoints) {
-      points = currentVote + remainingPoints;
+    fetchVotingData();
+    fetchUserPoints();
+  }, [session]);
+
+  // Calcular puntos usados
+  const usedPoints = Object.values(userVotes).reduce((sum, points) => sum + points, 0);
+  const remainingPoints = userPoints - usedPoints;
+
+  // Función para actualizar votos
+  const updateVote = (candidateId: string, points: number) => {
+    const newPoints = Math.max(0, points);
+    const currentUsed = usedPoints - userVotes[candidateId];
+    const newUsed = currentUsed + newPoints;
+    
+    if (newUsed <= userPoints) {
+      setUserVotes(prev => ({
+        ...prev,
+        [candidateId]: newPoints
+      }));
     }
-
-    if (points <= 0) {
-      delete newVotes[candidateId];
-    } else {
-      newVotes[candidateId] = points;
-    }
-
-    setVotes(newVotes);
   };
 
-  const handleSubmitVotes = async () => {
+  // Función para agregar puntos rápidamente
+  const addQuickPoints = (candidateId: string, points: number) => {
+    const currentPoints = userVotes[candidateId] || 0;
+    const newPoints = currentPoints + points;
+    updateVote(candidateId, newPoints);
+  };
+
+  // Función para enviar votos
+  const submitVotes = async () => {
     if (usedPoints === 0) {
-      alert('Debes asignar al menos 1 punto para votar');
+      setError('Debes asignar al menos un punto para poder votar');
       return;
     }
 
-    setIsSubmitting(true);
-    
+    if (usedPoints > userPoints) {
+      setError('No tienes suficientes puntos disponibles');
+      return;
+    }
+
     try {
-      // Aquí iría la llamada a la API
-      console.log('Enviando votos:', votes);
-      
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      alert('¡Votos enviados exitosamente!');
-      router.push('/');
-    } catch (error) {
-      alert('Error al enviar votos. Intenta de nuevo.');
+      setSubmitting(true);
+      setError(null);
+
+      const votes = Object.entries(userVotes)
+        .filter(([_, points]) => points > 0)
+        .map(([candidateId, points]) => ({
+          candidateId,
+          points
+        }));
+
+      const response = await fetch('/api/vote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'submitVotes',
+          weekId: votingData?.week?.id,
+          votes
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al enviar votos');
+      }
+
+      // Redirigir a la página principal con mensaje de éxito
+      router.push('/?message=voted');
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error submitting votes:', err);
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-primary">Cargando...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
       </div>
     );
   }
 
   if (!session) {
-    return null;
+    return null; // Será redirigido
+  }
+
+  if (error && !votingData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Error al cargar datos</h3>
+          <p className="text-muted-foreground">{error}</p>
+          <button
+            onClick={() => router.push('/')}
+            className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!votingData?.week?.isActive) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">📅</div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No hay votación activa</h3>
+          <p className="text-muted-foreground">No hay ninguna semana de votación activa en este momento.</p>
+          <button
+            onClick={() => router.push('/')}
+            className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <main className="min-h-screen bg-background pb-24">
+    <main className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border/40">
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-primary/20">
         <div className="px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            ← Volver
-          </button>
-          <span className="font-bold text-foreground">Votar</span>
-          <div className="text-sm text-primary font-medium">
-            {remainingPoints} puntos
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => router.push('/')}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Volver
+            </button>
+            <h1 className="text-lg font-bold text-foreground">Votar</h1>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {userPoints} puntos
           </div>
         </div>
       </header>
 
-      {/* Points Summary */}
-      <section className="px-4 py-4">
-        <div className="bg-card/50 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-primary mb-1">{remainingPoints}</div>
-          <div className="text-sm text-muted-foreground">puntos disponibles</div>
-          {usedPoints > 0 && (
-            <div className="text-xs text-muted-foreground mt-1">
-              Has usado {usedPoints} de {availablePoints} puntos
+      <div className="px-4 py-6 space-y-6">
+        {/* Error Display */}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-destructive">⚠️</span>
+              <span className="text-destructive font-medium">{error}</span>
+              <button 
+                onClick={() => setError(null)}
+                className="ml-auto text-destructive hover:text-destructive/80"
+              >
+                ✕
+              </button>
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        )}
 
-      {/* Voting Interface */}
-      <section className="px-4 space-y-4">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          Distribuye tus puntos
-        </h2>
-        
-        {mockNominees.map((nominee) => {
-          const currentVote = votes[nominee.id] || 0;
-          
-          return (
-            <div key={nominee.id} className="bg-card rounded-lg p-4 border border-border/20">
+        {/* Available Points */}
+        <div className="bg-card rounded-xl p-4 border border-border/20">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-primary mb-1">{remainingPoints}</div>
+            <div className="text-sm text-muted-foreground">puntos disponibles</div>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-foreground mb-2">Distribuye tus puntos</h2>
+          <p className="text-muted-foreground text-sm">
+            Asigna tus {userPoints} puntos entre los candidatos nominados
+          </p>
+        </div>
+
+        {/* Candidates */}
+        <div className="space-y-4">
+          {votingData?.nominees.map((nominee) => (
+            <div key={nominee.id} className="bg-card rounded-xl p-4 border border-border/20">
               <div className="flex items-center space-x-4 mb-4">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                  <span className="text-2xl">👤</span>
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center overflow-hidden">
+                  {nominee.photo ? (
+                    <Image
+                      src={nominee.photo}
+                      alt={nominee.name}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-muted-foreground text-lg">👤</span>
+                  )}
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground">{nominee.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {nominee.currentVotes.toLocaleString()} votos actuales
+                    {nominee.votes.toLocaleString()} votos actuales
                   </p>
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold text-primary">
-                    {currentVote} pts
+                    {userVotes[nominee.id] || 0} pts
                   </div>
                 </div>
               </div>
 
               {/* Vote Controls */}
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center justify-center space-x-2 mb-3">
                 <button
-                  onClick={() => handleVoteChange(nominee.id, Math.max(0, currentVote - 1))}
-                  disabled={currentVote <= 0}
-                  className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary/80 transition-colors"
+                  onClick={() => updateVote(nominee.id, (userVotes[nominee.id] || 0) - 1)}
+                  disabled={!userVotes[nominee.id] || userVotes[nominee.id] === 0}
+                  className="w-10 h-10 bg-muted text-muted-foreground rounded-lg flex items-center justify-center hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   -
                 </button>
-                
-                <input
-                  type="number"
-                  min="0"
-                  max={currentVote + remainingPoints}
-                  value={currentVote}
-                  onChange={(e) => handleVoteChange(nominee.id, parseInt(e.target.value) || 0)}
-                  className="flex-1 bg-input border border-border rounded-lg px-3 py-2 text-center text-foreground focus:border-primary focus:outline-none"
-                />
-                
+                <div className="w-16 h-10 bg-input border border-border rounded-lg flex items-center justify-center">
+                  <span className="font-medium text-foreground">
+                    {userVotes[nominee.id] || 0}
+                  </span>
+                </div>
                 <button
-                  onClick={() => handleVoteChange(nominee.id, currentVote + 1)}
+                  onClick={() => updateVote(nominee.id, (userVotes[nominee.id] || 0) + 1)}
                   disabled={remainingPoints <= 0}
-                  className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary/80 transition-colors"
+                  className="w-10 h-10 bg-primary text-primary-foreground rounded-lg flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
                 </button>
               </div>
 
-              {/* Quick Vote Buttons */}
-              <div className="flex space-x-2 mt-3">
-                {[5, 10, 20].map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => handleVoteChange(nominee.id, Math.min(currentVote + amount, currentVote + remainingPoints))}
-                    disabled={remainingPoints < amount}
-                    className="flex-1 bg-muted/30 text-muted-foreground py-1 px-2 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted/50 transition-colors"
-                  >
-                    +{amount}
-                  </button>
-                ))}
+              {/* Quick Add Buttons */}
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => addQuickPoints(nominee.id, 5)}
+                  disabled={remainingPoints < 5}
+                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  +5
+                </button>
+                <button
+                  onClick={() => addQuickPoints(nominee.id, 10)}
+                  disabled={remainingPoints < 10}
+                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  +10
+                </button>
+                <button
+                  onClick={() => addQuickPoints(nominee.id, 20)}
+                  disabled={remainingPoints < 20}
+                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  +20
+                </button>
               </div>
             </div>
-          );
-        })}
-      </section>
+          ))}
+        </div>
 
-      {/* Submit Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur border-t border-border/40 p-4">
-        <button
-          onClick={handleSubmitVotes}
-          disabled={usedPoints === 0 || isSubmitting}
-          className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-4 rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed glow hover:scale-[1.02] transition-transform"
-        >
-          {isSubmitting ? 'Enviando...' : `Enviar ${usedPoints} votos`}
-        </button>
-        
-        {usedPoints === 0 && (
-          <p className="text-center text-muted-foreground text-sm mt-2">
-            Asigna puntos para poder votar
-          </p>
-        )}
+        {/* Submit Button */}
+        <div className="space-y-3">
+          <button
+            onClick={submitVotes}
+            disabled={submitting || usedPoints === 0}
+            className="w-full bg-primary text-primary-foreground py-4 px-6 rounded-xl font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? 'Enviando...' : `Enviar ${usedPoints} votos`}
+          </button>
+          {usedPoints === 0 && (
+            <p className="text-center text-sm text-muted-foreground">
+              Asigna puntos para poder votar
+            </p>
+          )}
+        </div>
       </div>
     </main>
   );
