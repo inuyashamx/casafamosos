@@ -180,11 +180,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar que todos los candidatos estén nominados
-    const nomineeIds = activeWeek.nominees.map((n: any) => n.candidateId.toString());
+    const nomineeIds = activeWeek.nominees.map((n: any) => n.candidateId._id.toString());
+    console.log('Debug - nomineeIds:', nomineeIds);
+    console.log('Debug - votes:', votes);
+    console.log('Debug - activeWeek.nominees:', activeWeek.nominees);
+    
     for (const vote of votes) {
+      console.log('Debug - checking vote:', vote.candidateId, 'in nominees:', nomineeIds.includes(vote.candidateId));
       if (!nomineeIds.includes(vote.candidateId)) {
         return NextResponse.json({ 
-          error: 'Uno o más candidatos no están nominados esta semana' 
+          error: 'Uno o más candidatos no están nominados esta semana',
+          debug: {
+            nomineeIds,
+            voteCandidateId: vote.candidateId,
+            nominees: activeWeek.nominees
+          }
         }, { status: 400 });
       }
     }
