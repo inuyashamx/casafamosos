@@ -297,6 +297,7 @@ export async function POST(request: NextRequest) {
     // Los puntos se calculan dinámicamente basado en el último voto, 
     // pero podemos actualizar lastPointsReset para tracking
     user.lastPointsReset = new Date();
+    user.totalVotes += totalPointsToUse; // Incrementar totalVotes con los puntos usados
     await user.save();
 
     // Actualizar estadísticas de la semana
