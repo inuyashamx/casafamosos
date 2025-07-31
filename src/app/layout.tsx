@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Providers from "@/components/Providers";
+import Footer from "@/components/Footer";
 import "./globals.css";
 import Script from "next/script";
 
@@ -52,6 +53,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           {children}
+          <Footer />
         </Providers>
       </body>
     </html>
