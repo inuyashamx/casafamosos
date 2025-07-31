@@ -1785,7 +1785,7 @@ export default function AdminPage() {
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div className="mb-2 lg:mb-0">
                       <p className="text-muted-foreground text-xs lg:text-sm font-medium">Usuarios Totales</p>
-                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{stats.totalUsers.toLocaleString()}</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{(stats.totalUsers || 0).toLocaleString()}</p>
                     </div>
                     <div className="w-8 h-8 lg:w-12 lg:h-12 bg-blue-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
                       <span className="text-lg lg:text-2xl">👥</span>
@@ -1801,7 +1801,7 @@ export default function AdminPage() {
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div className="mb-2 lg:mb-0">
                       <p className="text-muted-foreground text-xs lg:text-sm font-medium">Semana Actual</p>
-                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">Semana {stats.currentWeek}</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">Semana {stats.currentWeek || 0}</p>
                     </div>
                     <div className="w-8 h-8 lg:w-12 lg:h-12 bg-green-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
                       <span className="text-lg lg:text-2xl">📅</span>
@@ -1815,15 +1815,15 @@ export default function AdminPage() {
                 <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div className="mb-2 lg:mb-0">
-                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Candidatos</p>
-                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{stats.totalCandidates}</p>
+                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Nominados</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{stats.totalNominados || 0}</p>
                     </div>
                     <div className="w-8 h-8 lg:w-12 lg:h-12 bg-purple-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
                       <span className="text-lg lg:text-2xl">⭐</span>
                     </div>
                   </div>
                   <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
-                    <span className="text-destructive">{stats.eliminatedCandidates} eliminados</span>
+                    <span className="text-destructive">{stats.eliminatedCandidates || 0} eliminados</span>
                   </div>
                 </div>
 
@@ -1831,7 +1831,7 @@ export default function AdminPage() {
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div className="mb-2 lg:mb-0">
                       <p className="text-muted-foreground text-xs lg:text-sm font-medium">Votos Semanales</p>
-                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{stats.weeklyVotes.toLocaleString()}</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{(stats.weeklyVotes || 0).toLocaleString()}</p>
                     </div>
                     <div className="w-8 h-8 lg:w-12 lg:h-12 bg-orange-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
                       <span className="text-lg lg:text-2xl">🗳️</span>
@@ -1921,14 +1921,14 @@ export default function AdminPage() {
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                         <span className="text-xs lg:text-sm font-medium text-foreground">Semana en Curso</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">Semana {stats.currentWeek}</span>
+                      <span className="text-xs text-muted-foreground">Semana {stats.currentWeek || 0}</span>
                     </div>
                     <div className="flex items-center justify-between p-2 lg:p-3 bg-muted/30 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                         <span className="text-xs lg:text-sm font-medium text-foreground">Participantes Activos</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">{stats.totalCandidates - stats.eliminatedCandidates}</span>
+                      <span className="text-xs text-muted-foreground">{(stats.totalCandidates || 0) - (stats.eliminatedCandidates || 0)}</span>
                     </div>
                   </div>
                 </div>
@@ -2015,26 +2015,26 @@ export default function AdminPage() {
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="bg-muted/30 rounded-lg p-3 text-center">
                             <div className="text-lg font-bold text-foreground">
-                              {stats ? stats.candidates.total : season.stats.totalCandidates}
+                              {stats ? (stats.candidates.total || 0) : (season.stats.totalCandidates || 0)}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               Candidatos
                               {stats && (
                                 <div className="text-xs text-green-500 mt-1">
-                                  {stats.candidates.active} activos, {stats.candidates.eliminated} eliminados
+                                  {stats.candidates.active || 0} activos, {stats.candidates.eliminated || 0} eliminados
                                 </div>
                               )}
                             </div>
                       </div>
                       <div className="bg-muted/30 rounded-lg p-3 text-center">
                             <div className="text-lg font-bold text-foreground">
-                              {stats ? stats.weeks.total : season.stats.totalWeeks}
+                              {stats ? (stats.weeks.total || 0) : (season.stats.totalWeeks || 0)}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               Semanas
                               {stats && (
                                 <div className="text-xs text-blue-500 mt-1">
-                                  {stats.weeks.active} activas, {stats.weeks.completed} completadas
+                                  {stats.weeks.active || 0} activas, {stats.weeks.completed || 0} completadas
                                 </div>
                               )}
                             </div>
@@ -2046,13 +2046,13 @@ export default function AdminPage() {
                           <div className="grid grid-cols-2 gap-3 mb-4">
                             <div className="bg-green-500/10 rounded-lg p-3 text-center">
                               <div className="text-lg font-bold text-green-600">
-                                {stats.votes.totalVotes.toLocaleString()}
+                                {(stats.votes.totalVotes || 0).toLocaleString()}
                               </div>
                               <div className="text-xs text-green-600">Votos Totales</div>
                             </div>
                             <div className="bg-blue-500/10 rounded-lg p-3 text-center">
                               <div className="text-lg font-bold text-blue-600">
-                                {stats.votes.uniqueVoters}
+                                {stats.votes.uniqueVoters || 0}
                               </div>
                               <div className="text-xs text-blue-600">Votantes Únicos</div>
                             </div>
@@ -2596,11 +2596,11 @@ export default function AdminPage() {
 
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="bg-muted/30 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-foreground">{candidate.stats.timesNominated}</div>
+                          <div className="text-lg font-bold text-foreground">{candidate.stats.timesNominated || 0}</div>
                           <div className="text-xs text-muted-foreground">Nominaciones</div>
                       </div>
                       <div className="bg-muted/30 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-foreground">{candidate.stats.totalVotes.toLocaleString()}</div>
+                          <div className="text-lg font-bold text-foreground">{(candidate.stats.totalVotes || 0).toLocaleString()}</div>
                           <div className="text-xs text-muted-foreground">Votos Totales</div>
                       </div>
                     </div>

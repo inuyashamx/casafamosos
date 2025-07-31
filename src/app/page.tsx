@@ -4,6 +4,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Chat from '@/components/Chat';
+import Footer from '@/components/Footer';
 
 interface Nominee {
   id: string;
@@ -806,6 +807,8 @@ export default function Home() {
           </div>
         </div>
       )}
+      
+      <Footer />
     </main>
   );
 }

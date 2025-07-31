@@ -31,7 +31,8 @@ const UserSchema = new mongoose.Schema({
     default: Date.now,
   },
   totalVotes: {
-    type: Number,
+    type: Number,s
+    
     default: 0,
   },
   isAdmin: {

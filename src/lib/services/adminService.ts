@@ -164,6 +164,7 @@ export class AdminService {
       activeUsers,
       totalSeasons,
       activeSeason,
+      activeWeekData,
       totalCandidates,
       eliminatedCandidates,
       currentWeek,
@@ -171,27 +172,27 @@ export class AdminService {
       totalVotes,
       weeklyVotes
     ] = await Promise.all([
-      User.countDocuments({ isActive: true }),
+      User.countDocuments(), // Todos los usuarios registrados
       User.countDocuments({ 
-        isActive: true,
         lastVoteDate: { 
           $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) 
         }
       }),
       Season.countDocuments({}),
       Season.findOne({ isActive: true }).select('name'),
-      Candidate.countDocuments({ ...seasonFilter, isActive: true }),
+      Week.findOne({ ...seasonFilter, isVotingActive: true }).select('nominees'), // Semana activa con nominados
+      Candidate.countDocuments({ ...seasonFilter }), // Total candidatos en la temporada
       Candidate.countDocuments({ ...seasonFilter, 'eliminationInfo.isEliminated': true }),
       Week.findOne({ ...seasonFilter, isVotingActive: true }).select('weekNumber'),
       Week.countDocuments({ ...seasonFilter, isVotingActive: true }),
       Vote.aggregate([
-        { $match: seasonFilter },
+        { $match: { isValid: true } }, // Solo votos válidos
         { $group: { _id: null, total: { $sum: '$points' } } }
       ]),
       Vote.aggregate([
         { 
           $match: { 
-            ...seasonFilter,
+            isValid: true, // Solo votos válidos
             voteDate: { 
               $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) 
             }
@@ -206,7 +207,8 @@ export class AdminService {
       activeUsers,
       totalSeasons,
       activeSeason: activeSeason?.name || '',
-      totalCandidates,
+      totalNominados: activeWeekData?.nominees?.length || 0, // Contar nominados de la semana activa
+      totalCandidates, // Total candidatos en la temporada
       eliminatedCandidates,
       currentWeek: currentWeek?.weekNumber || 0,
       activeWeek: activeWeek > 0,

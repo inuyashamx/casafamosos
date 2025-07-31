@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Providers from "@/components/Providers";
-import "./globals.css";
+import "../globals.css";
 import Script from "next/script";
 
 const inter = Inter({
@@ -10,11 +10,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Casa Famosos",
-  description: "Plataforma de entretenimiento y celebridades",
+  title: "Admin - Casa Famosos",
+  description: "Panel de administración de Casa Famosos",
 };
 
-export default function RootLayout({
+export default function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -56,4 +56,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-}
+} 
