@@ -908,7 +908,7 @@ export default function AdminPage() {
     try {
       setLoadingCandidates(true);
       setError(null);
-      const response = await fetch(`/api/candidates?seasonId=${seasonId}`);
+      const response = await fetch(`/api/candidates?seasonId=${seasonId}&action=withRealStats`);
       if (!response.ok) {
         throw new Error('Error al cargar candidatos');
       }
@@ -2663,10 +2663,10 @@ export default function AdminPage() {
                           <div className="text-lg font-bold text-foreground">{candidate.stats.timesNominated || 0}</div>
                           <div className="text-xs text-muted-foreground">Nominaciones</div>
                       </div>
-                      <div className="bg-muted/30 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-foreground">{(candidate.stats.totalVotes || 0).toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">Votos Totales</div>
-                      </div>
+                                 <div className="bg-muted/30 rounded-lg p-3 text-center">
+               <div className="text-lg font-bold text-foreground">{(candidate.stats.totalVotes || 0).toLocaleString()}</div>
+               <div className="text-xs text-muted-foreground">Puntos Totales</div>
+           </div>
                     </div>
 
                       {candidate.eliminationInfo.isEliminated && (

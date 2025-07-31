@@ -34,6 +34,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(candidates);
       }
 
+      if (action === 'withRealStats') {
+        const candidates = await CandidateService.getCandidatesWithRealStats(seasonId);
+        return NextResponse.json(candidates);
+      }
+
       const candidates = await CandidateService.getCandidatesBySeason(seasonId);
       return NextResponse.json(candidates);
     }

@@ -201,4 +201,58 @@ CandidateSchema.statics.getEliminatedBySeason = function(seasonId: string) {
   }).sort({ 'eliminationInfo.eliminatedWeek': 1 });
 };
 
+// Método para calcular estadísticas reales de un candidato
+CandidateSchema.statics.calculateRealStats = async function(candidateId: string) {
+  const Vote = mongoose.model('Vote');
+  const Week = mongoose.model('Week');
+  
+  const [totalVotes, totalPoints, nominations] = await Promise.all([
+    // Total de votos recibidos (documentos de votos)
+    Vote.countDocuments({ 
+      candidateId: candidateId, 
+      isValid: true 
+    }),
+    
+    // Total de puntos recibidos (suma de puntos de todos los votos)
+    Vote.aggregate([
+      { $match: { candidateId: new mongoose.Types.ObjectId(candidateId), isValid: true } },
+      { $group: { _id: null, totalPoints: { $sum: '$points' } } }
+    ]),
+    
+    // Total de nominaciones
+    Week.countDocuments({
+      'nominees.candidateId._id': candidateId
+    })
+  ]);
+
+  const totalPointsValue = totalPoints.length > 0 ? totalPoints[0].totalPoints : 0;
+  
+  return {
+    totalVotes,
+    totalPoints: totalPointsValue,
+    timesNominated: nominations
+  };
+};
+
+// Método para actualizar estadísticas reales de un candidato
+CandidateSchema.statics.updateRealStats = async function(candidateId: string) {
+  const realStats = await (this as any).calculateRealStats(candidateId);
+  
+  const candidate = await this.findById(candidateId);
+  if (!candidate) {
+    throw new Error('Candidato no encontrado');
+  }
+  
+  // Usar totalPoints para stats.totalVotes (como en los rankings)
+  candidate.stats.totalVotes = realStats.totalPoints;
+  candidate.stats.timesNominated = realStats.timesNominated;
+  
+  // Calcular promedio de votos basado en puntos
+  if (realStats.timesNominated > 0) {
+    candidate.stats.averageVotes = Math.round(realStats.totalPoints / realStats.timesNominated);
+  }
+  
+  return await candidate.save();
+};
+
 export default mongoose.models.Candidate || mongoose.model('Candidate', CandidateSchema); 

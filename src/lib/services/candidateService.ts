@@ -137,4 +137,28 @@ export class CandidateService {
       'eliminationInfo.isEliminated': true 
     }).sort({ 'eliminationInfo.eliminatedWeek': 1 });
   }
+
+  static async updateCandidateStats(candidateId: string) {
+    await dbConnect();
+    return await (Candidate as any).updateRealStats(candidateId);
+  }
+
+  static async getCandidatesWithRealStats(seasonId: string) {
+    await dbConnect();
+    const candidates = await Candidate.find({ seasonId }).sort({ createdAt: 1 });
+    
+    // Actualizar estadísticas reales para cada candidato
+    const updatedCandidates = await Promise.all(
+      candidates.map(async (candidate) => {
+        try {
+          return await (Candidate as any).updateRealStats(candidate._id);
+        } catch (error) {
+          console.error(`Error actualizando stats para candidato ${candidate._id}:`, error);
+          return candidate; // Retornar candidato original si hay error
+        }
+      })
+    );
+    
+    return updatedCandidates;
+  }
 } 
