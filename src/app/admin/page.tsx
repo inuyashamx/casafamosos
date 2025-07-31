@@ -1830,16 +1830,45 @@ export default function AdminPage() {
                 <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div className="mb-2 lg:mb-0">
-                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Votos Semanales</p>
-                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{(stats.weeklyVotes || 0).toLocaleString()}</p>
+                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Votos Semana Actual</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{(stats.currentWeekVotes || 0).toLocaleString()}</p>
                     </div>
                     <div className="w-8 h-8 lg:w-12 lg:h-12 bg-orange-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
                       <span className="text-lg lg:text-2xl">🗳️</span>
                     </div>
                   </div>
                   <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
-                    <span className="text-green-500">↗ +15%</span>
-                    <span className="text-muted-foreground ml-2 hidden lg:inline">vs semana anterior</span>
+                    <span className="text-blue-500">Semana {stats.currentWeek || 0}</span>
+                  </div>
+                </div>
+
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div className="mb-2 lg:mb-0">
+                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Votos Totales</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{(stats.totalVotes || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 bg-blue-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
+                      <span className="text-lg lg:text-2xl">📊</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
+                    <span className="text-green-500">Toda la temporada</span>
+                  </div>
+                </div>
+
+                <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40 hover:shadow-lg transition-all duration-200">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div className="mb-2 lg:mb-0">
+                      <p className="text-muted-foreground text-xs lg:text-sm font-medium">Total Candidatos</p>
+                      <p className="text-xl lg:text-3xl font-bold text-foreground mt-1 lg:mt-2">{(stats.totalCandidates || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 bg-green-500/10 rounded-lg flex items-center justify-center self-end lg:self-auto">
+                      <span className="text-lg lg:text-2xl">👥</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 lg:mt-4 flex items-center text-xs lg:text-sm">
+                    <span className="text-muted-foreground">En la temporada</span>
                   </div>
                 </div>
               </div>

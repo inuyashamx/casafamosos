@@ -169,8 +169,7 @@ export class AdminService {
       eliminatedCandidates,
       currentWeek,
       activeWeek,
-      totalVotes,
-      weeklyVotes
+      totalVotes
     ] = await Promise.all([
       User.countDocuments(), // Todos los usuarios registrados
       User.countDocuments({ 
@@ -188,19 +187,17 @@ export class AdminService {
       Vote.aggregate([
         { $match: { isValid: true } }, // Solo votos válidos
         { $group: { _id: null, total: { $sum: '$points' } } }
-      ]),
-      Vote.aggregate([
-        { 
-          $match: { 
-            isValid: true, // Solo votos válidos
-            voteDate: { 
-              $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) 
-            }
-          }
-        },
-        { $group: { _id: null, total: { $sum: '$points' } } }
       ])
     ]);
+
+    // Votos de la semana actual - calculado por separado
+    let currentWeekVotes = [{ total: 0 }];
+    if (activeWeekData) {
+      currentWeekVotes = await Vote.aggregate([
+        { $match: { weekId: activeWeekData._id, isValid: true } },
+        { $group: { _id: null, total: { $sum: '$points' } } }
+      ]);
+    }
 
     return {
       totalUsers,
@@ -212,8 +209,8 @@ export class AdminService {
       eliminatedCandidates,
       currentWeek: currentWeek?.weekNumber || 0,
       activeWeek: activeWeek > 0,
-      totalVotes: totalVotes[0]?.total || 0,
-      weeklyVotes: weeklyVotes[0]?.total || 0,
+      totalVotes: totalVotes[0]?.total || 0, // Votos totales de toda la temporada
+      currentWeekVotes: currentWeekVotes[0]?.total || 0, // Votos de la semana actual
     };
   }
 
