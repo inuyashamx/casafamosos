@@ -602,25 +602,6 @@ export default function Home() {
           </button>
         )}
 
-                 {/* Share App Banner - Mostrar siempre cuando usuario esté logueado */}
-         {session && votingData?.week && (
-          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
-            <div className="text-4xl mb-3">🎁</div>
-            <h3 className="text-lg font-bold text-foreground mb-2">
-              ¡Comparte esta APP y consigue 60 puntos extra!
-            </h3>
-            <p className="text-muted-foreground text-sm mb-4">
-              Invita a tus amigos a votar y obtén puntos extra para seguir participando
-            </p>
-            <button
-              onClick={handleShareApp}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              📤 COMPARTIR APP
-            </button>
-          </div>
-        )}
-
         {/* Nominees List */}
         {votingData?.nominees && votingData.nominees.length > 0 && (
           <div className="space-y-4">
@@ -735,6 +716,25 @@ export default function Home() {
                 <div className="text-xs text-muted-foreground">Nominados</div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Share App Banner - Al final de la página */}
+        {session && votingData?.week && (
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
+            <div className="text-4xl mb-3">🎁</div>
+            <h3 className="text-lg font-bold text-foreground mb-2">
+              ¡Comparte esta APP y consigue 60 puntos extra!
+            </h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              Invita a tus amigos a votar y obtén puntos extra para seguir participando
+            </p>
+            <button
+              onClick={handleShareApp}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              📤 COMPARTIR APP
+            </button>
           </div>
         )}
       </div>
