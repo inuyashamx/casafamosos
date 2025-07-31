@@ -45,6 +45,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canReceiveShareBonus, setCanReceiveShareBonus] = useState(false);
   
   // Contador regresivo
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -98,6 +99,15 @@ export default function Home() {
         if (adminResponse.ok) {
           const adminData = await adminResponse.json();
           setIsAdmin(adminData.isAdmin || false);
+        }
+
+        // Verificar si puede recibir bono de compartir
+        const shareBonusResponse = await fetch('/api/vote?action=share-bonus');
+        if (shareBonusResponse.ok) {
+          setCanReceiveShareBonus(true);
+        } else {
+          const errorData = await shareBonusResponse.json();
+          setCanReceiveShareBonus(!errorData.alreadyReceived);
         }
       } catch (err) {
         console.error('Error fetching user data:', err);
@@ -185,6 +195,225 @@ export default function Home() {
     }
   };
 
+  const handleShareApp = async () => {
+    try {
+      const shareUrl = window.location.origin;
+      const shareText = '¡Vota por tus candidatos favoritos en Casa Famosos! 🏠✨';
+      
+      // Detectar si es móvil real (no solo viewport)
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      // Solo usar Web Share API en móviles reales
+      if (isMobile && navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Casa Famosos 2025',
+            text: shareText,
+            url: shareUrl
+          });
+          
+          // Después de compartir exitosamente, dar puntos extra
+          await giveShareBonus();
+          return;
+        } catch (err) {
+          // Si el usuario cancela el share nativo, mostrar nuestra ventana personalizada
+          console.log('Share nativo cancelado, mostrando ventana personalizada');
+        }
+      }
+      
+      // En desktop o si falla el share nativo, mostrar ventana personalizada
+      showCustomShareModal(shareUrl, shareText);
+      
+    } catch (error) {
+      console.error('Error compartiendo app:', error);
+      // En caso de error, mostrar ventana personalizada
+      const shareUrl = window.location.origin;
+      const shareText = '¡Vota por tus candidatos favoritos en Casa Famosos! 🏠✨';
+      showCustomShareModal(shareUrl, shareText);
+    }
+  };
+
+  const showCustomShareModal = (shareUrl: string, shareText: string) => {
+    // Crear modal personalizado
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+      <div class="bg-card rounded-2xl w-full max-w-md border border-border/40 overflow-hidden shadow-2xl">
+        <div class="bg-gradient-to-r from-primary to-accent p-6 text-center text-white">
+          <div class="text-4xl mb-2">📤</div>
+          <h3 class="text-xl font-bold">¡Comparte Casa Famosos!</h3>
+          <p class="text-sm opacity-90 mt-1">Ayuda a tus candidatos favoritos</p>
+        </div>
+        
+        <div class="p-6 space-y-4">
+          <div class="bg-muted/30 rounded-lg p-4 border border-border/20">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-xl">🔗</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-foreground break-all">${shareUrl}</p>
+                <p class="text-xs text-muted-foreground mt-1">Enlace de la aplicación</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="copyToClipboard('${shareUrl}')" class="share-option-btn">
+              <div class="text-3xl mb-2">📋</div>
+              <span class="text-sm font-medium">Copiar Enlace</span>
+            </button>
+            <button onclick="shareToWhatsApp('${shareText} ${shareUrl}')" class="share-option-btn">
+              <div class="text-3xl mb-2">💬</div>
+              <span class="text-sm font-medium">WhatsApp</span>
+            </button>
+            <button onclick="shareToTwitter('${shareText} ${shareUrl}')" class="share-option-btn">
+              <div class="text-3xl mb-2">🐦</div>
+              <span class="text-sm font-medium">Twitter</span>
+            </button>
+            <button onclick="shareToFacebook('${shareText} ${shareUrl}')" class="share-option-btn">
+              <div class="text-3xl mb-2">📘</div>
+              <span class="text-sm font-medium">Facebook</span>
+            </button>
+          </div>
+          
+          <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-4 text-center">
+            <p class="text-sm text-amber-600 font-bold">🎁 ¡Gana 60 puntos extra por compartir!</p>
+            <p class="text-xs text-amber-500/80 mt-1">Una vez por día</p>
+          </div>
+        </div>
+        
+        <div class="p-4 border-t border-border/20 bg-muted/20">
+          <button onclick="closeShareModal()" class="w-full bg-muted hover:bg-muted/80 text-foreground py-3 rounded-lg text-sm font-medium transition-colors">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // Agregar estilos CSS mejorados
+    const style = document.createElement('style');
+    style.textContent = `
+      .share-option-btn {
+        @apply bg-card border border-border/20 rounded-xl p-4 text-center hover:bg-muted/50 transition-all duration-200 hover:scale-105 cursor-pointer;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .share-option-btn:hover {
+        @apply border-primary/30 shadow-lg;
+      }
+      .share-option-btn:active {
+        @apply scale-95;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Agregar funciones globales
+    // Función para mostrar mensajes de éxito
+    (window as any).showSuccessMessage = (message: string) => {
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-xl shadow-2xl z-60 transform translate-x-full transition-all duration-500 border border-green-400/20 backdrop-blur-sm';
+      toast.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <div class="text-2xl">🎉</div>
+          <div class="font-semibold">${message}</div>
+        </div>
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+        toast.classList.add('scale-105');
+      }, 100);
+      
+      setTimeout(() => {
+        toast.classList.remove('scale-105');
+        toast.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+          document.body.removeChild(toast);
+        }, 300);
+      }, 3000);
+    };
+    
+    (window as any).copyToClipboard = async (text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        (window as any).showSuccessMessage('¡Enlace copiado al portapapeles!');
+        await giveShareBonus();
+      } catch (err) {
+        // Fallback para navegadores antiguos
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        (window as any).showSuccessMessage('¡Enlace copiado al portapapeles!');
+        await giveShareBonus();
+      }
+    };
+    
+    (window as any).shareToWhatsApp = async (text: string) => {
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+      (window as any).showSuccessMessage('¡Abriendo WhatsApp!');
+      await giveShareBonus();
+    };
+    
+    (window as any).shareToTwitter = async (text: string) => {
+      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+      (window as any).showSuccessMessage('¡Abriendo Twitter!');
+      await giveShareBonus();
+    };
+    
+    (window as any).shareToFacebook = async (text: string) => {
+      // Facebook tiene limitaciones con parámetros de texto, usar solo la URL
+      const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}`;
+      window.open(url, '_blank');
+      (window as any).showSuccessMessage('¡Abriendo Facebook! El texto se puede agregar manualmente.');
+      await giveShareBonus();
+    };
+    
+    (window as any).closeShareModal = () => {
+      document.body.removeChild(modal);
+      document.head.removeChild(style);
+    };
+    
+    document.body.appendChild(modal);
+  };
+
+  const giveShareBonus = async () => {
+    try {
+      const response = await fetch('/api/vote?action=share-bonus');
+      if (response.ok) {
+        const data = await response.json();
+        (window as any).showSuccessMessage(`🎉 ${data.message}`);
+        // Recargar puntos del usuario
+        const pointsResponse = await fetch('/api/vote?action=points');
+        if (pointsResponse.ok) {
+          const pointsData = await pointsResponse.json();
+          setUserPoints(pointsData.availablePoints);
+        }
+        // Actualizar estado del bono
+        setCanReceiveShareBonus(false);
+      } else {
+        const errorData = await response.json();
+        if (!errorData.alreadyReceived) {
+          console.log('Ya recibiste el bono hoy');
+        }
+        // Actualizar estado del bono
+        setCanReceiveShareBonus(false);
+      }
+    } catch (error) {
+      console.error('Error dando bono:', error);
+    }
+  };
+
+
 
 
   return (
@@ -258,6 +487,8 @@ export default function Home() {
                             <span>Panel Admin</span>
                           </button>
                         )}
+
+                        
 
 
 
@@ -367,6 +598,25 @@ export default function Home() {
           >
             🗳️ VOTAR AHORA
           </button>
+        )}
+
+                 {/* Share App Banner - Solo cuando usuario logueado tiene 0 puntos Y puede recibir bono */}
+         {session && userPoints === 0 && canReceiveShareBonus && votingData?.week && (
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
+            <div className="text-4xl mb-3">🎁</div>
+            <h3 className="text-lg font-bold text-foreground mb-2">
+              ¡Comparte esta APP y consigue otros 60 puntos!
+            </h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              Invita a tus amigos a votar y obtén puntos extra para seguir participando
+            </p>
+            <button
+              onClick={handleShareApp}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              📤 COMPARTIR APP
+            </button>
+          </div>
         )}
 
         {/* Nominees List */}

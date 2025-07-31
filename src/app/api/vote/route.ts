@@ -87,12 +87,21 @@ export async function GET(request: NextRequest) {
       let lastVoteInfo = null;
       
       if (activeWeek) {
-        const userVotes = await Vote.find({
+        // CALCULAR PUNTOS USADOS HOY (no toda la semana)
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+        
+        const userVotesToday = await Vote.find({
           userId: user._id,
-          weekId: activeWeek._id,
+          seasonId: activeSeason._id,
+          voteDate: {
+            $gte: startOfDay,
+            $lt: endOfDay
+          },
           isValid: true
         });
-        usedPoints = userVotes.reduce((sum, vote) => sum + vote.points, 0);
+        usedPoints = userVotesToday.reduce((sum, vote) => sum + vote.points, 0);
         
         // Obtener información del último voto para debugging
         const lastVote = await Vote.findOne({
@@ -115,6 +124,13 @@ export async function GET(request: NextRequest) {
         usedPoints,
         lastVoteInfo,
         lastReset: user.lastPointsReset,
+        debug: {
+          today: new Date().toISOString(),
+          startOfDay: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).toISOString(),
+          endOfDay: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1).toISOString(),
+          votesTodayCount: usedPoints / 60, // Asumiendo que cada voto es de 60 puntos
+          seasonId: activeSeason._id.toString()
+        }
       });
     }
 
@@ -132,6 +148,52 @@ export async function GET(request: NextRequest) {
       .limit(50);
 
       return NextResponse.json(votes);
+    }
+
+    if (action === 'share-bonus') {
+      // Dar puntos extra por compartir la app
+      await dbConnect();
+      const user = await User.findById((session.user as any).id);
+      if (!user) {
+        return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+      }
+
+      // Verificar si ya recibió el bono hoy
+      const today = new Date();
+      const lastShareBonus = user.lastShareBonus || new Date(0);
+      const lastShareBonusDate = new Date(lastShareBonus);
+      
+      // Normalizar fechas para comparación (sin horas/minutos/segundos)
+      const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const lastShareBonusNormalized = new Date(lastShareBonusDate.getFullYear(), lastShareBonusDate.getMonth(), lastShareBonusDate.getDate());
+      
+      console.log('Debug share bonus:', {
+        today: today.toISOString(),
+        lastShareBonus: lastShareBonusDate.toISOString(),
+        todayNormalized: todayNormalized.toISOString(),
+        lastShareBonusNormalized: lastShareBonusNormalized.toISOString(),
+        isSameDay: todayNormalized.getTime() === lastShareBonusNormalized.getTime()
+      });
+      
+      if (todayNormalized.getTime() === lastShareBonusNormalized.getTime()) {
+        return NextResponse.json({ 
+          error: 'Ya recibiste el bono por compartir hoy. ¡Vuelve mañana!',
+          alreadyReceived: true
+        }, { status: 400 });
+      }
+
+      // Dar 60 puntos extra
+      const bonusPoints = 60;
+      user.dailyPoints += bonusPoints;
+      user.lastShareBonus = today;
+      await user.save();
+
+      return NextResponse.json({
+        success: true,
+        message: `¡Recibiste ${bonusPoints} puntos extra por compartir la app!`,
+        bonusPoints,
+        newTotalPoints: user.dailyPoints
+      });
     }
 
     return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });

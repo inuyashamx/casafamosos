@@ -63,6 +63,10 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  lastShareBonus: {
+    type: Date,
+    default: null,
+  },
 }, {
   timestamps: true,
 });
@@ -91,17 +95,26 @@ UserSchema.methods.getAvailablePoints = function() {
 UserSchema.methods.checkAndResetDailyPoints = async function() {
   // Importar Vote aquí para evitar dependencias circulares
   const Vote = mongoose.model('Vote');
+  const Season = mongoose.model('Season');
   
   try {
-    // 1. Buscar el último voto del usuario
+    // Obtener temporada activa
+    const activeSeason = await Season.findOne({ isActive: true });
+    if (!activeSeason) {
+      console.log(`Usuario ${this.email}: No hay temporada activa, puntos disponibles: ${this.dailyPoints}`);
+      return this.dailyPoints;
+    }
+    
+    // 1. Buscar el último voto del usuario en la temporada activa
     const lastVote = await Vote.findOne({ 
-      userId: this._id, 
+      userId: this._id,
+      seasonId: activeSeason._id,
       isValid: true 
     }).sort({ voteDate: -1 });
     
-    // 2. Si no hay votos previos, puntos disponibles = dailyPoints
+    // 2. Si no hay votos previos en esta temporada, puntos disponibles = dailyPoints
     if (!lastVote) {
-      console.log(`Usuario ${this.email}: No tiene votos previos, puntos disponibles: ${this.dailyPoints}`);
+      console.log(`Usuario ${this.email}: No tiene votos previos en esta temporada, puntos disponibles: ${this.dailyPoints}`);
       return this.dailyPoints;
     }
     
@@ -120,7 +133,7 @@ UserSchema.methods.checkAndResetDailyPoints = async function() {
     } else {
       // 5. Mismo día - calcular puntos usados en la semana activa
       const usedPoints = await this.getUsedPointsInActiveWeek();
-      const availablePoints = this.dailyPoints - usedPoints;
+      const availablePoints = Math.max(0, this.dailyPoints - usedPoints);
       console.log(`Usuario ${this.email}: Ya votó hoy, puntos usados: ${usedPoints}, disponibles: ${availablePoints}`);
       return availablePoints;
     }
@@ -143,21 +156,25 @@ UserSchema.methods.getUsedPointsInActiveWeek = async function() {
       return 0;
     }
     
-    // Obtener semana activa (simplificado - asumiendo que es la semana actual)
-    const currentWeek = Math.ceil((Date.now() - activeSeason.startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
-    const currentYear = new Date().getFullYear();
+    // Obtener fecha de hoy (inicio y fin del día)
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
     
-    // Buscar votos del usuario en la semana activa
+    // Buscar votos del usuario HOY en la temporada activa
     const userVotes = await Vote.find({
       userId: this._id,
       seasonId: activeSeason._id,
-      weekNumber: currentWeek,
-      year: currentYear,
+      voteDate: {
+        $gte: startOfDay,
+        $lt: endOfDay
+      },
       isValid: true
     });
     
-    // Sumar puntos usados
+    // Sumar puntos usados hoy
     const usedPoints = userVotes.reduce((sum, vote) => sum + vote.points, 0);
+    console.log(`Usuario ${this.email}: Votos encontrados hoy: ${userVotes.length}, puntos usados: ${usedPoints}`);
     return usedPoints;
   } catch (error) {
     console.error(`Error calculando puntos usados para usuario ${this.email}:`, error);

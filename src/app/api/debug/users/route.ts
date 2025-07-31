@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Vote from '@/lib/models/Vote';
+import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
@@ -99,6 +100,121 @@ export async function GET(request: NextRequest) {
           candidateId: lastVote.candidateId
         } : null,
         today: new Date().toDateString()
+      });
+    }
+
+    if (action === 'test-points') {
+      // Probar el sistema de puntos
+      const users = await User.find({}).limit(5);
+      const results = [];
+      
+      for (const user of users) {
+        const availablePoints = await user.checkAndResetDailyPoints();
+        results.push({
+          email: user.email,
+          availablePoints,
+          dailyPoints: user.dailyPoints,
+          usedPointsToday: user.usedPointsToday,
+          lastPointsReset: user.lastPointsReset
+        });
+      }
+      
+      return NextResponse.json({
+        message: 'Test de puntos completado',
+        results
+      });
+    }
+
+    if (action === 'debug-points') {
+      // Debug detallado del sistema de puntos
+      const Vote = mongoose.model('Vote');
+      const Season = mongoose.model('Season');
+      
+      // Obtener temporada activa
+      const activeSeason = await Season.findOne({ isActive: true });
+      if (!activeSeason) {
+        return NextResponse.json({ error: 'No hay temporada activa' });
+      }
+      
+      const user = await User.findById((session.user as any).id);
+      if (!user) {
+        return NextResponse.json({ error: 'Usuario no encontrado' });
+      }
+      
+      // 1. Buscar último voto del usuario en temporada activa
+      const lastVote = await Vote.findOne({ 
+        userId: user._id,
+        seasonId: activeSeason._id,
+        isValid: true 
+      }).sort({ voteDate: -1 });
+      
+      // 2. Obtener fecha de hoy
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      
+      // 3. Buscar votos de hoy
+      const todayVotes = await Vote.find({
+        userId: user._id,
+        seasonId: activeSeason._id,
+        voteDate: {
+          $gte: startOfDay,
+          $lt: endOfDay
+        },
+        isValid: true
+      });
+      
+      // 4. Calcular puntos usados hoy
+      const usedPointsToday = todayVotes.reduce((sum, vote) => sum + vote.points, 0);
+      
+      // 5. Comparar fechas
+      let lastVoteDateNormalized = null;
+      let todayNormalized = null;
+      let isDifferentDay = false;
+      
+      if (lastVote) {
+        const lastVoteDate = new Date(lastVote.voteDate);
+        lastVoteDateNormalized = new Date(lastVoteDate.getFullYear(), lastVoteDate.getMonth(), lastVoteDate.getDate());
+        todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        isDifferentDay = lastVoteDateNormalized.getTime() !== todayNormalized.getTime();
+      }
+      
+      return NextResponse.json({
+        debug: {
+          user: {
+            email: user.email,
+            dailyPoints: user.dailyPoints,
+            usedPointsToday: user.usedPointsToday
+          },
+          season: {
+            id: activeSeason._id,
+            name: activeSeason.name
+          },
+          lastVote: lastVote ? {
+            id: lastVote._id,
+            date: lastVote.voteDate,
+            points: lastVote.points,
+            candidate: lastVote.candidateId
+          } : null,
+          todayVotes: todayVotes.map(vote => ({
+            id: vote._id,
+            date: vote.voteDate,
+            points: vote.points,
+            candidate: vote.candidateId
+          })),
+          dateComparison: {
+            lastVoteDateNormalized: lastVoteDateNormalized?.toISOString(),
+            todayNormalized: todayNormalized?.toISOString(),
+            isDifferentDay,
+            startOfDay: startOfDay.toISOString(),
+            endOfDay: endOfDay.toISOString()
+          },
+          calculation: {
+            usedPointsToday,
+            availablePoints: Math.max(0, user.dailyPoints - usedPointsToday),
+            shouldReset: !lastVote || isDifferentDay
+          }
+        }
       });
     }
 
