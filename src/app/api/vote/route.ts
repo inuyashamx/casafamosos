@@ -78,13 +78,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
       }
 
-      // Resetear puntos diarios si es necesario
-      await user.resetDailyPoints();
-
-      const availablePoints = user.getAvailablePoints();
-      const activeWeek = await WeekService.getActiveWeek(activeSeason._id.toString());
+      // NUEVA LÓGICA: Verificar puntos basado en el último voto
+      const availablePoints = await user.checkAndResetDailyPoints();
       
+      // Obtener información adicional para debugging
+      const activeWeek = await WeekService.getActiveWeek(activeSeason._id.toString());
       let usedPoints = 0;
+      let lastVoteInfo = null;
+      
       if (activeWeek) {
         const userVotes = await Vote.find({
           userId: user._id,
@@ -92,12 +93,27 @@ export async function GET(request: NextRequest) {
           isValid: true
         });
         usedPoints = userVotes.reduce((sum, vote) => sum + vote.points, 0);
+        
+        // Obtener información del último voto para debugging
+        const lastVote = await Vote.findOne({
+          userId: user._id,
+          isValid: true
+        }).sort({ voteDate: -1 });
+        
+        if (lastVote) {
+          lastVoteInfo = {
+            date: lastVote.voteDate,
+            points: lastVote.points,
+            candidate: lastVote.candidateId
+          };
+        }
       }
 
       return NextResponse.json({
         totalPoints: user.dailyPoints,
-        availablePoints: availablePoints - usedPoints,
+        availablePoints: availablePoints,
         usedPoints,
+        lastVoteInfo,
         lastReset: user.lastPointsReset,
       });
     }
@@ -164,23 +180,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
-    // Resetear puntos diarios si es necesario
-    await user.resetDailyPoints();
-
-    // Verificar puntos disponibles
-    const availablePoints = user.getAvailablePoints();
-    const existingVotes = await Vote.find({
-      userId: user._id,
-      weekId: activeWeek._id,
-      isValid: true
-    });
-    const usedPoints = existingVotes.reduce((sum, vote) => sum + vote.points, 0);
+    // NUEVA LÓGICA: Verificar puntos disponibles basado en el último voto
+    const availablePoints = await user.checkAndResetDailyPoints();
     const totalPointsToUse = votes.reduce((sum, vote) => sum + vote.points, 0);
 
-    if (usedPoints + totalPointsToUse > availablePoints) {
+    if (totalPointsToUse > availablePoints) {
       return NextResponse.json({ 
         error: 'No tienes suficientes puntos disponibles',
-        available: availablePoints - usedPoints,
+        available: availablePoints,
         requested: totalPointsToUse
       }, { status: 400 });
     }
@@ -227,15 +234,11 @@ export async function POST(request: NextRequest) {
     // Actualizar estadísticas de la semana
     await WeekService.updateWeekResults(activeWeek._id.toString());
 
-    // Actualizar puntos usados del usuario
-    user.usedPointsToday += totalPointsToUse;
-    await user.save();
-
     return NextResponse.json({
       success: true,
       votes: savedVotes,
       pointsUsed: totalPointsToUse,
-      remainingPoints: availablePoints - usedPoints - totalPointsToUse,
+      remainingPoints: availablePoints - totalPointsToUse,
     });
 
   } catch (error: any) {

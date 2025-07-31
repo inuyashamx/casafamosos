@@ -185,6 +185,8 @@ export default function Home() {
     }
   };
 
+
+
   return (
     <main className="min-h-screen bg-background pb-20">
       {/* Header Mobile */}
@@ -256,6 +258,8 @@ export default function Home() {
                             <span>Panel Admin</span>
                           </button>
                         )}
+
+
 
                         <div className="border-t border-border/20 mt-2 pt-2">
                           <button

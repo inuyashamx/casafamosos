@@ -67,7 +67,7 @@ const UserSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Método para resetear puntos diarios
+// Método para resetear puntos diarios (método anterior - mantener para compatibilidad)
 UserSchema.methods.resetDailyPoints = function() {
   const today = new Date();
   const lastReset = new Date(this.lastPointsReset);
@@ -85,6 +85,84 @@ UserSchema.methods.resetDailyPoints = function() {
 // Método para obtener puntos disponibles
 UserSchema.methods.getAvailablePoints = function() {
   return this.dailyPoints - this.usedPointsToday;
+};
+
+// NUEVO MÉTODO: Verificar y resetear puntos diarios basado en el último voto
+UserSchema.methods.checkAndResetDailyPoints = async function() {
+  // Importar Vote aquí para evitar dependencias circulares
+  const Vote = mongoose.model('Vote');
+  
+  try {
+    // 1. Buscar el último voto del usuario
+    const lastVote = await Vote.findOne({ 
+      userId: this._id, 
+      isValid: true 
+    }).sort({ voteDate: -1 });
+    
+    // 2. Si no hay votos previos, puntos disponibles = dailyPoints
+    if (!lastVote) {
+      console.log(`Usuario ${this.email}: No tiene votos previos, puntos disponibles: ${this.dailyPoints}`);
+      return this.dailyPoints;
+    }
+    
+    // 3. Comparar fecha del último voto con hoy
+    const lastVoteDate = new Date(lastVote.voteDate);
+    const today = new Date();
+    
+    // Normalizar fechas para comparación (sin horas/minutos/segundos)
+    const lastVoteDateNormalized = new Date(lastVoteDate.getFullYear(), lastVoteDate.getMonth(), lastVoteDate.getDate());
+    const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    // 4. Si es un día diferente (después de 00:00), resetear puntos
+    if (lastVoteDateNormalized.getTime() !== todayNormalized.getTime()) {
+      console.log(`Usuario ${this.email}: Último voto fue ayer (${lastVoteDateNormalized.toDateString()}), puntos reseteados: ${this.dailyPoints}`);
+      return this.dailyPoints;
+    } else {
+      // 5. Mismo día - calcular puntos usados en la semana activa
+      const usedPoints = await this.getUsedPointsInActiveWeek();
+      const availablePoints = this.dailyPoints - usedPoints;
+      console.log(`Usuario ${this.email}: Ya votó hoy, puntos usados: ${usedPoints}, disponibles: ${availablePoints}`);
+      return availablePoints;
+    }
+  } catch (error) {
+    console.error(`Error verificando puntos para usuario ${this.email}:`, error);
+    // En caso de error, retornar puntos completos
+    return this.dailyPoints;
+  }
+};
+
+// Método auxiliar para obtener puntos usados en la semana activa
+UserSchema.methods.getUsedPointsInActiveWeek = async function() {
+  const Vote = mongoose.model('Vote');
+  const Season = mongoose.model('Season');
+  
+  try {
+    // Obtener temporada activa
+    const activeSeason = await Season.findOne({ isActive: true });
+    if (!activeSeason) {
+      return 0;
+    }
+    
+    // Obtener semana activa (simplificado - asumiendo que es la semana actual)
+    const currentWeek = Math.ceil((Date.now() - activeSeason.startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    const currentYear = new Date().getFullYear();
+    
+    // Buscar votos del usuario en la semana activa
+    const userVotes = await Vote.find({
+      userId: this._id,
+      seasonId: activeSeason._id,
+      weekNumber: currentWeek,
+      year: currentYear,
+      isValid: true
+    });
+    
+    // Sumar puntos usados
+    const usedPoints = userVotes.reduce((sum, vote) => sum + vote.points, 0);
+    return usedPoints;
+  } catch (error) {
+    console.error(`Error calculando puntos usados para usuario ${this.email}:`, error);
+    return 0;
+  }
 };
 
 export default mongoose.models.User || mongoose.model('User', UserSchema); 
