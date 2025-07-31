@@ -192,9 +192,11 @@ export class AdminService {
 
     // Votos de la semana actual - calculado por separado
     let currentWeekVotes = [{ total: 0 }];
-    if (activeWeekData) {
+    // Obtener la semana activa completa para tener su ID
+    const activeWeekComplete = await Week.findOne({ ...seasonFilter, isVotingActive: true });
+    if (activeWeekComplete) {
       currentWeekVotes = await Vote.aggregate([
-        { $match: { weekId: activeWeekData._id, isValid: true } },
+        { $match: { weekId: activeWeekComplete._id, isValid: true } },
         { $group: { _id: null, total: { $sum: '$points' } } }
       ]);
     }

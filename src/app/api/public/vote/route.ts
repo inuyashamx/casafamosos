@@ -46,7 +46,12 @@ export async function GET(request: NextRequest) {
     // Obtener resultados actualizados
     const weekWithResults = await WeekService.getWeekResults(activeWeek._id.toString());
     
-    // Solo mostrar candidatos que estén realmente en week.nominees
+    // Debug: Log para ver qué datos tenemos
+    console.log('Week nominees count:', weekWithResults.nominees?.length);
+    console.log('Week voting stats count:', weekWithResults.results?.votingStats?.length);
+    console.log('Total votes in week results:', weekWithResults.results?.totalVotes);
+    
+    // Mostrar todos los candidatos que estén en week.nominees, incluso con 0 votos
     const nominees = weekWithResults.nominees
       .filter((nominee: any) => nominee.candidateId) // Filtrar nominados válidos
       .map((nominee: any) => {
@@ -54,6 +59,8 @@ export async function GET(request: NextRequest) {
         const stats = weekWithResults.results?.votingStats?.find(
           (stat: any) => stat.candidateId.toString() === candidate._id.toString()
         );
+
+        console.log(`Candidate ${candidate.name}: votes = ${stats?.votes || 0}`);
 
         return {
           id: candidate._id,
@@ -78,7 +85,8 @@ export async function GET(request: NextRequest) {
         id: activeSeason._id,
         name: activeSeason.name,
         year: activeSeason.year,
-      }
+      },
+      totalVotes: weekWithResults.results?.totalVotes || 0
     });
 
   } catch (error) {

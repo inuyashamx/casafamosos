@@ -33,6 +33,7 @@ interface VotingData {
   nominees: Nominee[];
   week: WeekData;
   season: SeasonData;
+  totalVotes?: number;
 }
 
 export default function Home() {
@@ -725,7 +726,7 @@ export default function Home() {
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold text-primary">
-                  {votingData.nominees.reduce((sum, n) => sum + n.votes, 0).toLocaleString()}
+                  {votingData.totalVotes ? votingData.totalVotes.toLocaleString() : votingData.nominees.reduce((sum, n) => sum + n.votes, 0).toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground">Total de votos</div>
               </div>
