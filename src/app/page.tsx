@@ -600,12 +600,12 @@ export default function Home() {
           </button>
         )}
 
-                 {/* Share App Banner - Solo cuando usuario logueado tiene 0 puntos Y puede recibir bono */}
-         {session && userPoints === 0 && canReceiveShareBonus && votingData?.week && (
+                 {/* Share App Banner - Mostrar siempre cuando usuario esté logueado */}
+         {session && votingData?.week && (
           <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
             <div className="text-4xl mb-3">🎁</div>
             <h3 className="text-lg font-bold text-foreground mb-2">
-              ¡Comparte esta APP y consigue otros 60 puntos!
+              ¡Comparte esta APP y consigue 60 puntos extra!
             </h3>
             <p className="text-muted-foreground text-sm mb-4">
               Invita a tus amigos a votar y obtén puntos extra para seguir participando

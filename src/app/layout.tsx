@@ -35,6 +35,19 @@ export default function RootLayout({
             `,
           }}
         />
+        
+        {/* Twitter conversion tracking event code */}
+        <Script
+          id="twitter-event-tracking"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Insert Twitter Event ID
+              twq('event', 'tw-q91m1-q91m1', {
+              });
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
