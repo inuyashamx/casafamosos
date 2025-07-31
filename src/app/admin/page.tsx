@@ -2110,9 +2110,9 @@ export default function AdminPage() {
                           <div className="grid grid-cols-2 gap-3 mb-4">
                             <div className="bg-green-500/10 rounded-lg p-3 text-center">
                               <div className="text-lg font-bold text-green-600">
-                                {(stats.votes.totalVotes || 0).toLocaleString()}
+                                {(stats.votes.totalPoints || 0).toLocaleString()}
                               </div>
-                              <div className="text-xs text-green-600">Votos Totales</div>
+                              <div className="text-xs text-green-600">Puntos Totales</div>
                             </div>
                             <div className="bg-blue-500/10 rounded-lg p-3 text-center">
                               <div className="text-lg font-bold text-blue-600">
