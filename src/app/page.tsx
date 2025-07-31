@@ -37,7 +37,7 @@ interface VotingData {
 }
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -69,8 +69,8 @@ export default function Home() {
           const errorData = await response.json();
           setError(errorData.message || 'Error al cargar datos');
         }
-      } catch (err) {
-        console.error('Error fetching voting data:', err);
+      } catch (error) {
+        console.error('Error fetching voting data:', error);
         setError('Error de conexión');
       } finally {
         setLoading(false);
@@ -111,8 +111,8 @@ export default function Home() {
           const errorData = await shareBonusResponse.json();
           setCanReceiveShareBonus(!errorData.alreadyReceived);
         }
-      } catch (err) {
-        console.error('Error fetching user data:', err);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
       }
     };
 
@@ -167,13 +167,13 @@ export default function Home() {
     }
   }, [session, votingData?.week?.isActive]);
 
-  const handleChatClick = () => {
-    if (!session) {
-      setShowLoginModal(true);
-    } else {
-      setShowChat(true);
-    }
-  };
+  // const handleChatClick = () => {
+  //   if (!session) {
+  //     setShowLoginModal(true);
+  //   } else {
+  //     setShowChat(true);
+  //   }
+  // };
 
   const handleRefresh = async () => {
     setLoading(true);
@@ -190,9 +190,9 @@ export default function Home() {
         const errorData = await response.json();
         setError(errorData.message || 'Error al cargar datos');
       }
-    } catch (err) {
-      setError('Error de conexión');
-    } finally {
+          } catch (error) {
+        setError('Error de conexión');
+      } finally {
       setLoading(false);
     }
   };
@@ -226,13 +226,13 @@ export default function Home() {
       // En desktop o si falla el share nativo, mostrar ventana personalizada
       showCustomShareModal(shareUrl, shareText);
       
-    } catch (error) {
-      console.error('Error compartiendo app:', error);
-      // En caso de error, mostrar ventana personalizada
-      const shareUrl = window.location.origin;
-      const shareText = '¡Vota por tus candidatos favoritos en Casa Famosos! 🏠✨';
-      showCustomShareModal(shareUrl, shareText);
-    }
+          } catch (shareError) {
+        console.error('Error compartiendo app:', shareError);
+        // En caso de error, mostrar ventana personalizada
+        const shareUrl = window.location.origin;
+        const shareText = '¡Vota por tus candidatos favoritos en Casa Famosos! 🏠✨';
+        showCustomShareModal(shareUrl, shareText);
+      }
   };
 
   const showCustomShareModal = (shareUrl: string, shareText: string) => {
@@ -372,13 +372,13 @@ export default function Home() {
       await giveShareBonus();
     };
     
-    (window as any).shareToFacebook = async (text: string) => {
-      // Facebook tiene limitaciones con parámetros de texto, usar solo la URL
-      const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}`;
-      window.open(url, '_blank');
-      (window as any).showSuccessMessage('¡Abriendo Facebook! El texto se puede agregar manualmente.');
-      await giveShareBonus();
-    };
+         (window as any).shareToFacebook = async (_text: string) => {
+       // Facebook tiene limitaciones con parámetros de texto, usar solo la URL
+       const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}`;
+       window.open(url, '_blank');
+       (window as any).showSuccessMessage('¡Abriendo Facebook! El texto se puede agregar manualmente.');
+       await giveShareBonus();
+     };
     
     (window as any).closeShareModal = () => {
       document.body.removeChild(modal);
@@ -410,9 +410,9 @@ export default function Home() {
         // Actualizar estado del bono
         setCanReceiveShareBonus(false);
       }
-    } catch (error) {
-      console.error('Error dando bono:', error);
-    }
+          } catch (bonusError) {
+        console.error('Error dando bono:', bonusError);
+      }
   };
 
 

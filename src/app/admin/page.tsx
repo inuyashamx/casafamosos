@@ -237,12 +237,13 @@ export default function AdminPage() {
     activeUsers: 0,
     totalSeasons: 0,
     activeSeason: '',
+    totalNominados: 0,
     totalCandidates: 0,
     eliminatedCandidates: 0,
     currentWeek: 0,
     activeWeek: false,
     totalVotes: 0,
-    weeklyVotes: 0,
+    currentWeekVotes: 0,
   });
   const [loadingDashboardStats, setLoadingDashboardStats] = useState(false);
 
@@ -1205,43 +1206,43 @@ export default function AdminPage() {
   };
 
   // Función para resetear votos de una semana específica
-  const resetWeekVotes = async () => {
-    if (!selectedWeek) {
-      setError('Debes seleccionar una semana');
-      return;
-    }
+  // const resetWeekVotes = async () => {
+  //   if (!selectedWeek) {
+  //     setError('Debes seleccionar una semana');
+  //     return;
+  //   }
 
-    try {
-      setError(null);
-      const selectedWeekData = weeks.find(w => w._id === selectedWeek);
-      if (!selectedWeekData) {
-        setError('Semana no encontrada');
-        return;
-      }
+  //   try {
+  //     setError(null);
+  //     const selectedWeekData = weeks.find(w => w._id === selectedWeek);
+  //     if (!selectedWeekData) {
+  //       setError('Semana no encontrada');
+  //       return;
+  //     }
 
-      const response = await fetch('/api/admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'resetWeekVotes',
-          weekId: selectedWeek,
-        }),
-      });
+  //     const response = await fetch('/api/admin', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         action: 'resetWeekVotes',
+  //         weekId: selectedWeek,
+  //       }),
+  //     });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al resetear votos de la semana');
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.error || 'Error al resetear votos de la semana');
+  //     }
 
-      await loadWeeks(selectedSeason);
-      showToast('success', `Votos de la Semana ${selectedWeekData.weekNumber} reseteados correctamente`);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Error interno del servidor");
-      console.error('Error reseteando votos de la semana:', err);
-    }
-  };
+  //     await loadWeeks(selectedSeason);
+  //     showToast('success', `Votos de la Semana ${selectedWeekData.weekNumber} reseteados correctamente`);
+  //   } catch (err: unknown) {
+  //     setError(err instanceof Error ? err.message : "Error interno del servidor");
+  //     console.error('Error reseteando votos de la semana:', err);
+  //   }
+  // };
 
   // Función para cargar usuarios
   const loadUsers = async (page = 1, search = '', sortBy = 'createdAt', sortOrder = 'desc') => {

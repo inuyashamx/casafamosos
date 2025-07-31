@@ -20,8 +20,8 @@ export default function Chat({ isOpen, onClose }: ChatProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState(1234);
+  // const [isTyping, setIsTyping] = useState(false);
+  // const [onlineUsers, setOnlineUsers] = useState(1234);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Mock messages
@@ -132,7 +132,7 @@ export default function Chat({ isOpen, onClose }: ChatProps) {
           <div>
             <h2 className="font-semibold text-foreground">💬 Casa Famosos 2025</h2>
             <p className="text-xs text-muted-foreground">
-              🟢 {onlineUsers.toLocaleString()} usuarios activos
+              🟢 1,234 usuarios activos
             </p>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function Chat({ isOpen, onClose }: ChatProps) {
           </div>
         ))}
         
-        {isTyping && (
+        {false && (
           <div className="flex justify-start">
             <div className="bg-card text-card-foreground rounded-2xl px-4 py-2 mr-2 border border-border/20">
               <div className="flex space-x-1">

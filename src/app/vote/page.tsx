@@ -166,7 +166,7 @@ export default function VotePage() {
       setError(null);
 
       const votes = Object.entries(userVotes)
-        .filter(([_, points]) => points > 0)
+        .filter(([_candidateId, points]) => points > 0)
         .map(([candidateId, points]) => ({
           candidateId,
           points

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
+  // const router = useRouter();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -15,7 +15,7 @@ export default function LoginPage() {
       await signIn("google", { 
         callbackUrl: "/dashboard"
       });
-    } catch (err) {
+    } catch (_err) {
       setError("Error al conectar con Google");
       setIsLoading(false);
     }

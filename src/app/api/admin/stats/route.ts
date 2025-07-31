@@ -8,7 +8,7 @@ import Candidate from '@/lib/models/Candidate';
 import Season from '@/lib/models/Season';
 import Week from '@/lib/models/Week';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {

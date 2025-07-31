@@ -160,7 +160,7 @@ export default function Footer() {
                   <p>
                     Podemos actualizar esta política de privacidad ocasionalmente. Le notificaremos 
                     sobre cualquier cambio significativo publicando la nueva política en esta página 
-                    y actualizando la fecha de "Última actualización".
+                    y actualizando la fecha de &quot;Última actualización&quot;.
                   </p>
                 </div>
 

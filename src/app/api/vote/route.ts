@@ -6,7 +6,7 @@ import { SeasonService } from '@/lib/services/seasonService';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Vote from '@/lib/models/Vote';
-import Candidate from '@/lib/models/Candidate';
+// import Candidate from '@/lib/models/Candidate';
 
 export async function GET(request: NextRequest) {
   try {

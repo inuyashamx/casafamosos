@@ -13,7 +13,7 @@ export class WeekService {
 
   static async getActiveWeek(seasonId: string) {
     await dbConnect();
-    const now = new Date();
+    // const now = new Date();
     
     // Primero intentar activar automáticamente semanas que deberían estar activas
     await this.activateScheduledWeeks(seasonId);
