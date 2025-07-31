@@ -134,6 +134,11 @@ export async function POST(request: NextRequest) {
         const deleteResult = await AdminService.deleteUser(deleteUserId);
         return NextResponse.json(deleteResult);
 
+      case 'resetUserVotes':
+        const { userId: resetUserId } = body;
+        const resetUserResult = await AdminService.resetUserVotes(resetUserId);
+        return NextResponse.json(resetUserResult);
+
       default:
         return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
     }

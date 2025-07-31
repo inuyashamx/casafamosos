@@ -326,4 +326,24 @@ export class AdminService {
     
     return { success: true, message: 'Usuario eliminado correctamente' };
   }
+
+  static async resetUserVotes(userId: string) {
+    await dbConnect();
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('Usuario no encontrado');
+    
+    // Borrar TODOS los votos del usuario
+    const result = await Vote.deleteMany({ userId });
+    
+    return {
+      success: true,
+      message: `Se borraron ${result.deletedCount} votos del usuario ${user.name}. Ahora puede votar de nuevo con 60 puntos completos.`,
+      deletedCount: result.deletedCount,
+      user: {
+        name: user.name,
+        email: user.email
+      }
+    };
+  }
 } 

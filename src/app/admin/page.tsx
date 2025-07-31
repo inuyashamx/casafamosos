@@ -279,6 +279,11 @@ export default function AdminPage() {
       }
       const data = await response.json();
       setSeasons(data);
+      
+      // Cargar estadísticas básicas para todas las temporadas automáticamente
+      for (const season of data) {
+        await loadSeasonStats(season._id);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error cargando temporadas');
       console.error('Error cargando temporadas:', err);
@@ -1418,6 +1423,35 @@ export default function AdminPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error eliminando usuario:', err);
+    }
+  };
+
+  const resetUserVotes = async (userId: string, userName: string) => {
+    try {
+      setError(null);
+      
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'resetUserVotes',
+          userId: userId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al resetear votos del usuario');
+      }
+
+      const result = await response.json();
+      await loadUsers(userPage, userSearch, userSortBy, userSortOrder);
+      showToast('success', result.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
+      console.error('Error reseteando votos del usuario:', err);
     }
   };
 
@@ -3466,6 +3500,18 @@ export default function AdminPage() {
                                       🚫 Bloquear
                                     </button>
                                   )}
+
+                                  {/* Reset Votes */}
+                                  <button
+                                    onClick={() => handleConfirmAction(
+                                      'Resetear Votos del Usuario',
+                                      `¿Estás seguro de que quieres resetear los votos de ${user.name}?\n\n⚠️ Esta acción:\n• Borrará TODOS los votos del usuario\n• Permitirá que vote de nuevo con 60 puntos completos\n• Es útil para testing\n\nEsta acción NO SE PUEDE DESHACER.`,
+                                      () => resetUserVotes(user._id, user.name)
+                                    )}
+                                    className="px-2 py-1 bg-orange-500/10 text-orange-500 rounded text-xs font-medium hover:bg-orange-500/20 transition-colors"
+                                  >
+                                    🔄 Reset Votos
+                                  </button>
 
                                   {/* Delete */}
                                   <button

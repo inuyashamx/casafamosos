@@ -85,10 +85,11 @@ export class SeasonService {
   static async getSeasonStats(seasonId: string) {
     await dbConnect();
     
-    const [season, candidates, weeks] = await Promise.all([
+    const [season, candidates, weeks, voteStats] = await Promise.all([
       Season.findById(seasonId),
       Candidate.find({ seasonId }),
       Week.find({ seasonId }),
+      (Vote as any).getSeasonStats(seasonId),
     ]);
 
     if (!season) {
@@ -99,6 +100,14 @@ export class SeasonService {
     const eliminatedCandidates = candidates.filter((c: any) => c.status === 'eliminated').length;
     const activeWeeks = weeks.filter((w: any) => w.status === 'active' || w.status === 'voting').length;
     const completedWeeks = weeks.filter((w: any) => w.status === 'completed').length;
+
+    // Extraer estadísticas de votos del resultado de la agregación
+    const votesData = voteStats.length > 0 ? voteStats[0] : {
+      totalVotes: 0,
+      totalPoints: 0,
+      uniqueVoters: 0,
+      uniqueCandidates: 0,
+    };
 
     return {
       season: {
@@ -114,19 +123,19 @@ export class SeasonService {
         total: candidates.length,
         active: activeCandidates,
         eliminated: eliminatedCandidates,
-        winner: candidates.filter(c => c.status === 'winner').length,
+        winner: candidates.filter((c: any) => c.status === 'winner').length,
       },
       weeks: {
         total: weeks.length,
         active: activeWeeks,
         completed: completedWeeks,
-        scheduled: weeks.filter(w => w.status === 'scheduled').length,
+        scheduled: weeks.filter((w: any) => w.status === 'scheduled').length,
       },
       votes: {
-        totalVotes: 0,
-        totalPoints: 0,
-        uniqueVoters: 0,
-        uniqueCandidates: 0,
+        totalVotes: votesData.totalVotes || 0,
+        totalPoints: votesData.totalPoints || 0,
+        uniqueVoters: votesData.uniqueVoters || 0,
+        uniqueCandidates: votesData.uniqueCandidates || 0,
       },
     };
   }
