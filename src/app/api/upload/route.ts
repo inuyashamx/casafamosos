@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     const result = await uploadPromise as any;
 
     // Preparar respuesta
-    const response = {
+    const response: any = {
       public_id: result.public_id,
       secure_url: result.secure_url,
       resource_type: result.resource_type,
