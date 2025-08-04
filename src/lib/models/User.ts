@@ -10,6 +10,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  nickname: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   image: {
     type: String,
   },

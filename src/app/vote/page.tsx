@@ -255,14 +255,32 @@ export default function VotePage() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-primary/20">
         <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
+            <Image
+              src="/logo.png"
+              alt="Casa Famosos"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-lg"
+            />
             <button
               onClick={() => router.push('/')}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-lg font-bold text-foreground hover:text-primary transition-colors"
             >
-              ← Volver
+              Inicio
             </button>
-            <h1 className="text-lg font-bold text-foreground">Votar</h1>
+            <button
+              onClick={() => router.push('/vote')}
+              className="text-lg font-bold text-primary"
+            >
+              Votar
+            </button>
+            <button
+              onClick={() => router.push('/muro')}
+              className="text-lg font-bold text-foreground hover:text-primary transition-colors"
+            >
+              Muro
+            </button>
           </div>
 
           {/* User Menu */}
@@ -311,6 +329,17 @@ export default function VotePage() {
                       </div>
 
                       <div className="py-2">
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            window.location.href = '/perfil';
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors flex items-center space-x-2"
+                        >
+                          <span>👤</span>
+                          <span>Perfil</span>
+                        </button>
+
                         {isAdmin && (
                           <button
                             onClick={() => {

@@ -41,6 +41,28 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).id = token.id as string;
         (session.user as any).isAdmin = token.isAdmin as boolean;
+        
+        // Verificar admin y otros datos desde la base de datos para asegurar que estén actualizados
+        try {
+          const User = (await import('@/lib/models/User')).default;
+          const user = await User.findById(token.id);
+          if (user) {
+            (session.user as any).isAdmin = user.isAdmin;
+            token.isAdmin = user.isAdmin;
+            
+            // Actualizar la imagen del usuario desde la base de datos
+            if (user.image) {
+              session.user.image = user.image;
+            }
+            
+            // Actualizar el nombre si ha cambiado
+            if (user.name) {
+              session.user.name = user.name;
+            }
+          }
+        } catch (error) {
+          console.error('Error verificando datos del usuario:', error);
+        }
       }
       return session;
     },

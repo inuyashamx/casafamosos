@@ -268,6 +268,37 @@ export default function AdminPage() {
   const [userTotal, setUserTotal] = useState(0);
   const [userPages, setUserPages] = useState(0);
 
+  // Estados para imágenes de Cloudinary
+  const [cloudinaryImages, setCloudinaryImages] = useState<Array<{
+    public_id: string;
+    secure_url: string;
+    format: string;
+    width?: number;
+    height?: number;
+    bytes: number;
+    created_at: string;
+    resource_type: string;
+    folder: string;
+    filename: string;
+    thumbnail_url?: string;
+  }>>([]);
+  const [loadingCloudinary, setLoadingCloudinary] = useState(false);
+  const [cloudinaryPage, setCloudinaryPage] = useState(1);
+  const [cloudinaryHasMore, setCloudinaryHasMore] = useState(true);
+  const [cloudinaryResourceType, setCloudinaryResourceType] = useState<'image' | 'video'>('image');
+
+  // Estados para redes sociales
+  const [socialMedia, setSocialMedia] = useState({
+    whatsapp: '',
+    telegram: '',
+    twitter: '',
+    facebook: '',
+    instagram: '',
+    tiktok: '',
+  });
+  const [loadingSocialMedia, setLoadingSocialMedia] = useState(false);
+  const [savingSocialMedia, setSavingSocialMedia] = useState(false);
+
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -407,6 +438,20 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeTab === 'users') {
       loadUsers(1, '', 'createdAt', 'desc');
+    }
+  }, [activeTab]);
+
+  // Cargar imágenes de Cloudinary cuando se active la pestaña
+  useEffect(() => {
+    if (activeTab === 'cloudinary') {
+      loadCloudinaryImages(1, cloudinaryResourceType);
+    }
+  }, [activeTab, cloudinaryResourceType]);
+
+  // Cargar redes sociales cuando se active la pestaña
+  useEffect(() => {
+    if (activeTab === 'social-media') {
+      loadSocialMedia();
     }
   }, [activeTab]);
 
@@ -1512,6 +1557,120 @@ export default function AdminPage() {
     loadUsers(page, userSearch, userSortBy, userSortOrder);
   };
 
+  // Función para cargar imágenes de Cloudinary
+  const loadCloudinaryImages = async (page: number = 1, resourceType: 'image' | 'video' = 'image') => {
+    try {
+      setLoadingCloudinary(true);
+      setError(null);
+      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '20',
+        type: resourceType,
+      });
+      
+      const response = await fetch(`/api/admin/cloudinary-images?${params}`);
+      if (!response.ok) {
+        throw new Error('Error al cargar imágenes de Cloudinary');
+      }
+      
+      const data = await response.json();
+      
+      if (page === 1) {
+        setCloudinaryImages(data.resources);
+      } else {
+        setCloudinaryImages(prev => [...prev, ...data.resources]);
+      }
+      
+      setCloudinaryHasMore(data.pagination.has_more);
+      setCloudinaryPage(data.pagination.page);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error interno del servidor");
+      console.error('Error cargando imágenes de Cloudinary:', err);
+    } finally {
+      setLoadingCloudinary(false);
+    }
+  };
+
+  // Función para cargar más imágenes de Cloudinary
+  const loadMoreCloudinaryImages = () => {
+    if (cloudinaryHasMore && !loadingCloudinary) {
+      loadCloudinaryImages(cloudinaryPage + 1, cloudinaryResourceType);
+    }
+  };
+
+  // Función para eliminar imagen de Cloudinary
+  const deleteCloudinaryImage = async (publicId: string, filename: string) => {
+    try {
+      setError(null);
+      const response = await fetch(`/api/admin/cloudinary-images/${encodeURIComponent(publicId)}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error eliminando imagen');
+      }
+
+      // Remover la imagen de la lista local
+      setCloudinaryImages(prev => prev.filter(img => img.public_id !== publicId));
+      showToast('success', `Imagen "${filename}" eliminada correctamente`);
+    } catch (error) {
+      console.error('Error eliminando imagen:', error);
+      setError(error instanceof Error ? error.message : 'Error eliminando imagen');
+    }
+  };
+
+  // Función para cargar redes sociales
+  const loadSocialMedia = async () => {
+    try {
+      setLoadingSocialMedia(true);
+      setError(null);
+      const response = await fetch('/api/admin/social-media');
+      if (!response.ok) {
+        throw new Error('Error cargando redes sociales');
+      }
+      const data = await response.json();
+      setSocialMedia({
+        whatsapp: data.whatsapp || '',
+        telegram: data.telegram || '',
+        twitter: data.twitter || '',
+        facebook: data.facebook || '',
+        instagram: data.instagram || '',
+        tiktok: data.tiktok || '',
+      });
+    } catch (error) {
+      console.error('Error cargando redes sociales:', error);
+      setError(error instanceof Error ? error.message : 'Error cargando redes sociales');
+    } finally {
+      setLoadingSocialMedia(false);
+    }
+  };
+
+  // Función para guardar redes sociales
+  const saveSocialMedia = async () => {
+    try {
+      setSavingSocialMedia(true);
+      setError(null);
+      const response = await fetch('/api/admin/social-media', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(socialMedia),
+      });
+      if (!response.ok) {
+        throw new Error('Error guardando redes sociales');
+      }
+      showToast('success', 'Redes sociales actualizadas correctamente');
+    } catch (error) {
+      console.error('Error guardando redes sociales:', error);
+      setError(error instanceof Error ? error.message : 'Error guardando redes sociales');
+    } finally {
+      setSavingSocialMedia(false);
+    }
+  };
+
 
 
   if (status === 'loading') {
@@ -1555,6 +1714,9 @@ export default function AdminPage() {
     { id: 'nominees', label: 'Nominados', icon: '🎯' },
     { id: 'votes', label: 'Votaciones', icon: '🗳️' },
     { id: 'users', label: 'Usuarios', icon: '👤' },
+    { id: 'cloudinary', label: 'Imágenes', icon: '🖼️' },
+    { id: 'social-media', label: 'Redes Sociales', icon: '📱' },
+    { id: 'public', label: 'Página Pública', icon: '🌐' },
   ];
 
   const handleConfirmAction = (title: string, message: string, onConfirm: () => void) => {
@@ -2053,8 +2215,12 @@ export default function AdminPage() {
               <button
                 key={tab.id}
                 onClick={() => {
-                  setActiveTab(tab.id);
-                  setSidebarOpen(false);
+                  if (tab.id === 'public') {
+                    router.push('/');
+                  } else {
+                    setActiveTab(tab.id);
+                    setSidebarOpen(false);
+                  }
                 }}
                 className={`w-full flex items-center space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg text-left transition-all duration-200 ${
                   activeTab === tab.id
@@ -3952,12 +4118,54 @@ export default function AdminPage() {
                               </td>
                               <td className="p-4 text-sm text-muted-foreground">
                                 {user.lastVoteDate 
-                                  ? new Date(user.lastVoteDate).toLocaleDateString('es-ES')
+                                  ? (() => {
+                                      const now = new Date();
+                                      const lastVote = new Date(user.lastVoteDate);
+                                      const diffTime = Math.abs(now.getTime() - lastVote.getTime());
+                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                      
+                                      if (diffDays === 0) {
+                                        return 'Hoy';
+                                      } else if (diffDays === 1) {
+                                        return 'Ayer';
+                                      } else if (diffDays < 7) {
+                                        return `Hace ${diffDays} días`;
+                                      } else if (diffDays < 30) {
+                                        const weeks = Math.floor(diffDays / 7);
+                                        return `Hace ${weeks} ${weeks === 1 ? 'semana' : 'semanas'}`;
+                                      } else if (diffDays < 365) {
+                                        const months = Math.floor(diffDays / 30);
+                                        return `Hace ${months} ${months === 1 ? 'mes' : 'meses'}`;
+                                      } else {
+                                        const years = Math.floor(diffDays / 365);
+                                        return `Hace ${years} ${years === 1 ? 'año' : 'años'}`;
+                                      }
+                                    })()
                                   : 'Nunca'
                                 }
                               </td>
                               <td className="p-4 text-sm text-muted-foreground">
-                                {new Date(user.createdAt).toLocaleDateString('es-ES')}
+                                {(() => {
+                                  const now = new Date();
+                                  const createdAt = new Date(user.createdAt);
+                                  const diffTime = Math.abs(now.getTime() - createdAt.getTime());
+                                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                  
+                                  if (diffDays === 1) {
+                                    return 'Hace 1 día';
+                                  } else if (diffDays < 7) {
+                                    return `Hace ${diffDays} días`;
+                                  } else if (diffDays < 30) {
+                                    const weeks = Math.floor(diffDays / 7);
+                                    return `Hace ${weeks} ${weeks === 1 ? 'semana' : 'semanas'}`;
+                                  } else if (diffDays < 365) {
+                                    const months = Math.floor(diffDays / 30);
+                                    return `Hace ${months} ${months === 1 ? 'mes' : 'meses'}`;
+                                  } else {
+                                    const years = Math.floor(diffDays / 365);
+                                    return `Hace ${years} ${years === 1 ? 'año' : 'años'}`;
+                                  }
+                                })()}
                               </td>
                               <td className="p-4">
                                 <div className="flex flex-wrap gap-2">
@@ -4057,8 +4265,308 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* Imágenes de Cloudinary */}
+          {activeTab === 'cloudinary' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                <div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Imágenes de Cloudinary</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">Gestiona todas las imágenes y videos almacenados en Cloudinary</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <select
+                    value={cloudinaryResourceType}
+                    onChange={(e) => setCloudinaryResourceType(e.target.value as 'image' | 'video')}
+                    className="bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                  >
+                    <option value="image">🖼️ Imágenes</option>
+                    <option value="video">🎥 Videos</option>
+                  </select>
+                  <button 
+                    onClick={() => loadCloudinaryImages(1, cloudinaryResourceType)}
+                    disabled={loadingCloudinary}
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span>{loadingCloudinary ? '⏳' : '🔄'}</span>
+                    <span>{loadingCloudinary ? 'Cargando...' : 'Actualizar'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-destructive">⚠️</span>
+                    <span className="text-destructive font-medium">{error}</span>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="ml-auto text-destructive hover:text-destructive/80"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {loadingCloudinary && cloudinaryImages.length === 0 ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Cargando {cloudinaryResourceType === 'image' ? 'imágenes' : 'videos'}...</p>
+                  </div>
+                </div>
+              ) : cloudinaryImages.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">🖼️</div>
+                  <p className="text-lg font-medium text-foreground mb-2">No hay {cloudinaryResourceType === 'image' ? 'imágenes' : 'videos'}</p>
+                  <p className="text-muted-foreground">No se encontraron archivos en Cloudinary</p>
+                </div>
+              ) : (
+                <>
+                  {/* Grid de imágenes */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {cloudinaryImages.map((image) => (
+                      <div key={image.public_id} className="bg-card rounded-lg border border-border/40 overflow-hidden hover:shadow-lg transition-all duration-200 group">
+                        <div className="aspect-square relative">
+                          {image.resource_type === 'image' ? (
+                            <img
+                              src={image.secure_url}
+                              alt={image.filename}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : (
+                            <div className="relative w-full h-full">
+                              <img
+                                src={image.thumbnail_url || image.secure_url}
+                                alt={image.filename}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                <span className="text-white text-lg">▶️</span>
+                              </div>
+                            </div>
+                          )}
+                          <div className="hidden absolute inset-0 bg-muted flex items-center justify-center">
+                            <span className="text-muted-foreground text-sm">Error</span>
+                          </div>
+                          
+                          {/* Botón de eliminar */}
+                          <button
+                            onClick={() => handleConfirmAction(
+                              'Eliminar Imagen',
+                              `¿Estás seguro de que quieres eliminar "${image.filename}"?\n\n⚠️ Esta acción:\n• Eliminará permanentemente la imagen de Cloudinary\n• No se puede deshacer\n• Puede afectar posts que usen esta imagen`,
+                              () => deleteCloudinaryImage(image.public_id, image.filename)
+                            )}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 focus:opacity-100"
+                            title="Eliminar imagen"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                        <div className="p-3">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {image.folder}
+                          </div>
+                          <div className="text-sm font-medium text-foreground truncate mb-1">
+                            {image.filename}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {image.width && image.height && `${image.width}×${image.height}`}
+                            {image.bytes && ` • ${(image.bytes / 1024 / 1024).toFixed(1)}MB`}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {new Date(image.created_at).toLocaleDateString('es-ES')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Load More Button */}
+                  {cloudinaryHasMore && (
+                    <div className="text-center pt-6">
+                      <button
+                        onClick={loadMoreCloudinaryImages}
+                        disabled={loadingCloudinary}
+                        className="bg-muted text-foreground px-6 py-3 rounded-lg hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loadingCloudinary ? 'Cargando...' : 'Cargar más'}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* End Message */}
+                  {!cloudinaryHasMore && cloudinaryImages.length > 0 && (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground text-sm">No hay más {cloudinaryResourceType === 'image' ? 'imágenes' : 'videos'} que mostrar</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Redes Sociales */}
+          {activeTab === 'social-media' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+                <div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground">Redes Sociales</h3>
+                  <p className="text-muted-foreground text-sm lg:text-base">Gestiona los enlaces a tus redes sociales y grupos</p>
+                </div>
+                <button 
+                  onClick={saveSocialMedia}
+                  disabled={savingSocialMedia}
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{savingSocialMedia ? '⏳' : '💾'}</span>
+                  <span>{savingSocialMedia ? 'Guardando...' : 'Guardar Cambios'}</span>
+                </button>
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-destructive">⚠️</span>
+                    <span className="text-destructive font-medium">{error}</span>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="ml-auto text-destructive hover:text-destructive/80"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {loadingSocialMedia ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Cargando redes sociales...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Grupos */}
+                  <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                    <h4 className="text-lg font-semibold text-foreground mb-4">📱 Grupos</h4>
+                    <div className="space-y-4">
+                      {/* WhatsApp */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          💚 WhatsApp
+                        </label>
+                        <input
+                          type="url"
+                          value={socialMedia.whatsapp}
+                          onChange={(e) => setSocialMedia(prev => ({ ...prev, whatsapp: e.target.value }))}
+                          placeholder="https://chat.whatsapp.com/..."
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enlace del grupo de WhatsApp
+                        </p>
+                      </div>
+
+                      {/* Telegram */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          💙 Telegram
+                        </label>
+                        <input
+                          type="url"
+                          value={socialMedia.telegram}
+                          onChange={(e) => setSocialMedia(prev => ({ ...prev, telegram: e.target.value }))}
+                          placeholder="https://t.me/..."
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enlace del grupo o canal de Telegram
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Redes Sociales */}
+                  <div className="bg-card rounded-lg lg:rounded-xl p-4 lg:p-6 border border-border/40">
+                    <h4 className="text-lg font-semibold text-foreground mb-4">🌐 Redes Sociales</h4>
+                    <div className="space-y-4">
+                      {/* Twitter */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          🐦 Twitter / X
+                        </label>
+                        <input
+                          type="url"
+                          value={socialMedia.twitter}
+                          onChange={(e) => setSocialMedia(prev => ({ ...prev, twitter: e.target.value }))}
+                          placeholder="https://twitter.com/..."
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Facebook */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          📘 Facebook
+                        </label>
+                        <input
+                          type="url"
+                          value={socialMedia.facebook}
+                          onChange={(e) => setSocialMedia(prev => ({ ...prev, facebook: e.target.value }))}
+                          placeholder="https://facebook.com/..."
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Instagram */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          📷 Instagram
+                        </label>
+                        <input
+                          type="url"
+                          value={socialMedia.instagram}
+                          onChange={(e) => setSocialMedia(prev => ({ ...prev, instagram: e.target.value }))}
+                          placeholder="https://instagram.com/..."
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      {/* TikTok */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          🎵 TikTok
+                        </label>
+                        <input
+                          type="url"
+                          value={socialMedia.tiktok}
+                          onChange={(e) => setSocialMedia(prev => ({ ...prev, tiktok: e.target.value }))}
+                          placeholder="https://tiktok.com/@..."
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Otras pestañas */}
-          {activeTab !== 'dashboard' && activeTab !== 'seasons' && activeTab !== 'weeks' && activeTab !== 'candidates' && activeTab !== 'nominees' && activeTab !== 'votes' && activeTab !== 'users' && (
+          {activeTab !== 'dashboard' && activeTab !== 'seasons' && activeTab !== 'weeks' && activeTab !== 'candidates' && activeTab !== 'nominees' && activeTab !== 'votes' && activeTab !== 'users' && activeTab !== 'cloudinary' && activeTab !== 'social-media' && (
             <div className="text-center text-muted-foreground py-12">
               <div className="text-4xl lg:text-6xl mb-4">🚧</div>
               <p className="text-lg">Sección en construcción...</p>
