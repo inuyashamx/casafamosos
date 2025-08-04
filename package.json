@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.10.0",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "autoprefixer": "^10.4.21",
     "mongodb": "^6.18.0",
     "mongoose": "^8.16.4",
