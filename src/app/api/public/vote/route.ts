@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     let eliminatedCandidate = null;
     if (weekWithResults.results?.eliminated?.candidateId) {
       // Primero intentar encontrar en los nominados
-      let eliminatedNominee = weekWithResults.nominees.find(
+      const eliminatedNominee = weekWithResults.nominees.find(
         (nominee: any) => nominee.candidateId._id.toString() === weekWithResults.results.eliminated.candidateId.toString()
       );
       

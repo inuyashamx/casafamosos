@@ -296,10 +296,8 @@ export class WeekService {
   static async getWeekResults(weekId: string) {
     await dbConnect();
     
-    // Actualizar resultados en tiempo real y obtener la semana actualizada
-    const updatedWeek = await this.updateWeekResults(weekId);
-    
-    // Retornar la semana con los nominados y eliminado poblados
+    // Actualizar resultados en tiempo real y retornar la semana con los nominados y eliminado poblados
+    await this.updateWeekResults(weekId);
     return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
   }
 

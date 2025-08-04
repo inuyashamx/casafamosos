@@ -1464,9 +1464,9 @@ export default function AdminPage() {
         throw new Error(errorData.error || 'Error al resetear votos del usuario');
       }
 
-      const result = await response.json();
+      await response.json();
       await loadUsers(userPage, userSearch, userSortBy, userSortOrder);
-      showToast('success', result.message);
+      showToast('success', `Votos de ${userName} reseteados correctamente`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error interno del servidor");
       console.error('Error reseteando votos del usuario:', err);
