@@ -5,7 +5,7 @@ import { PostService } from '@/lib/services/postService';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,7 +19,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Solo administradores pueden eliminar posts permanentemente' }, { status: 403 });
     }
 
-    await PostService.permanentlyDeletePost(params.id, (session.user as any).id);
+    const resolvedParams = await params;
+    await PostService.permanentlyDeletePost(resolvedParams.id, (session.user as any).id);
     
     return NextResponse.json({ success: true, message: 'Post eliminado permanentemente' });
   } catch (error: any) {

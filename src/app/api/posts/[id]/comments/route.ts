@@ -5,7 +5,7 @@ import { PostService } from '@/lib/services/postService';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,7 +24,8 @@ export async function POST(
       return NextResponse.json({ error: 'El comentario no puede exceder 500 caracteres' }, { status: 400 });
     }
 
-    const post = await PostService.addComment(params.id, (session.user as any).id, content.trim(), media);
+    const resolvedParams = await params;
+    const post = await PostService.addComment(resolvedParams.id, (session.user as any).id, content.trim(), media);
     
     return NextResponse.json(post);
   } catch (error: any) {

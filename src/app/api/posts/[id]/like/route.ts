@@ -5,7 +5,7 @@ import { PostService } from '@/lib/services/postService';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,7 +13,8 @@ export async function POST(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const post = await PostService.likePost(params.id, (session.user as any).id);
+    const resolvedParams = await params;
+    const post = await PostService.likePost(resolvedParams.id, (session.user as any).id);
     
     return NextResponse.json({ success: true, likesCount: post.likes.length });
   } catch (error: any) {
@@ -24,7 +25,7 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -32,7 +33,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const post = await PostService.unlikePost(params.id, (session.user as any).id);
+    const resolvedParams = await params;
+    const post = await PostService.unlikePost(resolvedParams.id, (session.user as any).id);
     
     return NextResponse.json({ success: true, likesCount: post.likes.length });
   } catch (error: any) {

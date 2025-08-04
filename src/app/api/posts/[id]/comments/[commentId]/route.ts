@@ -5,7 +5,7 @@ import { PostService } from '@/lib/services/postService';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,9 +13,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    const resolvedParams = await params;
     const post = await PostService.removeComment(
-      params.id,
-      params.commentId,
+      resolvedParams.id,
+      resolvedParams.commentId,
       (session.user as any).id
     );
     
@@ -28,7 +29,7 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -47,9 +48,10 @@ export async function PUT(
       return NextResponse.json({ error: 'El comentario no puede exceder 500 caracteres' }, { status: 400 });
     }
 
+    const resolvedParams = await params;
     const post = await PostService.updateComment(
-      params.id,
-      params.commentId,
+      resolvedParams.id,
+      resolvedParams.commentId,
       (session.user as any).id,
       content.trim()
     );

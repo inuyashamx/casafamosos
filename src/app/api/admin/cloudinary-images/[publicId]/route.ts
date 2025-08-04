@@ -5,7 +5,7 @@ import { CloudinaryService } from '@/lib/cloudinary';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { publicId: string } }
+  { params }: { params: Promise<{ publicId: string }> }
 ) {
   try {
     // Verificar autenticación y permisos de admin
@@ -19,7 +19,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Acceso denegado. Se requieren permisos de administrador.' }, { status: 403 });
     }
 
-    const { publicId } = params;
+    const resolvedParams = await params;
+    const { publicId } = resolvedParams;
     if (!publicId) {
       return NextResponse.json({ error: 'ID público requerido' }, { status: 400 });
     }

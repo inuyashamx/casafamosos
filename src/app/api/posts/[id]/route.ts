@@ -5,10 +5,11 @@ import { PostService } from '@/lib/services/postService';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const post = await PostService.getPostById(params.id);
+    const resolvedParams = await params;
+    const post = await PostService.getPostById(resolvedParams.id);
     
     if (!post) {
       return NextResponse.json({ error: 'Post no encontrado' }, { status: 404 });
@@ -23,7 +24,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -42,7 +43,8 @@ export async function PUT(
       return NextResponse.json({ error: 'El contenido no puede exceder 2000 caracteres' }, { status: 400 });
     }
 
-    const post = await PostService.updatePost(params.id, (session.user as any).id, {
+    const resolvedParams = await params;
+    const post = await PostService.updatePost(resolvedParams.id, (session.user as any).id, {
       content: content.trim(),
     });
 
@@ -55,7 +57,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -63,7 +65,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    await PostService.deletePost(params.id, (session.user as any).id);
+    const resolvedParams = await params;
+    await PostService.deletePost(resolvedParams.id, (session.user as any).id);
     
     return NextResponse.json({ success: true });
   } catch (error: any) {
