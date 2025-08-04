@@ -164,6 +164,7 @@ export default function PerfilPage() {
           name: editName.trim(),
           nickname: editNickname.trim(),
           image: imageData?.url,
+          imagePublicId: imageData?.publicId,
         }),
       });
 

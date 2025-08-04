@@ -26,7 +26,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const data = await request.json();
-    const { name, nickname, image } = data;
+    const { name, nickname, image, imagePublicId } = data;
 
     // Validaciones básicas
     if (name && typeof name !== 'string') {
@@ -41,10 +41,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'La URL de la imagen debe ser una cadena de texto' }, { status: 400 });
     }
 
+    if (imagePublicId && typeof imagePublicId !== 'string') {
+      return NextResponse.json({ error: 'El ID público de la imagen debe ser una cadena de texto' }, { status: 400 });
+    }
+
     const updatedProfile = await UserService.updateUserProfile((session.user as any).id, {
       name: name?.trim(),
       nickname: nickname?.trim(),
       image,
+      imagePublicId,
     });
 
     return NextResponse.json(updatedProfile);

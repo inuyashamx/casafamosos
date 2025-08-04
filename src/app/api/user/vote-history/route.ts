@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -88,8 +87,8 @@ export async function GET(request: NextRequest) {
 
     // Aplanar todas las semanas de todas las temporadas
     const allWeeks: any[] = [];
-    allVoteHistory.forEach(season => {
-      season.weeks.forEach(week => {
+    allVoteHistory.forEach((season: any) => {
+      season.weeks.forEach((week: any) => {
         allWeeks.push({
           ...week,
           seasonId: season.seasonId,
@@ -108,7 +107,7 @@ export async function GET(request: NextRequest) {
     const voteHistory: any[] = [];
     const seasonMap: { [key: string]: any } = {};
 
-    paginatedWeeks.forEach(week => {
+    paginatedWeeks.forEach((week: any) => {
       if (!seasonMap[week.seasonId]) {
         seasonMap[week.seasonId] = {
           seasonId: week.seasonId,
@@ -126,7 +125,7 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    Object.values(seasonMap).forEach(season => {
+    Object.values(seasonMap).forEach((season: any) => {
       voteHistory.push(season);
     });
 

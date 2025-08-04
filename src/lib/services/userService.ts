@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
+import { CloudinaryService } from '@/lib/cloudinary';
 
 export class UserService {
   static async getUserProfile(userId: string) {
@@ -25,6 +26,7 @@ export class UserService {
     name?: string;
     nickname?: string;
     image?: string;
+    imagePublicId?: string;
   }) {
     await dbConnect();
     
@@ -56,8 +58,22 @@ export class UserService {
       user.nickname = newNickname;
     }
 
-    if (updates.image !== undefined) {
+    // Manejar actualización de imagen
+    if (updates.image !== undefined || updates.imagePublicId !== undefined) {
+      // Si hay una imagen anterior, eliminarla de Cloudinary
+      if (user.imagePublicId) {
+        try {
+          await CloudinaryService.deleteMedia(user.imagePublicId, 'image');
+          console.log(`Imagen anterior eliminada de Cloudinary: ${user.imagePublicId}`);
+        } catch (error) {
+          console.error(`Error eliminando imagen anterior de Cloudinary: ${user.imagePublicId}`, error);
+          // No lanzar error para no interrumpir la actualización
+        }
+      }
+
+      // Actualizar con la nueva imagen
       user.image = updates.image;
+      user.imagePublicId = updates.imagePublicId;
     }
 
     await user.save();

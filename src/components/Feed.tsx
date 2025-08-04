@@ -34,6 +34,13 @@ interface PostData {
       image?: string;
     };
     content: string;
+    media?: {
+      type: 'image' | 'video';
+      url: string;
+      publicId: string;
+      thumbnail?: string;
+    };
+    likes: Array<{ userId: string; likedAt: string }>;
     createdAt: string;
   }>;
   createdAt: string;

@@ -70,7 +70,7 @@ export class PostService {
     // Asegurar que todos los comentarios tengan el campo likes
     return {
       ...post,
-      comments: post.comments.map((comment: any) => ({
+      comments: (post as any).comments.map((comment: any) => ({
         ...comment,
         likes: comment.likes || []
       }))
@@ -91,7 +91,7 @@ export class PostService {
       .lean();
 
     // Asegurar que todos los comentarios tengan el campo likes
-    return posts.map(post => ({
+    return posts.map((post: any) => ({
       ...post,
       comments: post.comments.map((comment: any) => ({
         ...comment,
@@ -236,7 +236,7 @@ export class PostService {
 
     // Eliminar archivos de Cloudinary antes del hard delete
     if (post.media && post.media.length > 0) {
-      const deletePromises = post.media.map(async (mediaItem) => {
+      const deletePromises = post.media.map(async (mediaItem: any) => {
         try {
           await CloudinaryService.deleteMedia(mediaItem.publicId, mediaItem.type);
           console.log(`Archivo eliminado de Cloudinary: ${mediaItem.publicId}`);
@@ -253,8 +253,8 @@ export class PostService {
     // Eliminar archivos de Cloudinary de los comentarios
     if (post.comments && post.comments.length > 0) {
       const commentDeletePromises = post.comments
-        .filter(comment => comment.media)
-        .map(async (comment) => {
+        .filter((comment: any) => comment.media)
+        .map(async (comment: any) => {
           try {
             await CloudinaryService.deleteMedia(comment.media!.publicId, comment.media!.type);
             console.log(`Archivo de comentario eliminado de Cloudinary: ${comment.media!.publicId}`);
@@ -319,7 +319,7 @@ export class PostService {
 
     // Eliminar archivos de Cloudinary
     if (post.media && post.media.length > 0) {
-      const deletePromises = post.media.map(async (mediaItem) => {
+      const deletePromises = post.media.map(async (mediaItem: any) => {
         try {
           await CloudinaryService.deleteMedia(mediaItem.publicId, mediaItem.type);
           console.log(`Archivo eliminado de Cloudinary: ${mediaItem.publicId}`);
