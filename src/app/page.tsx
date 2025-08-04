@@ -622,6 +622,49 @@ export default function Home() {
           </>
         )}
 
+        {/* Eliminated Candidate Section */}
+        {votingData?.eliminatedCandidate && votingData.week.status === 'completed' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-foreground">Candidato Expulsado</h2>
+            <div className="bg-red-500/10 border-2 border-red-500/30 rounded-xl p-6">
+              <div className="flex items-center space-x-4">
+                {/* Avatar */}
+                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-red-500/20 shadow-lg">
+                  {votingData.eliminatedCandidate.photo ? (
+                    <Image 
+                      src={votingData.eliminatedCandidate.photo} 
+                      alt={votingData.eliminatedCandidate.name}
+                      width={64}
+                      height={64}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <span className="text-2xl">😢</span>
+                  )}
+                </div>
+                
+                {/* Info */}
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h3 className="text-xl font-bold text-red-600">
+                      {votingData.eliminatedCandidate.name}
+                    </h3>
+                    <span className="text-red-500">💔</span>
+                  </div>
+                  <p className="text-red-600 font-medium mb-1">¡Ha sido expulsado de la casa!</p>
+                  <p className="text-sm text-red-500/80">
+                    Eliminado el {new Date(votingData.eliminatedCandidate.eliminatedAt).toLocaleDateString('es-ES', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Nominees List */}
         {votingData?.nominees && votingData.nominees.length > 0 && (
           <div className="space-y-4">
@@ -717,49 +760,6 @@ export default function Home() {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Eliminated Candidate Section */}
-        {votingData?.eliminatedCandidate && votingData.week.status === 'completed' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-foreground">Candidato Expulsado</h2>
-            <div className="bg-red-500/10 border-2 border-red-500/30 rounded-xl p-6">
-              <div className="flex items-center space-x-4">
-                {/* Avatar */}
-                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-red-500/20 shadow-lg">
-                  {votingData.eliminatedCandidate.photo ? (
-                    <Image 
-                      src={votingData.eliminatedCandidate.photo} 
-                      alt={votingData.eliminatedCandidate.name}
-                      width={64}
-                      height={64}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <span className="text-2xl">😢</span>
-                  )}
-                </div>
-                
-                {/* Info */}
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h3 className="text-xl font-bold text-red-600">
-                      {votingData.eliminatedCandidate.name}
-                    </h3>
-                    <span className="text-red-500">💔</span>
-                  </div>
-                  <p className="text-red-600 font-medium mb-1">¡Ha sido expulsado de la casa!</p>
-                  <p className="text-sm text-red-500/80">
-                    Eliminado el {new Date(votingData.eliminatedCandidate.eliminatedAt).toLocaleDateString('es-ES', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 

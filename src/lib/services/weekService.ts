@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 export class WeekService {
   static async getWeeksBySeason(seasonId: string) {
     await dbConnect();
-    return await Week.find({ seasonId }).sort({ weekNumber: 1 }).populate('nominees.candidateId');
+    return await Week.find({ seasonId }).sort({ weekNumber: 1 }).populate('nominees.candidateId results.eliminated.candidateId');
   }
 
   static async getActiveWeek(seasonId: string) {
@@ -22,7 +22,7 @@ export class WeekService {
       seasonId,
       isVotingActive: true,
       status: 'voting'
-    }).populate('nominees.candidateId');
+    }).populate('nominees.candidateId results.eliminated.candidateId');
   }
 
   static async activateScheduledWeeks(seasonId: string) {
@@ -57,7 +57,7 @@ export class WeekService {
       seasonId,
       status: 'scheduled',
       'nominees.0': { $exists: true } // Verificar que tenga al menos un nominado
-    }).populate('nominees.candidateId').sort({ weekNumber: 1 });
+    }).populate('nominees.candidateId results.eliminated.candidateId').sort({ weekNumber: 1 });
   }
 
   static async getCurrentWeek(seasonId: string) {
@@ -67,7 +67,7 @@ export class WeekService {
       seasonId,
       startDate: { $lte: now },
       endDate: { $gte: now }
-    }).populate('nominees.candidateId');
+    }).populate('nominees.candidateId results.eliminated.candidateId');
   }
 
   static async getCurrentWeekByDate(seasonId: string, date: Date) {
@@ -76,12 +76,12 @@ export class WeekService {
       seasonId,
       votingStartDate: { $lte: date },
       votingEndDate: { $gte: date }
-    }).populate('nominees.candidateId');
+    }).populate('nominees.candidateId results.eliminated.candidateId');
   }
 
   static async getWeekById(weekId: string) {
     await dbConnect();
-    return await Week.findById(weekId).populate('nominees.candidateId');
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
   }
 
   static async createWeek(data: {
@@ -127,7 +127,7 @@ export class WeekService {
 
   static async updateWeek(weekId: string, data: any) {
     await dbConnect();
-    return await Week.findByIdAndUpdate(weekId, data, { new: true }).populate('nominees.candidateId');
+    return await Week.findByIdAndUpdate(weekId, data, { new: true }).populate('nominees.candidateId results.eliminated.candidateId');
   }
 
   static async startVoting(weekId: string) {
@@ -184,7 +184,7 @@ export class WeekService {
     await week.addNominee(candidateId);
     await candidate.addNomination(weekId, week.weekNumber);
 
-    return await Week.findById(weekId).populate('nominees.candidateId');
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
   }
 
   static async removeNominee(weekId: string, candidateId: string) {
@@ -195,7 +195,7 @@ export class WeekService {
     }
 
     await week.removeNominee(candidateId);
-    return await Week.findById(weekId).populate('nominees.candidateId');
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
   }
 
   static async updateWeekResults(weekId: string) {
@@ -331,6 +331,30 @@ export class WeekService {
       candidateId,
       eliminatedAt: new Date()
     };
+
+    await week.save();
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
+  }
+
+  static async removeEliminatedCandidate(weekId: string) {
+    await dbConnect();
+    
+    const week = await Week.findById(weekId);
+    if (!week) {
+      throw new Error('Semana no encontrada');
+    }
+
+    if (!week.results?.eliminated?.candidateId) {
+      throw new Error('No hay candidato eliminado en esta semana');
+    }
+
+    // Restaurar el candidato a estado activo
+    await Candidate.findByIdAndUpdate(week.results.eliminated.candidateId, {
+      status: 'active'
+    });
+
+    // Quitar el candidato eliminado de los resultados
+    week.results.eliminated = undefined;
 
     await week.save();
     return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');

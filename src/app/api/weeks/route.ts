@@ -91,6 +91,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(week);
     }
 
+    if (action === 'removeEliminatedCandidate') {
+      const week = await WeekService.removeEliminatedCandidate(weekData.weekId);
+      return NextResponse.json(week);
+    }
+
     // Crear nueva semana
     const week = await WeekService.createWeek({
       seasonId: weekData.seasonId,

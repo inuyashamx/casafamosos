@@ -25,7 +25,22 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     let activeWeek = await WeekService.getCurrentWeekByDate(activeSeason._id.toString(), now);
     
-    // Si no hay semana actual, buscar cualquier semana con nominados
+    // Si no hay semana actual, buscar semana activa de votación
+    if (!activeWeek) {
+      activeWeek = await WeekService.getActiveWeek(activeSeason._id.toString());
+    }
+    
+    // Si no hay semana activa, buscar la semana completada más reciente
+    if (!activeWeek) {
+      const weeks = await WeekService.getWeeksBySeason(activeSeason._id.toString());
+      const completedWeeks = weeks.filter((w: any) => w.status === 'completed' && w.nominees.length > 0);
+      if (completedWeeks.length > 0) {
+        // Obtener la semana completada más reciente
+        activeWeek = completedWeeks.sort((a: any, b: any) => new Date(b.votingEndDate).getTime() - new Date(a.votingEndDate).getTime())[0];
+      }
+    }
+    
+    // Si aún no hay semana, buscar cualquier semana con nominados
     if (!activeWeek) {
       activeWeek = await WeekService.getNextScheduledWeekWithNominees(activeSeason._id.toString());
     }
@@ -50,6 +65,8 @@ export async function GET(request: NextRequest) {
     console.log('Week nominees count:', weekWithResults.nominees?.length);
     console.log('Week voting stats count:', weekWithResults.results?.votingStats?.length);
     console.log('Total votes in week results:', weekWithResults.results?.totalVotes);
+    console.log('Week status:', weekWithResults.status);
+    console.log('Eliminated candidate info:', weekWithResults.results?.eliminated);
     
     // Mostrar todos los candidatos que estén en week.nominees, incluso con 0 votos
     const nominees = weekWithResults.nominees
@@ -74,7 +91,8 @@ export async function GET(request: NextRequest) {
     // Obtener información del candidato eliminado si existe
     let eliminatedCandidate = null;
     if (weekWithResults.results?.eliminated?.candidateId) {
-      const eliminatedNominee = weekWithResults.nominees.find(
+      // Primero intentar encontrar en los nominados
+      let eliminatedNominee = weekWithResults.nominees.find(
         (nominee: any) => nominee.candidateId._id.toString() === weekWithResults.results.eliminated.candidateId.toString()
       );
       
@@ -83,6 +101,14 @@ export async function GET(request: NextRequest) {
           id: eliminatedNominee.candidateId._id,
           name: eliminatedNominee.candidateId.name,
           photo: eliminatedNominee.candidateId.photo,
+          eliminatedAt: weekWithResults.results.eliminated.eliminatedAt,
+        };
+      } else if (weekWithResults.results.eliminated.candidateId.name) {
+        // Si el candidateId está poblado directamente
+        eliminatedCandidate = {
+          id: weekWithResults.results.eliminated.candidateId._id || weekWithResults.results.eliminated.candidateId,
+          name: weekWithResults.results.eliminated.candidateId.name,
+          photo: weekWithResults.results.eliminated.candidateId.photo,
           eliminatedAt: weekWithResults.results.eliminated.eliminatedAt,
         };
       }

@@ -1614,6 +1614,38 @@ export default function AdminPage() {
     }
   };
 
+  // Función para quitar candidato eliminado
+  const removeEliminatedCandidate = async (weekId: string) => {
+    try {
+      setError(null);
+
+      const response = await fetch('/api/weeks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'removeEliminatedCandidate',
+          weekId: weekId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al quitar candidato eliminado');
+      }
+
+      // Recargar datos
+      await loadWeeks(selectedSeason);
+      await loadCandidates(selectedSeason);
+      
+      showToast('success', 'Candidato eliminado removido correctamente');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error interno del servidor');
+      console.error('Error quitando candidato eliminado:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Toast Notifications */}
@@ -2542,7 +2574,7 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="grid grid-cols-3 gap-3 mb-4">
                       <div className="bg-muted/30 rounded-lg p-3 text-center">
                           <div className="text-lg font-bold text-foreground">{week.nominees.length}</div>
                         <div className="text-xs text-muted-foreground">Nominados</div>
@@ -2551,7 +2583,66 @@ export default function AdminPage() {
                           <div className="text-lg font-bold text-foreground">{week.results.totalVotes.toLocaleString()}</div>
                           <div className="text-xs text-muted-foreground">Votos</div>
                       </div>
+                      <div className={`rounded-lg p-3 text-center ${
+                        week.results?.eliminated?.candidateId 
+                          ? 'bg-red-500/10 border border-red-500/20' 
+                          : 'bg-muted/30'
+                      }`}>
+                        <div className={`text-lg font-bold ${
+                          week.results?.eliminated?.candidateId 
+                            ? 'text-red-600' 
+                            : 'text-foreground'
+                        }`}>
+                          {week.results?.eliminated?.candidateId ? '1' : '0'}
+                        </div>
+                        <div className={`text-xs ${
+                          week.results?.eliminated?.candidateId 
+                            ? 'text-red-500' 
+                            : 'text-muted-foreground'
+                        }`}>
+                          Expulsado
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Sección de candidato eliminado */}
+                    {week.results?.eliminated?.candidateId && (
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-red-500 text-xl">👤</span>
+                            <div>
+                              <p className="font-medium text-red-600">
+                                Candidato Expulsado
+                              </p>
+                              <p className="text-sm text-red-500">
+                                {new Date(week.results.eliminated.eliminatedAt).toLocaleDateString('es-ES')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleAddEliminatedCandidate(week._id, week.nominees)}
+                              className="text-xs bg-orange-500/10 text-orange-500 py-1 px-2 rounded hover:bg-orange-500/20 transition-colors"
+                              title="Cambiar expulsado"
+                            >
+                              Cambiar
+                            </button>
+                            <button
+                              onClick={() => handleConfirmAction(
+                                'Quitar Expulsado',
+                                '¿Estás seguro de que quieres quitar el candidato expulsado? El candidato volverá a estar activo.',
+                                () => removeEliminatedCandidate(week._id)
+                              )}
+                              className="text-xs bg-red-500/10 text-red-500 py-1 px-2 rounded hover:bg-red-500/20 transition-colors"
+                              title="Quitar expulsado"
+                            >
+                              Quitar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex space-x-2">
                         <button 
