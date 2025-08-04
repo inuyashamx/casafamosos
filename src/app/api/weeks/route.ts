@@ -96,6 +96,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(week);
     }
 
+    if (action === 'saveCandidate') {
+      const week = await WeekService.saveCandidate(weekData.weekId, weekData.candidateId);
+      return NextResponse.json(week);
+    }
+
+    if (action === 'removeSavedCandidate') {
+      const week = await WeekService.removeSavedCandidate(weekData.weekId);
+      return NextResponse.json(week);
+    }
+
     // Crear nueva semana
     const week = await WeekService.createWeek({
       seasonId: weekData.seasonId,

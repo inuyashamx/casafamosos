@@ -88,6 +88,15 @@ const WeekSchema = new mongoose.Schema({
         type: Date,
       },
     },
+    saved: {
+      candidateId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Candidate',
+      },
+      savedAt: {
+        type: Date,
+      },
+    },
   },
   settings: {
     maxVotesPerUser: {

@@ -68,9 +68,14 @@ export async function GET(request: NextRequest) {
     console.log('Week status:', weekWithResults.status);
     console.log('Eliminated candidate info:', weekWithResults.results?.eliminated);
     
-    // Mostrar todos los candidatos que estén en week.nominees, incluso con 0 votos
+    // Mostrar todos los candidatos que estén en week.nominees, excepto el salvado (no puede votarse)
     const nominees = weekWithResults.nominees
       .filter((nominee: any) => nominee.candidateId) // Filtrar nominados válidos
+      .filter((nominee: any) => {
+        // Excluir al candidato salvado de la votación
+        const isSaved = weekWithResults.results?.saved?.candidateId?.toString() === nominee.candidateId._id.toString();
+        return !isSaved;
+      })
       .map((nominee: any) => {
         const candidate = nominee.candidateId;
         const stats = weekWithResults.results?.votingStats?.find(
@@ -114,6 +119,32 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Obtener información del candidato salvado si existe
+    let savedCandidate = null;
+    if (weekWithResults.results?.saved?.candidateId) {
+      // Primero intentar encontrar en los nominados
+      const savedNominee = weekWithResults.nominees.find(
+        (nominee: any) => nominee.candidateId._id.toString() === weekWithResults.results.saved.candidateId.toString()
+      );
+      
+      if (savedNominee) {
+        savedCandidate = {
+          id: savedNominee.candidateId._id,
+          name: savedNominee.candidateId.name,
+          photo: savedNominee.candidateId.photo,
+          savedAt: weekWithResults.results.saved.savedAt,
+        };
+      } else if (weekWithResults.results.saved.candidateId.name) {
+        // Si el candidateId está poblado directamente
+        savedCandidate = {
+          id: weekWithResults.results.saved.candidateId._id || weekWithResults.results.saved.candidateId,
+          name: weekWithResults.results.saved.candidateId.name,
+          photo: weekWithResults.results.saved.candidateId.photo,
+          savedAt: weekWithResults.results.saved.savedAt,
+        };
+      }
+    }
+
     return NextResponse.json({
       nominees,
       week: {
@@ -130,7 +161,8 @@ export async function GET(request: NextRequest) {
         year: activeSeason.year,
       },
       totalVotes: weekWithResults.results?.totalVotes || 0,
-      eliminatedCandidate
+      eliminatedCandidate,
+      savedCandidate
     });
 
   } catch (error) {

@@ -36,12 +36,20 @@ interface EliminatedCandidate {
   eliminatedAt: string;
 }
 
+interface SavedCandidate {
+  id: string;
+  name: string;
+  photo?: string;
+  savedAt: string;
+}
+
 interface VotingData {
   nominees: Nominee[];
   week: WeekData;
   season: SeasonData;
   totalVotes?: number;
   eliminatedCandidate?: EliminatedCandidate;
+  savedCandidate?: SavedCandidate;
 }
 
 export default function Home() {
@@ -760,6 +768,49 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Saved Candidate Section */}
+        {votingData?.savedCandidate && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-foreground">Candidato Salvado</h2>
+            <div className="bg-green-500/10 border-2 border-green-500/30 rounded-xl p-6">
+              <div className="flex items-center space-x-4">
+                {/* Avatar */}
+                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-green-500/20 shadow-lg">
+                  {votingData.savedCandidate.photo ? (
+                    <Image 
+                      src={votingData.savedCandidate.photo} 
+                      alt={votingData.savedCandidate.name}
+                      width={64}
+                      height={64}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <span className="text-2xl">🙏</span>
+                  )}
+                </div>
+                
+                {/* Info */}
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h3 className="text-xl font-bold text-green-600">
+                      {votingData.savedCandidate.name}
+                    </h3>
+                    <span className="text-green-500">🛡️</span>
+                  </div>
+                  <p className="text-green-600 font-medium mb-1">¡Ha sido salvado esta semana!</p>
+                  <p className="text-sm text-green-500/80">
+                    Salvado el {new Date(votingData.savedCandidate.savedAt).toLocaleDateString('es-ES', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

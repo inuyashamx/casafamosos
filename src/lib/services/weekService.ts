@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 export class WeekService {
   static async getWeeksBySeason(seasonId: string) {
     await dbConnect();
-    return await Week.find({ seasonId }).sort({ weekNumber: 1 }).populate('nominees.candidateId results.eliminated.candidateId');
+    return await Week.find({ seasonId }).sort({ weekNumber: 1 }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async getActiveWeek(seasonId: string) {
@@ -22,7 +22,7 @@ export class WeekService {
       seasonId,
       isVotingActive: true,
       status: 'voting'
-    }).populate('nominees.candidateId results.eliminated.candidateId');
+    }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async activateScheduledWeeks(seasonId: string) {
@@ -57,7 +57,7 @@ export class WeekService {
       seasonId,
       status: 'scheduled',
       'nominees.0': { $exists: true } // Verificar que tenga al menos un nominado
-    }).populate('nominees.candidateId results.eliminated.candidateId').sort({ weekNumber: 1 });
+    }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId').sort({ weekNumber: 1 });
   }
 
   static async getCurrentWeek(seasonId: string) {
@@ -67,7 +67,7 @@ export class WeekService {
       seasonId,
       startDate: { $lte: now },
       endDate: { $gte: now }
-    }).populate('nominees.candidateId results.eliminated.candidateId');
+    }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async getCurrentWeekByDate(seasonId: string, date: Date) {
@@ -76,12 +76,12 @@ export class WeekService {
       seasonId,
       votingStartDate: { $lte: date },
       votingEndDate: { $gte: date }
-    }).populate('nominees.candidateId results.eliminated.candidateId');
+    }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async getWeekById(weekId: string) {
     await dbConnect();
-    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async createWeek(data: {
@@ -127,7 +127,7 @@ export class WeekService {
 
   static async updateWeek(weekId: string, data: any) {
     await dbConnect();
-    return await Week.findByIdAndUpdate(weekId, data, { new: true }).populate('nominees.candidateId results.eliminated.candidateId');
+    return await Week.findByIdAndUpdate(weekId, data, { new: true }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async startVoting(weekId: string) {
@@ -184,7 +184,7 @@ export class WeekService {
     await week.addNominee(candidateId);
     await candidate.addNomination(weekId, week.weekNumber);
 
-    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async removeNominee(weekId: string, candidateId: string) {
@@ -195,7 +195,7 @@ export class WeekService {
     }
 
     await week.removeNominee(candidateId);
-    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async updateWeekResults(weekId: string) {
@@ -298,7 +298,7 @@ export class WeekService {
     
     // Actualizar resultados en tiempo real y retornar la semana con los nominados y eliminado poblados
     await this.updateWeekResults(weekId);
-    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async eliminateCandidate(weekId: string, candidateId: string) {
@@ -331,7 +331,7 @@ export class WeekService {
     };
 
     await week.save();
-    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async removeEliminatedCandidate(weekId: string) {
@@ -355,7 +355,52 @@ export class WeekService {
     week.results.eliminated = undefined;
 
     await week.save();
-    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
+  }
+
+  static async saveCandidate(weekId: string, candidateId: string) {
+    await dbConnect();
+    
+    const week = await Week.findById(weekId);
+    if (!week) {
+      throw new Error('Semana no encontrada');
+    }
+
+    // Permitir salvar candidatos en cualquier momento (se hace 2 días antes)
+
+    // Verificar que el candidato esté nominado en esta semana
+    const isNominated = week.nominees.some((n: any) => n.candidateId.toString() === candidateId);
+    if (!isNominated) {
+      throw new Error('El candidato no está nominado en esta semana');
+    }
+
+    // Agregar al candidato salvado en los resultados
+    week.results.saved = {
+      candidateId,
+      savedAt: new Date()
+    };
+
+    await week.save();
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
+  }
+
+  static async removeSavedCandidate(weekId: string) {
+    await dbConnect();
+    
+    const week = await Week.findById(weekId);
+    if (!week) {
+      throw new Error('Semana no encontrada');
+    }
+
+    if (!week.results?.saved?.candidateId) {
+      throw new Error('No hay candidato salvado en esta semana');
+    }
+
+    // Quitar el candidato salvado de los resultados
+    week.results.saved = undefined;
+
+    await week.save();
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async deleteWeek(weekId: string) {

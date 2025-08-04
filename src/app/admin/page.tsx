@@ -92,6 +92,10 @@ interface Week {
       candidateId: string;
       eliminatedAt: string;
     };
+    saved?: {
+      candidateId: string;
+      savedAt: string;
+    };
   };
   settings: {
     maxVotesPerUser: number;
@@ -241,6 +245,20 @@ export default function AdminPage() {
   }>>([]);
   const [selectedEliminatedCandidate, setSelectedEliminatedCandidate] = useState<string>('');
   const [submittingElimination, setSubmittingElimination] = useState(false);
+
+  // Estados para modal de salvado de candidato
+  const [showSavedModal, setShowSavedModal] = useState(false);
+  const [savedWeekId, setSavedWeekId] = useState<string>('');
+  const [savedNominees, setSavedNominees] = useState<Array<{
+    candidateId: {
+      _id: string;
+      name: string;
+      photo?: string;
+    };
+    nominatedAt: string;
+  }>>([]);
+  const [selectedSavedCandidate, setSelectedSavedCandidate] = useState<string>('');
+  const [submittingSaved, setSubmittingSaved] = useState(false);
   
   // Estados para datatable
   const [userSearch, setUserSearch] = useState('');
@@ -1646,6 +1664,97 @@ export default function AdminPage() {
     }
   };
 
+  // Función para abrir modal de agregar salvado
+  const handleAddSavedCandidate = (weekId: string, nominees: Array<{
+    candidateId: {
+      _id: string;
+      name: string;
+      photo?: string;
+    };
+    nominatedAt: string;
+  }>) => {
+    setSavedWeekId(weekId);
+    setSavedNominees(nominees);
+    setSelectedSavedCandidate('');
+    setShowSavedModal(true);
+  };
+
+  // Función para salvar candidato
+  const saveCandidateFromWeek = async () => {
+    if (!selectedSavedCandidate || !savedWeekId) return;
+
+    try {
+      setSubmittingSaved(true);
+      setError(null);
+
+      const response = await fetch('/api/weeks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'saveCandidate',
+          weekId: savedWeekId,
+          candidateId: selectedSavedCandidate,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al salvar candidato');
+      }
+
+      // Recargar datos
+      await loadWeeks(selectedSeason);
+      await loadCandidates(selectedSeason);
+      
+      // Cerrar modal
+      setShowSavedModal(false);
+      setSavedWeekId('');
+      setSavedNominees([]);
+      setSelectedSavedCandidate('');
+      
+      showToast('success', 'Candidato salvado correctamente');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error interno del servidor');
+      console.error('Error salvando candidato:', err);
+    } finally {
+      setSubmittingSaved(false);
+    }
+  };
+
+  // Función para quitar candidato salvado
+  const removeSavedCandidate = async (weekId: string) => {
+    try {
+      setError(null);
+
+      const response = await fetch('/api/weeks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'removeSavedCandidate',
+          weekId: weekId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al quitar candidato salvado');
+      }
+
+      // Recargar datos
+      await loadWeeks(selectedSeason);
+      await loadCandidates(selectedSeason);
+      
+      showToast('success', 'Candidato salvado removido correctamente');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error interno del servidor');
+      console.error('Error quitando candidato salvado:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Toast Notifications */}
@@ -1811,6 +1920,71 @@ export default function AdminPage() {
                 className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submittingElimination ? 'Eliminando...' : 'Confirmar Expulsión'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Salvado de Candidato */}
+      {showSavedModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Agregar Candidato Salvado</h3>
+            <p className="text-muted-foreground mb-4">
+              Selecciona qué candidato fue salvado en esta semana. Esta acción no afecta el estado del candidato.
+            </p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-foreground mb-3">
+                Candidato a salvar *
+              </label>
+              <div className="space-y-2">
+                {savedNominees.map((nominee) => (
+                  <label key={nominee.candidateId._id} className="flex items-center space-x-3 p-3 rounded-lg border border-border/40 hover:bg-muted/30 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="savedCandidate"
+                      value={nominee.candidateId._id}
+                      checked={selectedSavedCandidate === nominee.candidateId._id}
+                      onChange={(e) => setSelectedSavedCandidate(e.target.value)}
+                      className="w-4 h-4 text-green-500"
+                    />
+                    <div className="flex items-center space-x-3">
+                      <img 
+                        src={nominee.candidateId.photo} 
+                        alt={nominee.candidateId.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div>
+                        <div className="font-medium text-foreground">{nominee.candidateId.name}</div>
+                        <div className="text-sm text-muted-foreground">Nominado en esta semana</div>
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowSavedModal(false);
+                  setSavedWeekId('');
+                  setSavedNominees([]);
+                  setSelectedSavedCandidate('');
+                }}
+                className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                disabled={submittingSaved}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveCandidateFromWeek}
+                disabled={submittingSaved || !selectedSavedCandidate}
+                className="flex-1 bg-green-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingSaved ? 'Guardando...' : 'Confirmar Salvado'}
               </button>
             </div>
           </div>
@@ -2574,7 +2748,7 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="grid grid-cols-4 gap-3 mb-4">
                       <div className="bg-muted/30 rounded-lg p-3 text-center">
                           <div className="text-lg font-bold text-foreground">{week.nominees.length}</div>
                         <div className="text-xs text-muted-foreground">Nominados</div>
@@ -2601,6 +2775,26 @@ export default function AdminPage() {
                             : 'text-muted-foreground'
                         }`}>
                           Expulsado
+                        </div>
+                      </div>
+                      <div className={`rounded-lg p-3 text-center ${
+                        week.results?.saved?.candidateId 
+                          ? 'bg-green-500/10 border border-green-500/20' 
+                          : 'bg-muted/30'
+                      }`}>
+                        <div className={`text-lg font-bold ${
+                          week.results?.saved?.candidateId 
+                            ? 'text-green-600' 
+                            : 'text-foreground'
+                        }`}>
+                          {week.results?.saved?.candidateId ? '1' : '0'}
+                        </div>
+                        <div className={`text-xs ${
+                          week.results?.saved?.candidateId 
+                            ? 'text-green-500' 
+                            : 'text-muted-foreground'
+                        }`}>
+                          Salvado
                         </div>
                       </div>
                     </div>
@@ -2636,6 +2830,45 @@ export default function AdminPage() {
                               )}
                               className="text-xs bg-red-500/10 text-red-500 py-1 px-2 rounded hover:bg-red-500/20 transition-colors"
                               title="Quitar expulsado"
+                            >
+                              Quitar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sección de candidato salvado */}
+                    {week.results?.saved?.candidateId && (
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-green-500 text-xl">🛡️</span>
+                            <div>
+                              <p className="font-medium text-green-600">
+                                Candidato Salvado
+                              </p>
+                              <p className="text-sm text-green-500">
+                                {new Date(week.results.saved.savedAt).toLocaleDateString('es-ES')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleAddSavedCandidate(week._id, week.nominees)}
+                              className="text-xs bg-orange-500/10 text-orange-500 py-1 px-2 rounded hover:bg-orange-500/20 transition-colors"
+                              title="Cambiar salvado"
+                            >
+                              Cambiar
+                            </button>
+                            <button
+                              onClick={() => handleConfirmAction(
+                                'Quitar Salvado',
+                                '¿Estás seguro de que quieres quitar el candidato salvado?',
+                                () => removeSavedCandidate(week._id)
+                              )}
+                              className="text-xs bg-red-500/10 text-red-500 py-1 px-2 rounded hover:bg-red-500/20 transition-colors"
+                              title="Quitar salvado"
                             >
                               Quitar
                             </button>
@@ -2692,6 +2925,16 @@ export default function AdminPage() {
                             className="flex-1 bg-orange-500/10 text-orange-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-orange-500/20 transition-colors"
                           >
                             Agregar Expulsado
+                          </button>
+                        )}
+                        
+                        {/* Botón para agregar salvado - disponible en cualquier momento */}
+                        {!week.results?.saved?.candidateId && week.nominees.length > 0 && (
+                          <button 
+                            onClick={() => handleAddSavedCandidate(week._id, week.nominees)}
+                            className="flex-1 bg-green-500/10 text-green-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-500/20 transition-colors"
+                          >
+                            Agregar Salvado
                           </button>
                         )}
                       </div>
