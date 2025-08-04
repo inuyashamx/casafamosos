@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import ImageCarousel from './ImageCarousel';
 import ConfirmDialog from './ConfirmDialog';
+import LikesModal from './LikesModal';
 
 interface User {
   _id: string;
@@ -75,6 +76,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
   const [editCommentContent, setEditCommentContent] = useState('');
   const [showCommentDeleteConfirm, setShowCommentDeleteConfirm] = useState<string | null>(null);
   const [commentMenuOpen, setCommentMenuOpen] = useState<string | null>(null);
+  const [showLikesModal, setShowLikesModal] = useState(false);
 
   const isOwner = session?.user && (session.user as any).id === post.userId._id;
   const isLiked = session?.user ? post.likes.some(like => like.userId === (session.user as any).id) : false;
@@ -470,22 +472,24 @@ export default function Post({ post, onPostUpdate }: PostProps) {
 
       {/* Media */}
       {post.media.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2 post-media-container">
           {post.media.length === 1 ? (
             // Una sola imagen/video
-            <div className="rounded-lg overflow-hidden bg-muted cursor-pointer" onClick={() => setShowCarousel(true)}>
+            <div className="rounded-lg overflow-hidden bg-muted cursor-pointer max-w-full" onClick={() => setShowCarousel(true)}>
               {post.media[0].type === 'image' ? (
                 <img
                   src={post.media[0].url}
                   alt="Media"
-                  className="w-full h-auto object-cover max-h-96 hover:opacity-95 transition-opacity"
+                  className="w-full h-auto object-cover max-h-96 max-w-full hover:opacity-95 transition-opacity"
+                  style={{ maxWidth: '100%' }}
                 />
               ) : (
                 <video
                   src={post.media[0].url}
                   controls
                   poster={post.media[0].thumbnail}
-                  className="w-full h-auto object-cover max-h-96"
+                  className="w-full h-auto object-cover max-h-96 max-w-full"
+                  style={{ maxWidth: '100%' }}
                 >
                   Tu navegador no soporta video.
                 </video>
@@ -493,20 +497,22 @@ export default function Post({ post, onPostUpdate }: PostProps) {
             </div>
           ) : post.media.length === 2 ? (
             // Dos imágenes/videos
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 max-w-full">
               {post.media.map((item, index) => (
-                <div key={index} className="rounded-lg overflow-hidden bg-muted cursor-pointer" onClick={() => setShowCarousel(true)}>
+                <div key={index} className="rounded-lg overflow-hidden bg-muted cursor-pointer max-w-full" onClick={() => setShowCarousel(true)}>
                   {item.type === 'image' ? (
                     <img
                       src={item.url}
                       alt="Media"
-                      className="w-full h-32 sm:h-48 object-cover hover:opacity-95 transition-opacity"
+                      className="w-full h-32 sm:h-48 object-cover hover:opacity-95 transition-opacity max-w-full"
+                      style={{ maxWidth: '100%' }}
                     />
                   ) : (
                     <div className="relative">
                       <video
                         src={item.url}
-                        className="w-full h-32 sm:h-48 object-cover"
+                        className="w-full h-32 sm:h-48 object-cover max-w-full"
+                        style={{ maxWidth: '100%' }}
                         muted
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -519,19 +525,21 @@ export default function Post({ post, onPostUpdate }: PostProps) {
             </div>
           ) : post.media.length === 3 ? (
             // Tres imágenes/videos
-            <div className="grid grid-cols-2 gap-2">
-              <div className="row-span-2 rounded-lg overflow-hidden bg-muted cursor-pointer" onClick={() => setShowCarousel(true)}>
+            <div className="grid grid-cols-2 gap-2 max-w-full">
+              <div className="row-span-2 rounded-lg overflow-hidden bg-muted cursor-pointer max-w-full" onClick={() => setShowCarousel(true)}>
                 {post.media[0].type === 'image' ? (
                   <img
                     src={post.media[0].url}
                     alt="Media"
-                    className="w-full h-full object-cover hover:opacity-95 transition-opacity"
+                    className="w-full h-full object-cover hover:opacity-95 transition-opacity max-w-full"
+                    style={{ maxWidth: '100%' }}
                   />
                 ) : (
                   <div className="relative h-full">
                     <video
                       src={post.media[0].url}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover max-w-full"
+                      style={{ maxWidth: '100%' }}
                       muted
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -542,18 +550,20 @@ export default function Post({ post, onPostUpdate }: PostProps) {
               </div>
               <div className="space-y-2">
                 {post.media.slice(1).map((item, index) => (
-                  <div key={index + 1} className="rounded-lg overflow-hidden bg-muted cursor-pointer" onClick={() => setShowCarousel(true)}>
+                  <div key={index + 1} className="rounded-lg overflow-hidden bg-muted cursor-pointer max-w-full" onClick={() => setShowCarousel(true)}>
                     {item.type === 'image' ? (
                       <img
                         src={item.url}
                         alt="Media"
-                        className="w-full h-24 sm:h-32 object-cover hover:opacity-95 transition-opacity"
+                        className="w-full h-24 sm:h-32 object-cover hover:opacity-95 transition-opacity max-w-full"
+                        style={{ maxWidth: '100%' }}
                       />
                     ) : (
                       <div className="relative">
                         <video
                           src={item.url}
-                          className="w-full h-24 sm:h-32 object-cover"
+                          className="w-full h-24 sm:h-32 object-cover max-w-full"
+                          style={{ maxWidth: '100%' }}
                           muted
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -567,17 +577,18 @@ export default function Post({ post, onPostUpdate }: PostProps) {
             </div>
           ) : (
             // Cuatro o más imágenes/videos
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 max-w-full">
               {post.media.slice(0, 4).map((item, index) => (
-                <div key={index} className="rounded-lg overflow-hidden bg-muted cursor-pointer relative" onClick={() => setShowCarousel(true)}>
+                <div key={index} className="rounded-lg overflow-hidden bg-muted cursor-pointer relative max-w-full" onClick={() => setShowCarousel(true)}>
                   {item.type === 'image' ? (
                     <>
                       <img
                         src={item.url}
                         alt="Media"
-                        className={`w-full object-cover hover:opacity-95 transition-opacity ${
+                        className={`w-full object-cover hover:opacity-95 transition-opacity max-w-full ${
                           index === 3 && post.media.length > 4 ? 'h-24 sm:h-32' : 'h-24 sm:h-32'
                         }`}
+                        style={{ maxWidth: '100%' }}
                       />
                       {index === 3 && post.media.length > 4 && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
@@ -589,9 +600,10 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                     <div className="relative">
                       <video
                         src={item.url}
-                        className={`w-full object-cover ${
+                        className={`w-full object-cover max-w-full ${
                           index === 3 && post.media.length > 4 ? 'h-24 sm:h-32' : 'h-24 sm:h-32'
                         }`}
+                        style={{ maxWidth: '100%' }}
                         muted
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -613,18 +625,30 @@ export default function Post({ post, onPostUpdate }: PostProps) {
 
       {/* Actions */}
       <div className="flex items-center space-x-4 pt-2 border-t border-border/20">
-        <button
-          onClick={handleLike}
-          disabled={!session?.user || isLiking}
-          className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-            isLiked
-              ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          <span>{isLiked ? '❤️' : '🤍'}</span>
-          <span className="text-sm">{post.likes.length}</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleLike}
+            disabled={!session?.user || isLiking}
+            className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+              isLiked
+                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            <span>{isLiked ? '❤️' : '🤍'}</span>
+            <span className="text-sm">{post.likes.length}</span>
+          </button>
+          
+          {post.likes.length > 0 && (
+            <button
+              onClick={() => setShowLikesModal(true)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+              title="Ver quién dio like"
+            >
+              Ver likes
+            </button>
+          )}
+        </div>
 
         <button
           onClick={() => setShowComments(!showComments)}
@@ -702,7 +726,8 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                     <img
                       src={commentImagePreview}
                       alt="Preview"
-                      className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg"
+                      className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg max-w-full"
+                      style={{ maxWidth: '100%' }}
                     />
                     <button
                       type="button"
@@ -821,7 +846,8 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                          <img
                            src={comment.media.url}
                            alt="Comentario"
-                           className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                           className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity max-w-full"
+                           style={{ maxWidth: '100%' }}
                            onClick={() => {
                              // Abrir en carrusel si es necesario
                              if (comment.media) {
@@ -895,6 +921,13 @@ export default function Post({ post, onPostUpdate }: PostProps) {
         }}
         onCancel={() => setShowCommentDeleteConfirm(null)}
         type="danger"
+      />
+
+      {/* Modal de likes */}
+      <LikesModal
+        isOpen={showLikesModal}
+        onClose={() => setShowLikesModal(false)}
+        postId={post._id}
       />
     </article>
   );
