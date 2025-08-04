@@ -86,6 +86,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(week);
     }
 
+    if (action === 'eliminateCandidate') {
+      const week = await WeekService.eliminateCandidate(weekData.weekId, weekData.candidateId);
+      return NextResponse.json(week);
+    }
+
     // Crear nueva semana
     const week = await WeekService.createWeek({
       seasonId: weekData.seasonId,

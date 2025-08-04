@@ -71,6 +71,23 @@ export async function GET(request: NextRequest) {
         };
       });
 
+    // Obtener información del candidato eliminado si existe
+    let eliminatedCandidate = null;
+    if (weekWithResults.results?.eliminated?.candidateId) {
+      const eliminatedNominee = weekWithResults.nominees.find(
+        (nominee: any) => nominee.candidateId._id.toString() === weekWithResults.results.eliminated.candidateId.toString()
+      );
+      
+      if (eliminatedNominee) {
+        eliminatedCandidate = {
+          id: eliminatedNominee.candidateId._id,
+          name: eliminatedNominee.candidateId.name,
+          photo: eliminatedNominee.candidateId.photo,
+          eliminatedAt: weekWithResults.results.eliminated.eliminatedAt,
+        };
+      }
+    }
+
     return NextResponse.json({
       nominees,
       week: {
@@ -86,7 +103,8 @@ export async function GET(request: NextRequest) {
         name: activeSeason.name,
         year: activeSeason.year,
       },
-      totalVotes: weekWithResults.results?.totalVotes || 0
+      totalVotes: weekWithResults.results?.totalVotes || 0,
+      eliminatedCandidate
     });
 
   } catch (error) {

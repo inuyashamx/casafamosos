@@ -299,8 +299,41 @@ export class WeekService {
     // Actualizar resultados en tiempo real y obtener la semana actualizada
     const updatedWeek = await this.updateWeekResults(weekId);
     
-    // Retornar la semana con los nominados poblados
-    return await Week.findById(weekId).populate('nominees.candidateId');
+    // Retornar la semana con los nominados y eliminado poblados
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
+  }
+
+  static async eliminateCandidate(weekId: string, candidateId: string) {
+    await dbConnect();
+    
+    const week = await Week.findById(weekId);
+    if (!week) {
+      throw new Error('Semana no encontrada');
+    }
+
+    if (week.status !== 'completed') {
+      throw new Error('Solo se puede eliminar candidatos de semanas cerradas');
+    }
+
+    // Verificar que el candidato esté nominado en esta semana
+    const isNominated = week.nominees.some((n: any) => n.candidateId.toString() === candidateId);
+    if (!isNominated) {
+      throw new Error('El candidato no está nominado en esta semana');
+    }
+
+    // Actualizar el candidato a eliminado
+    await Candidate.findByIdAndUpdate(candidateId, {
+      status: 'eliminated'
+    });
+
+    // Agregar al candidato eliminado en los resultados
+    week.results.eliminated = {
+      candidateId,
+      eliminatedAt: new Date()
+    };
+
+    await week.save();
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId');
   }
 
   static async deleteWeek(weekId: string) {

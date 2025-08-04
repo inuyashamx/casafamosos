@@ -88,6 +88,10 @@ interface Week {
       candidateId: string;
       votes: number;
     };
+    eliminated?: {
+      candidateId: string;
+      eliminatedAt: string;
+    };
   };
   settings: {
     maxVotesPerUser: number;
@@ -223,6 +227,20 @@ export default function AdminPage() {
   } | null>(null);
   const [blockReason, setBlockReason] = useState('');
   const [submittingBlock, setSubmittingBlock] = useState(false);
+
+  // Estados para modal de eliminación de candidato
+  const [showEliminatedModal, setShowEliminatedModal] = useState(false);
+  const [eliminationWeekId, setEliminationWeekId] = useState<string>('');
+  const [eliminationNominees, setEliminationNominees] = useState<Array<{
+    candidateId: {
+      _id: string;
+      name: string;
+      photo?: string;
+    };
+    nominatedAt: string;
+  }>>([]);
+  const [selectedEliminatedCandidate, setSelectedEliminatedCandidate] = useState<string>('');
+  const [submittingElimination, setSubmittingElimination] = useState(false);
   
   // Estados para datatable
   const [userSearch, setUserSearch] = useState('');
@@ -1537,6 +1555,65 @@ export default function AdminPage() {
     setTimeout(() => setToast(null), 4000); // Auto-hide después de 4 segundos
   };
 
+  // Función para abrir modal de agregar expulsado
+  const handleAddEliminatedCandidate = (weekId: string, nominees: Array<{
+    candidateId: {
+      _id: string;
+      name: string;
+      photo?: string;
+    };
+    nominatedAt: string;
+  }>) => {
+    setEliminationWeekId(weekId);
+    setEliminationNominees(nominees);
+    setSelectedEliminatedCandidate('');
+    setShowEliminatedModal(true);
+  };
+
+  // Función para eliminar candidato de la semana (expulsar)
+  const eliminateCandidateFromWeek = async () => {
+    if (!selectedEliminatedCandidate || !eliminationWeekId) return;
+
+    try {
+      setSubmittingElimination(true);
+      setError(null);
+
+      const response = await fetch('/api/weeks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'eliminateCandidate',
+          weekId: eliminationWeekId,
+          candidateId: selectedEliminatedCandidate,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar candidato');
+      }
+
+      // Recargar datos
+      await loadWeeks(selectedSeason);
+      await loadCandidates(selectedSeason);
+      
+      // Cerrar modal
+      setShowEliminatedModal(false);
+      setEliminationWeekId('');
+      setEliminationNominees([]);
+      setSelectedEliminatedCandidate('');
+      
+      showToast('success', 'Candidato eliminado correctamente');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error interno del servidor');
+      console.error('Error eliminando candidato:', err);
+    } finally {
+      setSubmittingElimination(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Toast Notifications */}
@@ -1630,6 +1707,78 @@ export default function AdminPage() {
                 className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submittingBlock ? 'Bloqueando...' : 'Bloquear'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Eliminación de Candidato */}
+      {showEliminatedModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl p-6 max-w-lg w-full border border-border/40 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Agregar Candidato Expulsado</h3>
+            <p className="text-muted-foreground mb-4">
+              Selecciona qué candidato fue expulsado en esta semana. Esta acción marcará al candidato como eliminado permanentemente.
+            </p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-foreground mb-3">
+                Candidato a expulsar *
+              </label>
+              <div className="space-y-2">
+                {eliminationNominees.map((nominee) => (
+                  <label key={nominee.candidateId._id} className="flex items-center space-x-3 p-3 rounded-lg border border-border/40 hover:bg-muted/30 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="eliminatedCandidate"
+                      value={nominee.candidateId._id}
+                      checked={selectedEliminatedCandidate === nominee.candidateId._id}
+                      onChange={(e) => setSelectedEliminatedCandidate(e.target.value)}
+                      className="text-primary focus:ring-primary"
+                    />
+                    {nominee.candidateId.photo && (
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-muted/50 flex-shrink-0">
+                        <img 
+                          src={nominee.candidateId.photo} 
+                          alt={nominee.candidateId.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-foreground">{nominee.candidateId.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Nominado el {new Date(nominee.nominatedAt).toLocaleDateString('es-ES')}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowEliminatedModal(false);
+                  setEliminationWeekId('');
+                  setEliminationNominees([]);
+                  setSelectedEliminatedCandidate('');
+                }}
+                className="flex-1 bg-muted text-muted-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                disabled={submittingElimination}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={eliminateCandidateFromWeek}
+                disabled={submittingElimination || !selectedEliminatedCandidate}
+                className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingElimination ? 'Eliminando...' : 'Confirmar Expulsión'}
               </button>
             </div>
           </div>
@@ -2442,6 +2591,16 @@ export default function AdminPage() {
                             title="No se puede abrir una semana cuya fecha de votación ya pasó"
                           >
                             Fecha Pasada
+                          </button>
+                        )}
+                        
+                        {/* Botón para agregar expulsado en semanas cerradas */}
+                        {week.status === 'completed' && !week.results?.eliminated?.candidateId && week.nominees.length > 0 && (
+                          <button 
+                            onClick={() => handleAddEliminatedCandidate(week._id, week.nominees)}
+                            className="flex-1 bg-orange-500/10 text-orange-500 py-2 px-3 rounded-lg text-sm font-medium hover:bg-orange-500/20 transition-colors"
+                          >
+                            Agregar Expulsado
                           </button>
                         )}
                       </div>

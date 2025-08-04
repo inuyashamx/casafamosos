@@ -79,6 +79,15 @@ const WeekSchema = new mongoose.Schema({
         default: 0,
       },
     },
+    eliminated: {
+      candidateId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Candidate',
+      },
+      eliminatedAt: {
+        type: Date,
+      },
+    },
   },
   settings: {
     maxVotesPerUser: {
