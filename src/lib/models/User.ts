@@ -18,6 +18,9 @@ const UserSchema = new mongoose.Schema({
   image: {
     type: String,
   },
+  imagePublicId: {
+    type: String,
+  },
   googleId: {
     type: String,
     unique: true,

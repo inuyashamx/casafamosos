@@ -60,6 +60,10 @@ export class UserService {
 
     // Manejar actualización de imagen
     if (updates.image !== undefined || updates.imagePublicId !== undefined) {
+      console.log('DEBUG: Actualizando imagen del usuario');
+      console.log('DEBUG: imagePublicId actual:', user.imagePublicId);
+      console.log('DEBUG: nuevo imagePublicId:', updates.imagePublicId);
+      
       // Si hay una imagen anterior, eliminarla de Cloudinary
       if (user.imagePublicId) {
         try {
@@ -74,6 +78,7 @@ export class UserService {
       // Actualizar con la nueva imagen
       user.image = updates.image;
       user.imagePublicId = updates.imagePublicId;
+      console.log('DEBUG: imagePublicId guardado en DB:', user.imagePublicId);
     }
 
     await user.save();
