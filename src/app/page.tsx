@@ -481,12 +481,6 @@ export default function Home() {
               Inicio
             </button>
             <button
-              onClick={() => window.location.href = '/vote'}
-              className="text-lg font-bold text-foreground hover:text-primary transition-colors"
-            >
-              Votar
-            </button>
-            <button
               onClick={() => window.location.href = '/muro'}
               className="text-lg font-bold text-foreground hover:text-primary transition-colors"
             >

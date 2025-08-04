@@ -95,12 +95,6 @@ export default function MuroPage() {
               Inicio
             </button>
             <button
-              onClick={() => router.push('/vote')}
-              className="text-lg font-bold text-foreground hover:text-primary transition-colors"
-            >
-              Votar
-            </button>
-            <button
               onClick={() => router.push('/muro')}
               className="text-lg font-bold text-primary"
             >
