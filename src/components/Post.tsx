@@ -29,7 +29,7 @@ interface Link {
 
 interface Comment {
   _id: string;
-  userId: User;
+  userId: User | null;
   content: string;
   media?: {
     type: 'image' | 'video';
@@ -77,6 +77,17 @@ export default function Post({ post, onPostUpdate }: PostProps) {
   const [showCommentDeleteConfirm, setShowCommentDeleteConfirm] = useState<string | null>(null);
   const [commentMenuOpen, setCommentMenuOpen] = useState<string | null>(null);
   const [showLikesModal, setShowLikesModal] = useState(false);
+
+  // Validar que post.userId existe antes de acceder a sus propiedades
+  if (!post.userId) {
+    return (
+      <article className="bg-card rounded-xl p-6 border border-border/20 space-y-4">
+        <div className="text-center text-muted-foreground">
+          <p>Post no disponible - Usuario eliminado</p>
+        </div>
+      </article>
+    );
+  }
 
   const isOwner = session?.user && (session.user as any).id === post.userId._id;
   const isLiked = session?.user ? post.likes.some(like => like.userId === (session.user as any).id) : false;
@@ -744,121 +755,141 @@ export default function Post({ post, onPostUpdate }: PostProps) {
 
           {/* Comments list */}
           <div className="space-y-3">
-            {post.comments.map((comment) => (
-              <div key={comment._id} className="flex space-x-2 sm:space-x-3">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                  {comment.userId.image ? (
-                    <Image
-                      src={comment.userId.image}
-                      alt={comment.userId.name}
-                      width={32}
-                      height={32}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                      {comment.userId.name[0]}
+            {post.comments.map((comment) => {
+              // Validar que comment.userId existe antes de renderizar
+              if (!comment.userId) {
+                return (
+                  <div key={comment._id} className="flex space-x-2 sm:space-x-3">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                        ?
+                      </div>
                     </div>
-                  )}
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-muted/30 rounded-lg p-2 sm:p-3">
+                        <p className="text-muted-foreground text-sm italic">Comentario de usuario eliminado</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={comment._id} className="flex space-x-2 sm:space-x-3">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                    {comment.userId.image ? (
+                      <Image
+                        src={comment.userId.image}
+                        alt={comment.userId.name}
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                        {comment.userId.name[0]}
+                      </div>
+                    )}
+                  </div>
                 
-                <div className="flex-1 min-w-0">
-                  <div className="bg-muted/30 rounded-lg p-2 sm:p-3">
-                    <div className="flex items-start justify-between mb-1 gap-2">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 min-w-0 flex-1">
-                        <span className="font-medium text-foreground text-sm truncate">
-                          {comment.userId.name}
-                        </span>
-                        <span className="text-muted-foreground text-xs flex-shrink-0">
-                          {formatDate(comment.createdAt)}
-                        </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="bg-muted/30 rounded-lg p-2 sm:p-3">
+                      <div className="flex items-start justify-between mb-1 gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 min-w-0 flex-1">
+                          <span className="font-medium text-foreground text-sm truncate">
+                            {comment.userId.name}
+                          </span>
+                          <span className="text-muted-foreground text-xs flex-shrink-0">
+                            {formatDate(comment.createdAt)}
+                          </span>
+                        </div>
+                        
+                        {/* Menu para el owner del comentario */}
+                        {session?.user && comment.userId && (session.user as any).id === comment.userId._id && (
+                          <div className="relative flex-shrink-0 comment-menu">
+                            <button
+                              onClick={() => setCommentMenuOpen(commentMenuOpen === comment._id ? null : comment._id)}
+                              className="text-muted-foreground hover:text-foreground text-xs opacity-70 hover:opacity-100 transition-opacity p-1"
+                              title="Opciones del comentario"
+                            >
+                              ⋯
+                            </button>
+                            
+                            {/* Menú desplegable */}
+                            {commentMenuOpen === comment._id && (
+                              <div className="absolute right-0 top-6 bg-card border border-border rounded-lg shadow-lg z-10 min-w-[120px]">
+                                <button
+                                  onClick={() => startEditComment(comment)}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                                >
+                                  ✏️ Editar
+                                </button>
+                                <button
+                                  onClick={() => setShowCommentDeleteConfirm(comment._id)}
+                                  className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"
+                                >
+                                  🗑️ Eliminar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                       
-                      {/* Menu para el owner del comentario */}
-                      {session?.user && (session.user as any).id === comment.userId._id && (
-                        <div className="relative flex-shrink-0 comment-menu">
-                          <button
-                            onClick={() => setCommentMenuOpen(commentMenuOpen === comment._id ? null : comment._id)}
-                            className="text-muted-foreground hover:text-foreground text-xs opacity-70 hover:opacity-100 transition-opacity p-1"
-                            title="Opciones del comentario"
-                          >
-                            ⋯
-                          </button>
-                          
-                          {/* Menú desplegable */}
-                          {commentMenuOpen === comment._id && (
-                            <div className="absolute right-0 top-6 bg-card border border-border rounded-lg shadow-lg z-10 min-w-[120px]">
+                      {/* Contenido del comentario - modo edición o visualización */}
+                      {editingCommentId === comment._id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editCommentContent}
+                            onChange={(e) => setEditCommentContent(e.target.value)}
+                            className="w-full p-2 text-sm border border-border rounded-lg bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            rows={2}
+                            maxLength={500}
+                            placeholder="Editar comentario..."
+                          />
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-muted-foreground">
+                              {editCommentContent.length}/500
+                            </span>
+                            <div className="flex gap-2">
                               <button
-                                onClick={() => startEditComment(comment)}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                                onClick={cancelEditComment}
+                                className="px-3 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors"
                               >
-                                ✏️ Editar
+                                Cancelar
                               </button>
                               <button
-                                onClick={() => setShowCommentDeleteConfirm(comment._id)}
-                                className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"
+                                onClick={() => handleEditComment(comment._id)}
+                                disabled={!editCommentContent.trim()}
+                                className="px-3 py-1 text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                🗑️ Eliminar
+                                Guardar
                               </button>
                             </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Contenido del comentario - modo edición o visualización */}
-                    {editingCommentId === comment._id ? (
-                      <div className="space-y-2">
-                        <textarea
-                          value={editCommentContent}
-                          onChange={(e) => setEditCommentContent(e.target.value)}
-                          className="w-full p-2 text-sm border border-border rounded-lg bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          rows={2}
-                          maxLength={500}
-                          placeholder="Editar comentario..."
-                        />
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-muted-foreground">
-                            {editCommentContent.length}/500
-                          </span>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={cancelEditComment}
-                              className="px-3 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={() => handleEditComment(comment._id)}
-                              disabled={!editCommentContent.trim()}
-                              className="px-3 py-1 text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Guardar
-                            </button>
                           </div>
                         </div>
-                      </div>
-                                         ) : (
-                       <p className="text-foreground text-sm break-words">{comment.content}</p>
-                     )}
-                     {comment.media && (
-                       <div className="mt-2">
-                         <img
-                           src={comment.media.url}
-                           alt="Comentario"
-                           className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity max-w-full"
-                           style={{ maxWidth: '100%' }}
-                           onClick={() => {
-                             // Abrir en carrusel si es necesario
-                             if (comment.media) {
-                               setShowCarousel(true);
-                             }
-                           }}
-                         />
-                       </div>
-                     )}
-                     
-                                           {/* Likes del comentario */}
+                      ) : (
+                        <p className="text-foreground text-sm break-words">{comment.content}</p>
+                      )}
+                      
+                      {comment.media && (
+                        <div className="mt-2">
+                          <img
+                            src={comment.media.url}
+                            alt="Comentario"
+                            className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity max-w-full"
+                            style={{ maxWidth: '100%' }}
+                            onClick={() => {
+                              // Abrir en carrusel si es necesario
+                              if (comment.media) {
+                                setShowCarousel(true);
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Likes del comentario */}
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
                         <button
                           onClick={() => handleCommentLike(comment._id)}
@@ -875,10 +906,11 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                           <span>{comment.likes?.length || 0}</span>
                         </button>
                       </div>
-                   </div>
-                 </div>
-               </div>
-             ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

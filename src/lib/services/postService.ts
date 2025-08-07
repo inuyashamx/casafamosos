@@ -47,14 +47,18 @@ export class PostService {
       .limit(limit)
       .lean();
 
-    // Asegurar que todos los comentarios tengan el campo likes
-    return posts.map(post => ({
-      ...post,
-      comments: post.comments.map((comment: any) => ({
-        ...comment,
-        likes: comment.likes || []
-      }))
-    }));
+    // Filtrar posts que tienen userId válido y comentarios con userId válido
+    return posts
+      .filter((post: any) => post.userId) // Solo posts con usuario válido
+      .map((post: any) => ({
+        ...post,
+        comments: (post.comments || [])
+          .filter((comment: any) => comment.userId) // Solo comentarios con usuario válido
+          .map((comment: any) => ({
+            ...comment,
+            likes: comment.likes || []
+          }))
+      }));
   }
 
   static async getPostById(postId: string) {
@@ -65,15 +69,17 @@ export class PostService {
       .populate('comments.userId', 'name email image')
       .lean();
 
-    if (!post) return null;
+    if (!post || !post.userId) return null; // Verificar que el post existe y tiene usuario válido
 
-    // Asegurar que todos los comentarios tengan el campo likes
+    // Filtrar comentarios con usuario válido
     return {
       ...post,
-      comments: (post as any).comments.map((comment: any) => ({
-        ...comment,
-        likes: comment.likes || []
-      }))
+      comments: (post as any).comments
+        .filter((comment: any) => comment.userId) // Solo comentarios con usuario válido
+        .map((comment: any) => ({
+          ...comment,
+          likes: comment.likes || []
+        }))
     };
   }
 
@@ -90,14 +96,18 @@ export class PostService {
       .limit(limit)
       .lean();
 
-    // Asegurar que todos los comentarios tengan el campo likes
-    return posts.map((post: any) => ({
-      ...post,
-      comments: post.comments.map((comment: any) => ({
-        ...comment,
-        likes: comment.likes || []
-      }))
-    }));
+    // Filtrar posts que tienen userId válido y comentarios con userId válido
+    return posts
+      .filter((post: any) => post.userId) // Solo posts con usuario válido
+      .map((post: any) => ({
+        ...post,
+        comments: (post.comments || [])
+          .filter((comment: any) => comment.userId) // Solo comentarios con usuario válido
+          .map((comment: any) => ({
+            ...comment,
+            likes: comment.likes || []
+          }))
+      }));
   }
 
   static async likePost(postId: string, userId: string) {
