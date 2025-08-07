@@ -78,6 +78,19 @@ export default function Post({ post, onPostUpdate }: PostProps) {
   const [commentMenuOpen, setCommentMenuOpen] = useState<string | null>(null);
   const [showLikesModal, setShowLikesModal] = useState(false);
 
+  // Cerrar menús cuando se hace clic fuera - DEBE estar antes de cualquier return
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.comment-menu')) {
+        setCommentMenuOpen(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Validar que post.userId existe antes de acceder a sus propiedades
   if (!post.userId) {
     return (
@@ -91,19 +104,6 @@ export default function Post({ post, onPostUpdate }: PostProps) {
 
   const isOwner = session?.user && (session.user as any).id === post.userId._id;
   const isLiked = session?.user ? post.likes.some(like => like.userId === (session.user as any).id) : false;
-
-  // Cerrar menús cuando se hace clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (!target.closest('.comment-menu')) {
-        setCommentMenuOpen(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

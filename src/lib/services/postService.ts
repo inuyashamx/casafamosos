@@ -69,7 +69,7 @@ export class PostService {
       .populate('comments.userId', 'name email image')
       .lean();
 
-    if (!post || !post.userId) return null; // Verificar que el post existe y tiene usuario válido
+    if (!post || !(post as any).userId) return null; // Verificar que el post existe y tiene usuario válido
 
     // Filtrar comentarios con usuario válido
     return {
