@@ -127,7 +127,34 @@ export class WeekService {
 
   static async updateWeek(weekId: string, data: any) {
     await dbConnect();
-    return await Week.findByIdAndUpdate(weekId, data, { new: true }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
+    
+    // Procesar las fechas si están presentes
+    const updateData = { ...data };
+    
+    if (data.startDate) {
+      updateData.startDate = new Date(data.startDate);
+    }
+    
+    if (data.endDate) {
+      updateData.endDate = new Date(data.endDate);
+    }
+    
+    if (data.votingStartDate) {
+      updateData.votingStartDate = new Date(data.votingStartDate);
+    }
+    
+    if (data.votingEndDate) {
+      updateData.votingEndDate = new Date(data.votingEndDate);
+    }
+    
+    // Actualizar el status y isVotingActive basándose en las nuevas fechas
+    if (updateData.votingStartDate && updateData.votingEndDate) {
+      const now = new Date();
+      updateData.status = updateData.votingStartDate <= now ? 'voting' : 'scheduled';
+      updateData.isVotingActive = updateData.votingStartDate <= now && updateData.votingEndDate >= now;
+    }
+    
+    return await Week.findByIdAndUpdate(weekId, updateData, { new: true }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async startVoting(weekId: string) {

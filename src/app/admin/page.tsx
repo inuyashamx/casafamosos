@@ -847,8 +847,8 @@ export default function AdminPage() {
           weekId: editingWeek._id,
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
-          votingStartDate: weekForm.votingStartDate,
-          votingEndDate: weekForm.votingEndDate,
+          votingStartDate: votingStartDate.toISOString(),
+          votingEndDate: votingEndDate.toISOString(),
         }),
       });
 
