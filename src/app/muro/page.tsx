@@ -103,9 +103,9 @@ export default function MuroPage() {
             <button
               onClick={() => router.push('/ranking/usuarios')}
               className="text-sm font-semibold text-primary hover:underline"
-              title="RANKING DE TODOS LOS TIEMPOS"
+              title="Ranking"
             >
-              RANKING DE TODOS LOS TIEMPOS
+              Ranking
             </button>
           </div>
 

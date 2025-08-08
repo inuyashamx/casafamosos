@@ -62,6 +62,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
   const { data: session } = useSession();
   const [showComments, setShowComments] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [initialVisibleComments, setInitialVisibleComments] = useState(3);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
@@ -90,6 +91,17 @@ export default function Post({ post, onPostUpdate }: PostProps) {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Calcular cuántos comentarios mostrar inicialmente según viewport (mobile-first)
+  useEffect(() => {
+    const updateInitialCount = () => {
+      const isSmall = typeof window !== 'undefined' && window.innerWidth < 640; // sm breakpoint
+      setInitialVisibleComments(isSmall ? 2 : 3);
+    };
+    updateInitialCount();
+    window.addEventListener('resize', updateInitialCount);
+    return () => window.removeEventListener('resize', updateInitialCount);
   }, []);
 
   // Validar que post.userId existe antes de acceder a sus propiedades
@@ -760,7 +772,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
 
           {/* Comments list */}
           <div className="space-y-3">
-            {(commentsExpanded ? post.comments : post.comments.slice(0, 3)).map((comment) => {
+            {(commentsExpanded ? post.comments : post.comments.slice(0, initialVisibleComments)).map((comment) => {
               // Validar que comment.userId existe antes de renderizar
               if (!comment.userId) {
                 return (
@@ -916,7 +928,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                 </div>
               );
             })}
-            {post.comments.length > 3 && (
+            {post.comments.length > initialVisibleComments && (
               <div className="pt-2">
                 <button
                   onClick={() => setCommentsExpanded(!commentsExpanded)}
