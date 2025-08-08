@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Post from './Post';
 import CreatePost from './CreatePost';
 
@@ -52,6 +53,7 @@ interface FeedProps {
 }
 
 export default function Feed({ userId }: FeedProps) {
+  const router = useRouter();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -169,7 +171,21 @@ export default function Feed({ userId }: FeedProps) {
 
   return (
     <div className="space-y-6">
-      {!userId && <CreatePost onPostCreated={handlePostCreated} />}
+      {!userId && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground">Muro</h2>
+            <button
+              onClick={() => router.push('/ranking')}
+              className="text-sm text-primary hover:underline"
+              title="RANKING DE TODOS LOS TIEMPOS"
+            >
+              RANKING DE TODOS LOS TIEMPOS
+            </button>
+          </div>
+          <CreatePost onPostCreated={handlePostCreated} />
+        </div>
+      )}
       
       {posts.length === 0 ? (
         <div className="bg-card rounded-xl p-8 border border-border/20 text-center">
