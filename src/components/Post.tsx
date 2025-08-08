@@ -61,6 +61,7 @@ interface PostProps {
 export default function Post({ post, onPostUpdate }: PostProps) {
   const { data: session } = useSession();
   const [showComments, setShowComments] = useState(false);
+  const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
@@ -662,7 +663,11 @@ export default function Post({ post, onPostUpdate }: PostProps) {
         </div>
 
         <button
-          onClick={() => setShowComments(!showComments)}
+          onClick={() => {
+            const next = !showComments;
+            setShowComments(next);
+            if (!next) setCommentsExpanded(false);
+          }}
           className="flex items-center space-x-2 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
         >
           <span>💬</span>
@@ -755,7 +760,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
 
           {/* Comments list */}
           <div className="space-y-3">
-            {post.comments.map((comment) => {
+            {(commentsExpanded ? post.comments : post.comments.slice(0, 3)).map((comment) => {
               // Validar que comment.userId existe antes de renderizar
               if (!comment.userId) {
                 return (
@@ -911,6 +916,16 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                 </div>
               );
             })}
+            {post.comments.length > 3 && (
+              <div className="pt-2">
+                <button
+                  onClick={() => setCommentsExpanded(!commentsExpanded)}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {commentsExpanded ? 'Ver menos' : 'Ver más...'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
