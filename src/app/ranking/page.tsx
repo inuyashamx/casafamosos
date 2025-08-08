@@ -26,6 +26,17 @@ export default function RankingPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  const formatUserName = (fullName: string): string => {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0];
+    const first = parts[0];
+    const last = parts[parts.length - 1];
+    const initial = last.charAt(0).toUpperCase();
+    return `${first} ${initial}.`;
+  };
+
   const loadPage = useCallback(async () => {
     if (loading || !hasMore) return;
     setLoading(true);
@@ -140,7 +151,7 @@ export default function RankingPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground truncate">{row.user.name}</span>
+                  <span className="text-sm font-medium text-foreground truncate">{formatUserName(row.user.name)}</span>
                   <span className="text-sm text-muted-foreground">{row.totalPoints} pts</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{row.voteCount} votos</div>
@@ -162,7 +173,7 @@ export default function RankingPage() {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDetailOpen(false)}>
             <div className="bg-card rounded-xl w/full max-w-md border border-border/40 overflow-hidden" onClick={(e) => e.stopPropagation()}>
               <div className="px-4 py-3 border-b border-border/20 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-foreground">{detailUser?.name}</h3>
+                <h3 className="text-lg font-bold text-foreground">{formatUserName(detailUser?.name || '')}</h3>
                 <button onClick={() => setDetailOpen(false)} className="text-muted-foreground hover:text-foreground">✕</button>
               </div>
               <div className="max-h-[70vh] overflow-y-auto">
