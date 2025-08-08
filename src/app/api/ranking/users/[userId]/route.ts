@@ -3,10 +3,10 @@ import dbConnect from '@/lib/mongodb';
 import Vote from '@/lib/models/Vote';
 import mongoose from 'mongoose';
 
-export async function GET(request: NextRequest, { params }: { params: { userId: string } }) {
+export async function GET(request: NextRequest, context: any) {
   try {
     await dbConnect();
-    const { userId } = params;
+    const { userId } = context?.params || {};
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return NextResponse.json({ error: 'userId inválido' }, { status: 400 });
     }
