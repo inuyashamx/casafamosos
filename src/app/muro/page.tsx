@@ -100,6 +100,13 @@ export default function MuroPage() {
             >
               Muro
             </button>
+            <button
+              onClick={() => router.push('/ranking/usuarios')}
+              className="text-sm font-semibold text-primary hover:underline"
+              title="RANKING DE TODOS LOS TIEMPOS"
+            >
+              RANKING DE TODOS LOS TIEMPOS
+            </button>
           </div>
 
           {/* User Menu */}

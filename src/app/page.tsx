@@ -486,6 +486,12 @@ export default function Home() {
             >
               Muro
             </button>
+            <button
+              onClick={() => window.location.href = '/ranking/usuarios'}
+              className="text-lg font-bold text-foreground hover:text-primary transition-colors"
+            >
+              Ranking
+            </button>
           </div>
 
           {/* User Menu or Login Button */}
