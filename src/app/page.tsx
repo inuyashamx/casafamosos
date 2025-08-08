@@ -63,6 +63,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [myRank, setMyRank] = useState<{ rank: number; totalUsers: number } | null>(null);
   const [canReceiveShareBonus, setCanReceiveShareBonus] = useState(false);
   
   // Redes sociales
@@ -144,6 +145,13 @@ export default function Home() {
         if (adminResponse.ok) {
           const adminData = await adminResponse.json();
           setIsAdmin(adminData.isAdmin || false);
+        }
+
+        // Cargar mi ranking (histórico)
+        const rankRes = await fetch('/api/ranking/users/me');
+        if (rankRes.ok) {
+          const r = await rankRes.json();
+          setMyRank({ rank: r.rank, totalUsers: r.totalUsers });
         }
 
         // Verificar si puede recibir bono de compartir
@@ -492,6 +500,11 @@ export default function Home() {
             >
               Ranking
             </button>
+            {session && myRank && (
+              <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">
+                Mi ranking: #{myRank.rank}
+              </span>
+            )}
           </div>
 
           {/* User Menu or Login Button */}

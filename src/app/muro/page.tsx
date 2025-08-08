@@ -10,6 +10,7 @@ export default function MuroPage() {
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [myRank, setMyRank] = useState<{ rank: number; totalUsers: number } | null>(null);
 
   // Verificar si es admin
   useEffect(() => {
@@ -21,6 +22,12 @@ export default function MuroPage() {
         if (response.ok) {
           const data = await response.json();
           setIsAdmin(data.isAdmin || false);
+        }
+        // Cargar mi ranking (histórico)
+        const rankRes = await fetch('/api/ranking/users/me');
+        if (rankRes.ok) {
+          const r = await rankRes.json();
+          setMyRank({ rank: r.rank, totalUsers: r.totalUsers });
         }
       } catch (err) {
         console.error('Error checking admin status:', err);
@@ -107,6 +114,11 @@ export default function MuroPage() {
             >
               Ranking
             </button>
+            {session && myRank && (
+              <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">
+                Mi ranking: #{myRank.rank}
+              </span>
+            )}
           </div>
 
           {/* User Menu */}
