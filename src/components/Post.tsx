@@ -60,9 +60,9 @@ interface PostProps {
 
 export default function Post({ post, onPostUpdate }: PostProps) {
   const { data: session } = useSession();
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(true);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
-  const [initialVisibleComments, setInitialVisibleComments] = useState(3);
+  const [initialVisibleComments, setInitialVisibleComments] = useState(2);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
@@ -93,16 +93,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Calcular cuántos comentarios mostrar inicialmente según viewport (mobile-first)
-  useEffect(() => {
-    const updateInitialCount = () => {
-      const isSmall = typeof window !== 'undefined' && window.innerWidth < 640; // sm breakpoint
-      setInitialVisibleComments(isSmall ? 2 : 3);
-    };
-    updateInitialCount();
-    window.addEventListener('resize', updateInitialCount);
-    return () => window.removeEventListener('resize', updateInitialCount);
-  }, []);
+  // Mostrar inicialmente 2 comentarios en todas las pantallas
 
   // Validar que post.userId existe antes de acceder a sus propiedades
   if (!post.userId) {
