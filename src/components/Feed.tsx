@@ -175,13 +175,6 @@ export default function Feed({ userId }: FeedProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-foreground">Muro</h2>
-            <button
-              onClick={() => router.push('/ranking')}
-              className="text-sm text-primary hover:underline"
-              title="RANKING DE TODOS LOS TIEMPOS"
-            >
-              RANKING DE TODOS LOS TIEMPOS
-            </button>
           </div>
           <CreatePost onPostCreated={handlePostCreated} />
         </div>

@@ -18,6 +18,10 @@ export default function RankingUsuariosPage() {
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const [detailUser, setDetailUser] = useState<{ id: string; name: string } | null>(null);
+  const [detailItems, setDetailItems] = useState<Array<{ candidate: { id: string; name: string; photo?: string | null }, totalPoints: number, voteCount: number, lastVoteAt?: string }>>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const loadPage = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -54,6 +58,23 @@ export default function RankingUsuariosPage() {
     };
   }, [loadPage]);
 
+  const openUserDetail = async (userId: string, userName: string) => {
+    try {
+      setDetailOpen(true);
+      setDetailLoading(true);
+      setDetailUser({ id: userId, name: userName });
+      const res = await fetch(`/api/ranking/users/${userId}`);
+      if (!res.ok) throw new Error('Error cargando desglose');
+      const data = await res.json();
+      setDetailItems(data.items);
+    } catch (err) {
+      console.error(err);
+      setDetailItems([]);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const formatDate = (date?: string) => {
     if (!date) return '';
     const d = new Date(date);
@@ -75,7 +96,7 @@ export default function RankingUsuariosPage() {
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <ol className="bg-card rounded-xl border border-border/30 divide-y divide-border/10">
           {items.map((row) => (
-            <li key={row.user.id} className="px-4 py-3 flex items-center gap-3">
+            <li key={row.user.id} className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/30" onClick={() => openUserDetail(row.user.id, row.user.name)}>
               <span className="w-8 text-center text-sm font-semibold text-muted-foreground">#{row.rank}</span>
               <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
                 {row.user.image ? (
@@ -107,6 +128,46 @@ export default function RankingUsuariosPage() {
 
         <div ref={sentinelRef} />
       </div>
+
+      {/* Modal detalle de usuario */}
+      {detailOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDetailOpen(false)}>
+          <div className="bg-card rounded-xl w-full max-w-md border border-border/40 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="px-4 py-3 border-b border-border/20 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-foreground">{detailUser?.name}</h3>
+              <button onClick={() => setDetailOpen(false)} className="text-muted-foreground hover:text-foreground">✕</button>
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto">
+              {detailLoading ? (
+                <div className="p-4 text-center text-muted-foreground">Cargando...</div>
+              ) : detailItems.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">Sin votos acumulados</div>
+              ) : (
+                <ol className="divide-y divide-border/10">
+                  {detailItems.map((it) => (
+                    <li key={it.candidate.id} className="px-4 py-3 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                        {it.candidate.photo ? (
+                          <Image src={it.candidate.photo} alt={it.candidate.name} width={40} height={40} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">{it.candidate.name[0]}</div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-foreground truncate">{it.candidate.name}</span>
+                          <span className="text-sm text-muted-foreground">{it.totalPoints} pts</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">{it.voteCount} votos</div>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

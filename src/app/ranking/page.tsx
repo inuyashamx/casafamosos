@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 interface RankingItem {
   id: string;
@@ -29,6 +30,8 @@ export default function RankingPage() {
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const { data: session } = useSession();
+  const [myRank, setMyRank] = useState<{ rank: number; totalUsers: number; totalPoints: number } | null>(null);
 
   const loadPage = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -65,6 +68,22 @@ export default function RankingPage() {
     };
   }, [loadPage]);
 
+  useEffect(() => {
+    const fetchMyRank = async () => {
+      if (!session?.user) return;
+      try {
+        const res = await fetch('/api/ranking/users/me');
+        if (res.ok) {
+          const r = await res.json();
+          setMyRank({ rank: r.rank, totalUsers: r.totalUsers, totalPoints: r.totalPoints });
+        }
+      } catch (e) {
+        console.error('Error fetching my rank', e);
+      }
+    };
+    fetchMyRank();
+  }, [session]);
+
   const formatDate = (date?: string) => {
     if (!date) return '';
     const d = new Date(date);
@@ -84,6 +103,18 @@ export default function RankingPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {session?.user && myRank && (
+          <div className="bg-card rounded-xl border border-border/30 p-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-muted-foreground">Mi ranking</div>
+              <div className="text-2xl font-bold text-foreground">#{myRank.rank}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-muted-foreground">Puntos acumulados</div>
+              <div className="text-xl font-semibold text-primary">{myRank.totalPoints}</div>
+            </div>
+          </div>
+        )}
         {items.map((week) => (
           <section key={week.id} className="bg-card rounded-xl border border-border/30 overflow-hidden">
             <div className="px-4 py-3 border-b border-border/20 flex items-center justify-between">
