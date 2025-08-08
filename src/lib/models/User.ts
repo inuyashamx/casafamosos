@@ -99,56 +99,42 @@ UserSchema.methods.getAvailablePoints = function() {
   return this.dailyPoints - this.usedPointsToday;
 };
 
-// NUEVO MÉTODO: Verificar y resetear puntos diarios basado en el último voto
+// NUEVO MÉTODO: Calcular puntos disponibles del día (base de temporada + bono de compartir hoy - votos de hoy)
 UserSchema.methods.checkAndResetDailyPoints = async function() {
-  // Importar Vote aquí para evitar dependencias circulares
-  const Vote = mongoose.model('Vote');
   const Season = mongoose.model('Season');
-  
+
   try {
-    // Obtener temporada activa
     const activeSeason = await Season.findOne({ isActive: true });
     if (!activeSeason) {
-      console.log(`Usuario ${this.email}: No hay temporada activa, puntos disponibles: ${this.dailyPoints}`);
-      return this.dailyPoints;
+      // Fallback al valor actual del usuario si no hay temporada activa
+      return Math.max(0, this.dailyPoints - (await this.getUsedPointsInActiveWeek()));
     }
-    
-    // 1. Buscar el último voto del usuario en la temporada activa
-    const lastVote = await Vote.findOne({ 
-      userId: this._id,
-      seasonId: activeSeason._id,
-      isValid: true 
-    }).sort({ voteDate: -1 });
-    
-    // 2. Si no hay votos previos en esta temporada, puntos disponibles = dailyPoints
-    if (!lastVote) {
-      console.log(`Usuario ${this.email}: No tiene votos previos en esta temporada, puntos disponibles: ${this.dailyPoints}`);
-      return this.dailyPoints;
-    }
-    
-    // 3. Comparar fecha del último voto con hoy
-    const lastVoteDate = new Date(lastVote.voteDate);
-    const today = new Date();
-    
-    // Normalizar fechas para comparación (sin horas/minutos/segundos)
-    const lastVoteDateNormalized = new Date(lastVoteDate.getFullYear(), lastVoteDate.getMonth(), lastVoteDate.getDate());
-    const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    
-    // 4. Si es un día diferente (después de 00:00), resetear puntos
-    if (lastVoteDateNormalized.getTime() !== todayNormalized.getTime()) {
-      console.log(`Usuario ${this.email}: Último voto fue ayer (${lastVoteDateNormalized.toDateString()}), puntos reseteados: ${this.dailyPoints}`);
-      return this.dailyPoints;
-    } else {
-      // 5. Mismo día - calcular puntos usados en la semana activa
-      const usedPoints = await this.getUsedPointsInActiveWeek();
-      const availablePoints = Math.max(0, this.dailyPoints - usedPoints);
-      console.log(`Usuario ${this.email}: Ya votó hoy, puntos usados: ${usedPoints}, disponibles: ${availablePoints}`);
-      return availablePoints;
-    }
+
+    // Base diaria configurada en la temporada (configurable desde Admin)
+    const baseDailyPoints = typeof activeSeason.defaultDailyPoints === 'number'
+      ? activeSeason.defaultDailyPoints
+      : 60;
+
+    // Determinar si el usuario tiene bono por compartir hoy
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastShare = this.lastShareBonus ? new Date(this.lastShareBonus) : null;
+    const lastShareNormalized = lastShare
+      ? new Date(lastShare.getFullYear(), lastShare.getMonth(), lastShare.getDate())
+      : null;
+    const hasShareBonusToday = !!lastShareNormalized && lastShareNormalized.getTime() === today.getTime();
+    const shareBonusPoints = hasShareBonusToday ? 60 : 0;
+
+    // Puntos usados HOY
+    const usedPointsToday = await this.getUsedPointsInActiveWeek();
+
+    const availablePoints = Math.max(0, baseDailyPoints + shareBonusPoints - usedPointsToday);
+    return availablePoints;
   } catch (error) {
     console.error(`Error verificando puntos para usuario ${this.email}:`, error);
-    // En caso de error, retornar puntos completos
-    return this.dailyPoints;
+    // Fallback conservador: usar dailyPoints del usuario menos lo usado hoy
+    const usedPointsToday = await this.getUsedPointsInActiveWeek().catch(() => 0);
+    return Math.max(0, this.dailyPoints - usedPointsToday);
   }
 };
 

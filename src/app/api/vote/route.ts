@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
       }
 
-      // NUEVA LÓGICA: Verificar puntos basado en el último voto
+      // Calcular puntos disponibles del día (base temporada + bono compartir hoy - votos de hoy)
       const availablePoints = await user.checkAndResetDailyPoints();
       
       // Obtener información adicional para debugging
@@ -118,8 +118,18 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // totalPoints del día: base + (bono si hoy)
+      const today = new Date();
+      const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const lastShare = user.lastShareBonus ? new Date(user.lastShareBonus) : null;
+      const lastShareNormalized = lastShare ? new Date(lastShare.getFullYear(), lastShare.getMonth(), lastShare.getDate()) : null;
+      const hasShareBonusToday = !!lastShareNormalized && lastShareNormalized.getTime() === todayNormalized.getTime();
+
+      const baseDailyPoints = typeof (activeSeason as any).defaultDailyPoints === 'number' ? (activeSeason as any).defaultDailyPoints : 60;
+      const dayTotalPoints = baseDailyPoints + (hasShareBonusToday ? 60 : 0);
+
       return NextResponse.json({
-        totalPoints: user.dailyPoints,
+        totalPoints: dayTotalPoints,
         availablePoints: availablePoints,
         usedPoints,
         lastVoteInfo,
@@ -182,17 +192,19 @@ export async function GET(request: NextRequest) {
         }, { status: 400 });
       }
 
-      // Dar 60 puntos extra
+      // Registrar bono de compartir solo para este día (no acumular en dailyPoints)
       const bonusPoints = 60;
-      user.dailyPoints += bonusPoints;
       user.lastShareBonus = today;
       await user.save();
+
+      const baseDailyPoints = typeof (activeSeason as any).defaultDailyPoints === 'number' ? (activeSeason as any).defaultDailyPoints : 60;
+      const newDayTotal = baseDailyPoints + bonusPoints;
 
       return NextResponse.json({
         success: true,
         message: `¡Recibiste ${bonusPoints} puntos extra por compartir la app!`,
         bonusPoints,
-        newTotalPoints: user.dailyPoints
+        newTotalPoints: newDayTotal
       });
     }
 
