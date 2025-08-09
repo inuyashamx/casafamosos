@@ -101,6 +101,13 @@ export default function MuroPage() {
             >
               Muro
             </button>
+            <button
+              onClick={() => router.push('/ranking')}
+              className="text-sm font-semibold text-primary hover:underline"
+              title="Ranking"
+            >
+              Ranking
+            </button>
           </div>
 
           {/* User Menu */}

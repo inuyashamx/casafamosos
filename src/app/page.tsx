@@ -148,6 +148,7 @@ export default function Home() {
           setIsAdmin(adminData.isAdmin || false);
         }
 
+
         // Verificar si puede recibir bono de compartir
         const shareBonusResponse = await fetch('/api/vote?action=share-bonus');
         if (shareBonusResponse.ok) {
@@ -487,6 +488,12 @@ export default function Home() {
               className="text-lg font-bold text-foreground hover:text-primary transition-colors"
             >
               Muro
+            </button>
+            <button
+              onClick={() => window.location.href = '/ranking'}
+              className="text-lg font-bold text-foreground hover:text-primary transition-colors"
+            >
+              Ranking
             </button>
           </div>
 

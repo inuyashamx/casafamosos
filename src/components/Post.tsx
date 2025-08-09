@@ -62,7 +62,9 @@ interface PostProps {
 
 export default function Post({ post, onPostUpdate }: PostProps) {
   const { data: session } = useSession();
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(true);
+  const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [initialVisibleComments, setInitialVisibleComments] = useState(2);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
@@ -92,6 +94,8 @@ export default function Post({ post, onPostUpdate }: PostProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Mostrar inicialmente 2 comentarios en todas las pantallas
 
   // Validar que post.userId existe antes de acceder a sus propiedades
   if (!post.userId) {
@@ -665,7 +669,11 @@ export default function Post({ post, onPostUpdate }: PostProps) {
         </div>
 
         <button
-          onClick={() => setShowComments(!showComments)}
+          onClick={() => {
+            const next = !showComments;
+            setShowComments(next);
+            if (!next) setCommentsExpanded(false);
+          }}
           className="flex items-center space-x-2 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
         >
           <span>💬</span>
@@ -758,7 +766,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
 
           {/* Comments list */}
           <div className="space-y-3">
-            {post.comments.map((comment) => {
+            {(commentsExpanded ? post.comments : post.comments.slice(0, initialVisibleComments)).map((comment) => {
               // Validar que comment.userId existe antes de renderizar
               if (!comment.userId) {
                 return (
@@ -915,6 +923,16 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                 </div>
               );
             })}
+            {post.comments.length > initialVisibleComments && (
+              <div className="pt-2">
+                <button
+                  onClick={() => setCommentsExpanded(!commentsExpanded)}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {commentsExpanded ? 'Ver menos' : 'Ver más...'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
