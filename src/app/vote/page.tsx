@@ -31,6 +31,12 @@ interface VotingData {
   nominees: Nominee[];
   week: WeekData;
   season: SeasonData;
+  savedCandidate?: {
+    id: string;
+    name: string;
+    photo?: string;
+    savedAt: string;
+  };
 }
 
 interface UserVotes {
@@ -67,12 +73,15 @@ export default function VotePage() {
         if (response.ok) {
           const data = await response.json();
           setVotingData(data);
-          
-          // Inicializar votos del usuario en 0
+
+          // Inicializar votos del usuario en 0 (excluyendo salvado por seguridad)
           const initialVotes: UserVotes = {};
-          data.nominees.forEach((nominee: Nominee) => {
-            initialVotes[nominee.id] = 0;
-          });
+          const savedId = data?.savedCandidate?.id;
+          data.nominees
+            .filter((n: Nominee) => !savedId || n.id !== savedId)
+            .forEach((nominee: Nominee) => {
+              initialVotes[nominee.id] = 0;
+            });
           setUserVotes(initialVotes);
         } else {
           const errorData = await response.json();
@@ -168,6 +177,7 @@ export default function VotePage() {
 
       const votes = Object.entries(userVotes)
         .filter(([_candidateId, points]) => points > 0)
+        .filter(([candidateId]) => !votingData?.savedCandidate?.id || candidateId !== votingData.savedCandidate.id)
         .map(([candidateId, points]) => ({
           candidateId,
           points
@@ -377,6 +387,46 @@ export default function VotePage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Saved Candidate (si existe) */}
+        {votingData?.savedCandidate && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-foreground">Candidato Salvado</h2>
+            <div className="bg-green-500/10 border-2 border-green-500/30 rounded-xl p-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-green-500/20 shadow-lg overflow-hidden">
+                  {votingData.savedCandidate.photo ? (
+                    <Image
+                      src={votingData.savedCandidate.photo}
+                      alt={votingData.savedCandidate.name}
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl">🛡️</span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h3 className="text-xl font-bold text-green-600">
+                      {votingData.savedCandidate.name}
+                    </h3>
+                    <span className="text-green-500">🛡️</span>
+                  </div>
+                  <p className="text-green-600 font-medium mb-1">Este candidato fue salvado y no recibe votos esta semana.</p>
+                  <p className="text-sm text-green-500/80">
+                    Salvado el {new Date(votingData.savedCandidate.savedAt).toLocaleDateString('es-ES', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Error Display */}
         {error && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
@@ -409,9 +459,11 @@ export default function VotePage() {
           </p>
         </div>
 
-        {/* Candidates */}
+        {/* Candidates (filtrados por seguridad en cliente) */}
         <div className="space-y-4">
-          {votingData?.nominees.map((nominee) => (
+          {votingData?.nominees
+            .filter((nominee) => !votingData?.savedCandidate?.id || nominee.id !== votingData.savedCandidate.id)
+            .map((nominee) => (
             <div key={nominee.id} className="bg-card rounded-xl p-4 border border-border/20">
               <div className="flex items-center space-x-4 mb-4">
                 <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center overflow-hidden">

@@ -37,21 +37,26 @@ export async function GET(request: NextRequest) {
 
       // Obtener resultados actualizados
       const weekWithResults = await WeekService.getWeekResults(activeWeek._id.toString());
-      
-      const nominees = weekWithResults.nominees.map((nominee: any) => {
-        const candidate = nominee.candidateId;
-        const stats = weekWithResults.results.votingStats.find(
-          (stat: any) => stat.candidateId.toString() === candidate._id.toString()
-        );
 
-        return {
-          id: candidate._id,
-          name: candidate.name,
-          photo: candidate.photo,
-          votes: stats?.votes || 0,
-          percentage: stats?.percentage || 0,
-        };
-      });
+      const savedRef: any = weekWithResults.results?.saved?.candidateId;
+      const savedId = savedRef ? (savedRef._id ? savedRef._id.toString() : savedRef.toString()) : null;
+      const nominees = weekWithResults.nominees
+        .filter((nominee: any) => nominee.candidateId)
+        .filter((nominee: any) => !savedId || nominee.candidateId._id.toString() !== savedId)
+        .map((nominee: any) => {
+          const candidate = nominee.candidateId;
+          const stats = weekWithResults.results?.votingStats?.find(
+            (stat: any) => stat.candidateId.toString() === candidate._id.toString()
+          );
+
+          return {
+            id: candidate._id,
+            name: candidate.name,
+            photo: candidate.photo,
+            votes: stats?.votes || 0,
+            percentage: stats?.percentage || 0,
+          };
+        });
 
       return NextResponse.json({
         nominees,
@@ -272,6 +277,9 @@ export async function POST(request: NextRequest) {
     console.log('Debug - votes:', votes);
     console.log('Debug - activeWeek.nominees:', activeWeek.nominees);
     
+    // Impedir votos hacia el candidato salvado
+    const savedRef: any = activeWeek.results?.saved?.candidateId;
+    const savedId = savedRef ? (savedRef._id ? savedRef._id.toString() : savedRef.toString()) : null;
     for (const vote of votes) {
       console.log('Debug - checking vote:', vote.candidateId, 'in nominees:', nomineeIds.includes(vote.candidateId));
       if (!nomineeIds.includes(vote.candidateId)) {
@@ -282,6 +290,13 @@ export async function POST(request: NextRequest) {
             voteCandidateId: vote.candidateId,
             nominees: activeWeek.nominees
           }
+        }, { status: 400 });
+      }
+
+      if (savedId && vote.candidateId === savedId) {
+        return NextResponse.json({ 
+          error: 'El candidato salvado no recibe votos esta semana',
+          savedCandidateId: savedId
         }, { status: 400 });
       }
     }

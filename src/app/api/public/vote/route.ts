@@ -69,12 +69,14 @@ export async function GET(request: NextRequest) {
     console.log('Eliminated candidate info:', weekWithResults.results?.eliminated);
     
     // Mostrar todos los candidatos que estén en week.nominees, excepto el salvado (no puede votarse)
+    const savedRef: any = weekWithResults.results?.saved?.candidateId;
+    const savedId = savedRef ? (savedRef._id ? savedRef._id.toString() : savedRef.toString()) : null;
     const nominees = weekWithResults.nominees
       .filter((nominee: any) => nominee.candidateId) // Filtrar nominados válidos
       .filter((nominee: any) => {
         // Excluir al candidato salvado de la votación
-        const isSaved = weekWithResults.results?.saved?.candidateId?.toString() === nominee.candidateId._id.toString();
-        return !isSaved;
+        if (!savedId) return true;
+        return nominee.candidateId._id.toString() !== savedId;
       })
       .map((nominee: any) => {
         const candidate = nominee.candidateId;
