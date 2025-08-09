@@ -26,7 +26,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const data = await request.json();
-    const { name, nickname, image, imagePublicId } = data;
+    const { name, nickname, image, imagePublicId, team } = data;
     
     console.log('DEBUG: Datos recibidos en /api/user/profile:', { name, nickname, image, imagePublicId });
 
@@ -47,11 +47,19 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'El ID público de la imagen debe ser una cadena de texto' }, { status: 400 });
     }
 
+    if (team !== undefined && team !== null) {
+      const allowed = ['DIA', 'NOCHE', 'ECLIPSE'];
+      if (!allowed.includes(team)) {
+        return NextResponse.json({ error: 'Team inválido' }, { status: 400 });
+      }
+    }
+
     const updatedProfile = await UserService.updateUserProfile((session.user as any).id, {
       name: name?.trim(),
       nickname: nickname?.trim(),
       image,
       imagePublicId,
+      team: team ?? undefined,
     });
 
     return NextResponse.json(updatedProfile);

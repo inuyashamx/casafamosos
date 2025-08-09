@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
+import TeamBadge from '@/components/TeamBadge';
 import ImageCarousel from './ImageCarousel';
 import ConfirmDialog from './ConfirmDialog';
 import LikesModal from './LikesModal';
@@ -11,6 +12,7 @@ interface User {
   name: string;
   email: string;
   image?: string;
+  team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
 }
 
 interface MediaItem {
@@ -394,8 +396,9 @@ export default function Post({ post, onPostUpdate }: PostProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <h3 className="font-semibold text-foreground truncate">
+              <h3 className="font-semibold text-foreground truncate flex items-center gap-1">
                 {post.userId.name}
+                <TeamBadge team={post.userId.team} />
               </h3>
               <span className="text-muted-foreground text-sm">
                 {formatDate(post.createdAt)}
@@ -796,8 +799,9 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                     <div className="bg-muted/30 rounded-lg p-2 sm:p-3">
                       <div className="flex items-start justify-between mb-1 gap-2">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 min-w-0 flex-1">
-                          <span className="font-medium text-foreground text-sm truncate">
+                          <span className="font-medium text-foreground text-sm truncate flex items-center gap-1">
                             {comment.userId.name}
+                            <TeamBadge team={comment.userId.team} />
                           </span>
                           <span className="text-muted-foreground text-xs flex-shrink-0">
                             {formatDate(comment.createdAt)}

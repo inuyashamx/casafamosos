@@ -75,6 +75,11 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  team: {
+    type: String,
+    enum: ['DIA', 'NOCHE', 'ECLIPSE'],
+    default: null,
+  },
 }, {
   timestamps: true,
 });

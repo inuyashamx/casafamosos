@@ -11,7 +11,7 @@ export async function GET(
     await dbConnect();
     
     const { id } = await params;
-    const post = await Post.findById(id).populate('likes.userId', 'name email image');
+    const post = await Post.findById(id).populate('likes.userId', 'name email image team');
     
     if (!post) {
       return NextResponse.json({ error: 'Post no encontrado' }, { status: 404 });
@@ -20,7 +20,7 @@ export async function GET(
     // Obtener información completa de los usuarios que dieron like
     const likesWithUserInfo = await Promise.all(
       post.likes.map(async (like: any) => {
-        const user = await User.findById(like.userId).select('name email image');
+        const user = await User.findById(like.userId).select('name email image team');
         return {
           userId: like.userId,
           likedAt: like.likedAt,
@@ -28,7 +28,8 @@ export async function GET(
             _id: user._id,
             name: user.name,
             email: user.email,
-            image: user.image
+            image: user.image,
+            team: user.team || null
           }
         };
       })

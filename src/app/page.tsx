@@ -4,6 +4,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Chat from '@/components/Chat';
+import TeamBadge from '@/components/TeamBadge';
 import Footer from '@/components/Footer';
 
 interface Nominee {
@@ -64,6 +65,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [canReceiveShareBonus, setCanReceiveShareBonus] = useState(false);
+  const [savingTeam, setSavingTeam] = useState<string | null>(null);
   
   // Redes sociales
   const [socialMedia, setSocialMedia] = useState({
@@ -525,10 +527,10 @@ export default function Home() {
 
                     {/* Menú desplegable */}
                     <div className="absolute right-0 mt-2 w-48 bg-card border border-border/40 rounded-lg shadow-lg z-20">
-                      <div className="p-3 border-b border-border/20">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {session.user?.name}
-                        </p>
+                <div className="p-3 border-b border-border/20">
+                  <p className="text-sm font-medium text-foreground truncate flex items-center gap-1">
+                    {session.user?.name} <TeamBadge team={(session.user as any)?.team} />
+                  </p>
                         <p className="text-xs text-muted-foreground truncate">
                           {session.user?.email}
                         </p>
@@ -881,6 +883,60 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {/* Elige tu Team */}
+        <div className="bg-card rounded-xl p-6 border border-border/20">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-foreground">Elige tu Team</h3>
+            {session?.user && (
+              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <span>Actual:</span>
+                <TeamBadge team={(session.user as any)?.team} withLabel />
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { key: 'DIA', label: 'Día', icon: '☀️' },
+              { key: 'NOCHE', label: 'Noche', icon: '🌙' },
+              { key: 'ECLIPSE', label: 'Eclipse', icon: '🌘' },
+            ].map(({ key, label, icon }) => {
+              const isSelected = (session?.user as any)?.team === key;
+              const handleClick = async () => {
+                if (!session?.user) {
+                  signIn('google', { callbackUrl: '/' });
+                  return;
+                }
+                try {
+                  setSavingTeam(key);
+                  const res = await fetch('/api/user/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ team: key }),
+                  });
+                  if (res.ok) {
+                    window.location.reload();
+                  }
+                } finally {
+                  setSavingTeam(null);
+                }
+              };
+              return (
+                <button
+                  key={key}
+                  onClick={handleClick}
+                  className={`flex items-center justify-center gap-2 p-4 rounded-lg border transition-all ${
+                    isSelected ? 'bg-primary/10 border-primary/40' : 'bg-background border-border/30 hover:bg-muted/30'
+                  }`}
+                >
+                  <span className="text-2xl" aria-hidden>{icon}</span>
+                  <span className="font-medium">Team {label}</span>
+                  {savingTeam === key && <span className="text-xs text-muted-foreground">Guardando...</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Share App Banner - Al final de la página */}
         {session && votingData?.week && (

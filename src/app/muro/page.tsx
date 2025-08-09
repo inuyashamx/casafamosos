@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Feed from '@/components/Feed';
 import Image from 'next/image';
+import TeamBadge from '@/components/TeamBadge';
 
 export default function MuroPage() {
   const { data: session, status } = useSession();
@@ -139,8 +140,8 @@ export default function MuroPage() {
                   {/* Menú desplegable */}
                   <div className="absolute right-0 mt-2 w-48 bg-card border border-border/40 rounded-lg shadow-lg z-20">
                     <div className="p-3 border-b border-border/20">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {session.user?.name}
+                      <p className="text-sm font-medium text-foreground truncate flex items-center gap-1">
+                        {session.user?.name} <TeamBadge team={(session.user as any)?.team} />
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
                         {session.user?.email}

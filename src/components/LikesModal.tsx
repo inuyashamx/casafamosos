@@ -1,12 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import TeamBadge from '@/components/TeamBadge';
 
 interface User {
   _id: string;
   name: string;
   email: string;
   image?: string;
+  team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
 }
 
 interface Like {
@@ -140,8 +142,8 @@ export default function LikesModal({ isOpen, onClose, postId }: LikesModalProps)
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">
-                        {like.user.name}
+                      <p className="font-medium text-foreground truncate flex items-center gap-1">
+                        {like.user.name} <TeamBadge team={like.user.team} />
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(like.likedAt)}

@@ -59,6 +59,9 @@ export const authOptions: NextAuthOptions = {
             if (user.name) {
               session.user.name = user.name;
             }
+
+            // Incluir team del usuario
+            (session.user as any).team = user.team || null;
           }
         } catch (error) {
           console.error('Error verificando datos del usuario:', error);

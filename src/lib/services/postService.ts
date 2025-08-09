@@ -31,7 +31,7 @@ export class PostService {
     });
 
     await post.save();
-    return await Post.findById(post._id).populate('userId', 'name email image');
+    return await Post.findById(post._id).populate('userId', 'name email image team');
   }
 
   static async getPosts(page: number = 1, limit: number = 20) {
@@ -40,8 +40,8 @@ export class PostService {
     const skip = (page - 1) * limit;
     
     const posts = await Post.find({ isActive: true })
-      .populate('userId', 'name email image')
-      .populate('comments.userId', 'name email image')
+      .populate('userId', 'name email image team')
+      .populate('comments.userId', 'name email image team')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -65,8 +65,8 @@ export class PostService {
     await dbConnect();
     
     const post = await Post.findById(postId)
-      .populate('userId', 'name email image')
-      .populate('comments.userId', 'name email image')
+      .populate('userId', 'name email image team')
+      .populate('comments.userId', 'name email image team')
       .lean();
 
     if (!post || !(post as any).userId) return null; // Verificar que el post existe y tiene usuario válido
@@ -89,8 +89,8 @@ export class PostService {
     const skip = (page - 1) * limit;
     
     const posts = await Post.find({ userId, isActive: true })
-      .populate('userId', 'name email image')
-      .populate('comments.userId', 'name email image')
+      .populate('userId', 'name email image team')
+      .populate('comments.userId', 'name email image team')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -147,8 +147,8 @@ export class PostService {
 
     await post.addComment(userId, content, media);
     return await Post.findById(postId)
-      .populate('userId', 'name email image')
-      .populate('comments.userId', 'name email image');
+      .populate('userId', 'name email image team')
+      .populate('comments.userId', 'name email image team');
   }
 
   static async removeComment(postId: string, commentId: string, userId: string) {
@@ -206,8 +206,8 @@ export class PostService {
     await post.save();
 
     return await Post.findById(postId)
-      .populate('userId', 'name email image')
-      .populate('comments.userId', 'name email image');
+      .populate('userId', 'name email image team')
+      .populate('comments.userId', 'name email image team');
   }
 
   static async likeComment(postId: string, commentId: string, userId: string) {

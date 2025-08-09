@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import TeamBadge from '@/components/TeamBadge';
 
 interface Nominee {
   id: string;
@@ -319,10 +320,10 @@ export default function VotePage() {
 
                     {/* Menú desplegable */}
                     <div className="absolute right-0 mt-2 w-48 bg-card border border-border/40 rounded-lg shadow-lg z-20">
-                      <div className="p-3 border-b border-border/20">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {session.user?.name}
-                        </p>
+                    <div className="p-3 border-b border-border/20">
+                      <p className="text-sm font-medium text-foreground truncate flex items-center gap-1">
+                        {session.user?.name} <TeamBadge team={(session.user as any)?.team} />
+                      </p>
                         <p className="text-xs text-muted-foreground truncate">
                           {session.user?.email}
                         </p>

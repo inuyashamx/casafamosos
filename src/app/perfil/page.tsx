@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import Image from 'next/image';
+import TeamBadge from '@/components/TeamBadge';
 
 interface UserProfile {
   _id: string;
@@ -14,6 +15,7 @@ interface UserProfile {
   nickname?: string;
   isAdmin: boolean;
   createdAt: string;
+  team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
 }
 
 export default function PerfilPage() {
@@ -428,8 +430,9 @@ export default function PerfilPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-xl font-semibold text-foreground truncate">
+                    <h2 className="text-xl font-semibold text-foreground truncate flex items-center gap-2">
                       {isEditing ? editName : profile.name}
+                      <TeamBadge team={profile.team} />
                     </h2>
                     {profile.nickname && (
                       <p className="text-muted-foreground truncate">
@@ -596,6 +599,12 @@ export default function PerfilPage() {
                   <span className="text-muted-foreground">Rol:</span>
                   <span className="text-foreground">
                     {profile.isAdmin ? 'Administrador' : 'Usuario'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Team:</span>
+                  <span className="text-foreground">
+                    <TeamBadge team={profile.team} withLabel />
                   </span>
                 </div>
               </div>

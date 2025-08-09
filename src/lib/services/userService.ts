@@ -6,7 +6,7 @@ export class UserService {
   static async getUserProfile(userId: string) {
     await dbConnect();
     
-    const user = await User.findById(userId).select('name email image nickname isAdmin createdAt');
+    const user = await User.findById(userId).select('name email image nickname isAdmin createdAt team');
     if (!user) {
       throw new Error('Usuario no encontrado');
     }
@@ -18,6 +18,7 @@ export class UserService {
       image: user.image,
       nickname: user.nickname,
       isAdmin: user.isAdmin,
+      team: user.team || null,
       createdAt: user.createdAt.toISOString(),
     };
   }
@@ -27,6 +28,7 @@ export class UserService {
     nickname?: string;
     image?: string;
     imagePublicId?: string;
+    team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
   }) {
     await dbConnect();
     
@@ -56,6 +58,19 @@ export class UserService {
       }
       
       user.nickname = newNickname;
+    }
+
+    // Actualizar team
+    if (updates.team !== undefined) {
+      if (updates.team === null) {
+        user.team = null;
+      } else {
+        const allowedTeams = ['DIA', 'NOCHE', 'ECLIPSE'] as const;
+        if (!allowedTeams.includes(updates.team as any)) {
+          throw new Error('Team inválido');
+        }
+        user.team = updates.team;
+      }
     }
 
     // Manejar actualización de imagen
@@ -90,6 +105,7 @@ export class UserService {
       image: user.image,
       nickname: user.nickname,
       isAdmin: user.isAdmin,
+      team: user.team || null,
       createdAt: user.createdAt.toISOString(),
     };
   }
