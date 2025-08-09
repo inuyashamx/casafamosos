@@ -747,7 +747,7 @@ export default function Home() {
             {votingData.nominees
               .sort((a, b) => b.votes - a.votes)
               .map((nominee, index) => (
-              <div key={nominee.id} className={`rounded-xl p-4 border vote-card ${
+              <div key={`${nominee.id}-${index}`} className={`rounded-xl p-4 border vote-card ${
                 index === 0 
                   ? '!bg-violet-600 !border-violet-700 shadow-lg' 
                   : 'bg-card border-border/20'

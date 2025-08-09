@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
+import TeamBadge from '@/components/TeamBadge';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 interface RankingUserItem {
   rank: number;
-  user: { id: string; name: string; image?: string | null; email?: string | null };
+  user: { id: string; name: string; image?: string | null; email?: string | null; team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null };
   totalPoints: number;
   voteCount: number;
   lastVoteAt?: string;
@@ -44,7 +45,20 @@ export default function RankingPage() {
       const res = await fetch(`/api/ranking/users?page=${page}&limit=20`);
       if (!res.ok) throw new Error('Error cargando ranking');
       const data = await res.json();
-      setItems(prev => [...prev, ...data.items]);
+      // Unir y desduplicar por user.id para evitar claves duplicadas si el backend devuelve usuarios repetidos
+      setItems(prev => {
+        const merged = [...prev, ...data.items];
+        const seen = new Set<string>();
+        const deduped: RankingUserItem[] = [];
+        for (const it of merged) {
+          const id = it.user.id;
+          if (!seen.has(id)) {
+            seen.add(id);
+            deduped.push(it);
+          }
+        }
+        return deduped;
+      });
       setHasMore(data.hasMore);
       setPage(prev => prev + 1);
     } catch (err) {
@@ -137,8 +151,8 @@ export default function RankingPage() {
           </div>
         )}
         <ol className="bg-card rounded-xl border border-border/30 divide-y divide-border/10">
-          {items.map((row) => (
-            <li key={row.user.id} className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/30" onClick={() => openUserDetail(row.user.id, row.user.name)}>
+          {items.map((row, idx) => (
+            <li key={`${row.user.id}-${row.rank}-${idx}`} className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/30" onClick={() => openUserDetail(row.user.id, row.user.name)}>
               <span className="w-8 text-center text-sm font-semibold text-muted-foreground">#{row.rank}</span>
               <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
                 {row.user.image ? (
@@ -151,7 +165,9 @@ export default function RankingPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground truncate">{formatUserName(row.user.name)}</span>
+                  <span className="text-sm font-medium text-foreground truncate flex items-center gap-1">
+                    {formatUserName(row.user.name)} <TeamBadge team={row.user.team} />
+                  </span>
                   <span className="text-sm text-muted-foreground">{row.totalPoints} pts</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{row.voteCount} votos</div>
