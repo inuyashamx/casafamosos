@@ -51,6 +51,11 @@ interface VotingData {
   totalVotes?: number;
   eliminatedCandidate?: EliminatedCandidate;
   savedCandidate?: SavedCandidate;
+  teamStats?: {
+    DIA: number;
+    NOCHE: number;
+    ECLIPSE: number;
+  };
 }
 
 export default function Home() {
@@ -864,6 +869,11 @@ export default function Home() {
                 >
                   <span className="text-2xl" aria-hidden>{icon}</span>
                   <span className="font-medium">Team {label}</span>
+                  {votingData?.teamStats && (
+                    <span className="text-lg font-bold text-primary">
+                      {votingData.teamStats[key as keyof typeof votingData.teamStats]}%
+                    </span>
+                  )}
                   {savingTeam === key && <span className="text-xs text-muted-foreground">Guardando...</span>}
                 </button>
               );

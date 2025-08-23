@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WeekService } from '@/lib/services/weekService';
 import { SeasonService } from '@/lib/services/seasonService';
+import dbConnect from '@/lib/mongodb';
+import User from '@/lib/models/User';
 
 export async function GET(request: NextRequest) {
   try {
@@ -147,6 +149,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Obtener estadísticas de teams
+    await dbConnect();
+    const users = await User.find({ isActive: true });
+    
+    const teamStats = {
+      DIA: users.filter(u => u.team === 'DIA').length,
+      NOCHE: users.filter(u => u.team === 'NOCHE').length,
+      ECLIPSE: users.filter(u => u.team === 'ECLIPSE').length
+    };
+
+    // Total de usuarios CON team (excluye a los sin team)
+    const totalUsersWithTeam = teamStats.DIA + teamStats.NOCHE + teamStats.ECLIPSE;
+
+    // Calcular porcentajes basado solo en usuarios con team
+    const teamPercentages = {
+      DIA: totalUsersWithTeam > 0 ? Math.round((teamStats.DIA / totalUsersWithTeam) * 100) : 0,
+      NOCHE: totalUsersWithTeam > 0 ? Math.round((teamStats.NOCHE / totalUsersWithTeam) * 100) : 0,
+      ECLIPSE: totalUsersWithTeam > 0 ? Math.round((teamStats.ECLIPSE / totalUsersWithTeam) * 100) : 0
+    };
+
     return NextResponse.json({
       nominees,
       week: {
@@ -164,7 +186,8 @@ export async function GET(request: NextRequest) {
       },
       totalVotes: weekWithResults.results?.totalVotes || 0,
       eliminatedCandidate,
-      savedCandidate
+      savedCandidate,
+      teamStats: teamPercentages
     });
 
   } catch (error) {
