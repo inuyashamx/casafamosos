@@ -128,7 +128,7 @@ UserSchema.methods.checkAndResetDailyPoints = async function() {
       ? new Date(lastShare.getFullYear(), lastShare.getMonth(), lastShare.getDate())
       : null;
     const hasShareBonusToday = !!lastShareNormalized && lastShareNormalized.getTime() === today.getTime();
-    const shareBonusPoints = hasShareBonusToday ? 60 : 0;
+    const shareBonusPoints = hasShareBonusToday ? 50 : 0;
 
     // Puntos usados HOY
     const usedPointsToday = await this.getUsedPointsInActiveWeek();

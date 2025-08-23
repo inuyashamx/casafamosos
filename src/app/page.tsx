@@ -78,7 +78,6 @@ export default function Home() {
   });
   
   // Contador regresivo
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   // Cargar datos de votación
   useEffect(() => {
@@ -88,11 +87,6 @@ export default function Home() {
         if (response.ok) {
           const data = await response.json();
           setVotingData(data);
-          
-          // Calcular tiempo restante si hay votación activa
-          if (data.week?.votingEndDate) {
-            updateCountdown(data.week.votingEndDate);
-          }
         } else {
           const errorData = await response.json();
           setError(errorData.message || 'Error al cargar datos');
@@ -165,36 +159,7 @@ export default function Home() {
     fetchUserData();
   }, [session]);
 
-  // Actualizar contador regresivo
-  const updateCountdown = (endDate: string) => {
-    const updateTimer = () => {
-      const now = new Date().getTime();
-      const end = new Date(endDate).getTime();
-      const distance = end - now;
 
-      if (distance > 0) {
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-        setTimeLeft({ days, hours, minutes, seconds });
-      } else {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  };
-
-  useEffect(() => {
-    if (votingData?.week?.votingEndDate) {
-      const cleanup = updateCountdown(votingData.week.votingEndDate);
-      return cleanup;
-    }
-  }, [votingData?.week?.votingEndDate]);
 
   const handleVoteClick = () => {
     if (!session) {
@@ -229,9 +194,6 @@ export default function Home() {
       if (response.ok) {
         const data = await response.json();
         setVotingData(data);
-        if (data.week?.votingEndDate) {
-          updateCountdown(data.week.votingEndDate);
-        }
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Error al cargar datos');
@@ -326,7 +288,7 @@ export default function Home() {
           </div>
           
           <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-4 text-center">
-            <p class="text-sm text-amber-600 font-bold">🎁 ¡Gana 60 puntos extra por compartir!</p>
+            <p class="text-sm text-amber-600 font-bold">🎁 ¡Gana 50 puntos extra por compartir!</p>
             <p class="text-xs text-amber-500/80 mt-1">Una vez por día</p>
           </div>
         </div>
@@ -639,32 +601,6 @@ export default function Home() {
           </div>
         ) : null}
 
-        {/* Countdown Timer */}
-        {votingData?.week?.isActive && (
-          <div className="bg-card rounded-xl p-4 border border-border/20">
-            <h3 className="text-center text-muted-foreground text-sm font-medium mb-3">
-              Votación cierra en:
-            </h3>
-            <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="bg-primary/10 rounded-lg p-2">
-                <div className="text-lg font-bold text-primary">{timeLeft.days}</div>
-                <div className="text-xs text-muted-foreground">Días</div>
-              </div>
-              <div className="bg-primary/10 rounded-lg p-2">
-                <div className="text-lg font-bold text-primary">{timeLeft.hours}</div>
-                <div className="text-xs text-muted-foreground">Horas</div>
-              </div>
-              <div className="bg-primary/10 rounded-lg p-2">
-                <div className="text-lg font-bold text-primary">{timeLeft.minutes}</div>
-                <div className="text-xs text-muted-foreground">Min</div>
-              </div>
-              <div className="bg-primary/10 rounded-lg p-2">
-                <div className="text-lg font-bold text-primary">{timeLeft.seconds}</div>
-                <div className="text-xs text-muted-foreground">Seg</div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Vote Button o Estado de Votación */}
         {votingData?.week && (
@@ -795,32 +731,22 @@ export default function Home() {
                       {nominee.name}
                       {index === 0 && <span className="ml-2 text-yellow-300">🏆</span>}
                     </h3>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <div className="flex-1 bg-muted rounded-full h-2 progress-bar">
+                    <div className="mt-1">
+                      <div className="bg-muted rounded-full h-2 progress-bar">
                         <div 
                           className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-500"
                           style={{ width: `${nominee.percentage}%` }}
                         ></div>
                       </div>
-                      <span className={`text-sm min-w-[3rem] ${
-                        index === 0 ? 'text-white' : 'text-muted-foreground'
-                      }`}>
-                        {nominee.percentage}%
-                      </span>
                     </div>
                   </div>
                   
-                  {/* Votes */}
+                  {/* Percentage */}
                   <div className="text-right">
-                    <div className={`text-lg font-bold ${
+                    <div className={`text-2xl font-bold ${
                       index === 0 ? 'text-white' : 'text-primary'
                     }`}>
-                      {nominee.votes.toLocaleString()}
-                    </div>
-                    <div className={`text-xs ${
-                      index === 0 ? 'text-white' : 'text-muted-foreground'
-                    }`}>
-                      votos
+                      {nominee.percentage}%
                     </div>
                   </div>
                 </div>
@@ -950,7 +876,7 @@ export default function Home() {
           <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
             <div className="text-4xl mb-3">🎁</div>
             <h3 className="text-lg font-bold text-foreground mb-2">
-              ¡Comparte esta APP y consigue 60 puntos extra!
+              ¡Comparte esta APP y consigue 50 puntos extra!
             </h3>
             <p className="text-muted-foreground text-sm mb-4">
               Invita a tus amigos a votar y obtén puntos extra para seguir participando

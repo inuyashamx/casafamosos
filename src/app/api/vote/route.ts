@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
       const hasShareBonusToday = !!lastShareNormalized && lastShareNormalized.getTime() === todayNormalized.getTime();
 
       const baseDailyPoints = typeof (activeSeason as any).defaultDailyPoints === 'number' ? (activeSeason as any).defaultDailyPoints : 60;
-      const dayTotalPoints = baseDailyPoints + (hasShareBonusToday ? 60 : 0);
+      const dayTotalPoints = baseDailyPoints + (hasShareBonusToday ? 50 : 0);
 
       return NextResponse.json({
         totalPoints: dayTotalPoints,
@@ -198,7 +198,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Registrar bono de compartir solo para este día (no acumular en dailyPoints)
-      const bonusPoints = 60;
+      const bonusPoints = 50;
       user.lastShareBonus = today;
       await user.save();
 

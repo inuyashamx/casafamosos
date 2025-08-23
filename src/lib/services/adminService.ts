@@ -338,7 +338,7 @@ export class AdminService {
     
     return {
       success: true,
-      message: `Se borraron ${result.deletedCount} votos del usuario ${user.name}. Ahora puede votar de nuevo con 60 puntos completos.`,
+      message: `Se borraron ${result.deletedCount} votos del usuario ${user.name}. Ahora puede votar de nuevo con los puntos configurados.`,
       deletedCount: result.deletedCount,
       user: {
         name: user.name,

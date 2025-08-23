@@ -4206,7 +4206,7 @@ export default function AdminPage() {
                                   <button
                                     onClick={() => handleConfirmAction(
                                       'Resetear Votos del Usuario',
-                                      `¿Estás seguro de que quieres resetear los votos de ${user.name}?\n\n⚠️ Esta acción:\n• Borrará TODOS los votos del usuario\n• Permitirá que vote de nuevo con 60 puntos completos\n• Es útil para testing\n\nEsta acción NO SE PUEDE DESHACER.`,
+                                      `¿Estás seguro de que quieres resetear los votos de ${user.name}?\n\n⚠️ Esta acción:\n• Borrará TODOS los votos del usuario\n• Permitirá que vote de nuevo con los puntos configurados\n• Es útil para testing\n\nEsta acción NO SE PUEDE DESHACER.`,
                                       () => resetUserVotes(user._id, user.name)
                                     )}
                                     className="px-2 py-1 bg-orange-500/10 text-orange-500 rounded text-xs font-medium hover:bg-orange-500/20 transition-colors"
