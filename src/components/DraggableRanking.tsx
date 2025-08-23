@@ -34,10 +34,11 @@ export default function DraggableRanking({
   const [hasChanges, setHasChanges] = useState(false);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Inicializar orden de candidatos
+  // Inicializar orden de candidatos solo una vez
   useEffect(() => {
-    if (candidates.length === 0) return;
+    if (candidates.length === 0 || isInitialized) return;
 
     const ordered = [...candidates];
     
@@ -58,17 +59,18 @@ export default function DraggableRanking({
     }
     
     setOrderedCandidates(ordered);
+    setIsInitialized(true);
     
     // Notificar cambio inicial
     const initialRankings = ordered.map(candidate => ({
       candidateId: candidate._id
     }));
     onRankingChange(initialRankings);
-  }, [candidates, initialRanking, onRankingChange]);
+  }, [candidates, initialRanking, onRankingChange, isInitialized]);
 
   // Auto-save con debounce
   useEffect(() => {
-    if (hasChanges && orderedCandidates.length > 0 && !isAutoSaving) {
+    if (hasChanges && orderedCandidates.length > 0 && !isAutoSaving && isInitialized) {
       if (autoSaveTimeout) {
         clearTimeout(autoSaveTimeout);
       }
@@ -87,7 +89,7 @@ export default function DraggableRanking({
         } finally {
           setIsAutoSaving(false);
         }
-      }, 2000); // Auto-save después de 2 segundos sin cambios
+      }, 1000); // Reducido a 1 segundo para respuesta más rápida
       
       setAutoSaveTimeout(timeout);
     }
@@ -97,7 +99,7 @@ export default function DraggableRanking({
         clearTimeout(autoSaveTimeout);
       }
     };
-  }, [hasChanges, orderedCandidates, isAutoSaving]);
+  }, [hasChanges, orderedCandidates, isAutoSaving, isInitialized]);
 
   // Arrow button functions
   const moveUp = (index: number) => {
