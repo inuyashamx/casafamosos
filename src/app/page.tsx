@@ -436,31 +436,61 @@ export default function Home() {
       {/* Header Mobile */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-primary/20">
         <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Image
-              src="/logo.png"
-              alt="Casa Famosos"
-              width={32}
-              height={32}
-              className="w-8 h-8 rounded-lg"
-            />
+          {/* Logo */}
+          <Image
+            src="/logo.png"
+            alt="Casa Famosos"
+            width={32}
+            height={32}
+            className="w-8 h-8 rounded-lg flex-shrink-0"
+          />
+          
+          {/* Navigation Icons */}
+          <div className="flex items-center space-x-6 flex-1 justify-center">
             <button
               onClick={() => window.location.href = '/'}
-              className="text-lg font-bold text-primary"
+              className="text-primary transition-colors p-2"
+              title="Inicio"
             >
-              Inicio
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              </svg>
+            </button>
+            <button
+              onClick={() => window.location.href = '/vote'}
+              className="text-white hover:text-primary transition-colors p-2"
+              title="Votar"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7.5v-2H14v2zm2-4H7.5v-2H16v2zm0-4H7.5V7H16v2z"/>
+              </svg>
             </button>
             <button
               onClick={() => window.location.href = '/muro'}
-              className="text-lg font-bold text-foreground hover:text-primary transition-colors"
+              className="text-white hover:text-primary transition-colors p-2"
+              title="Muro"
             >
-              Muro
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>
             </button>
             <button
               onClick={() => window.location.href = '/ranking'}
-              className="text-lg font-bold text-foreground hover:text-primary transition-colors"
+              className="text-white hover:text-primary transition-colors p-2"
+              title="Ranking"
             >
-              Ranking
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M7 14H5v5h2v-5zm3-7H8v12h2V7zm3 3h-2v9h2v-9zm3-6h-2v15h2V4z"/>
+              </svg>
+            </button>
+            <button
+              onClick={() => window.location.href = '/global'}
+              className="text-white hover:text-primary transition-colors p-2"
+              title="Global"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+              </svg>
             </button>
           </div>
 
@@ -881,24 +911,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Share App Banner - Al final de la página */}
-        {session && votingData?.week && (
-          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
-            <div className="text-4xl mb-3">🎁</div>
-            <h3 className="text-lg font-bold text-foreground mb-2">
-              ¡Comparte esta APP y consigue 50 puntos extra!
-            </h3>
-            <p className="text-muted-foreground text-sm mb-4">
-              Invita a tus amigos a votar y obtén puntos extra para seguir participando
-            </p>
-            <button
-              onClick={handleShareApp}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              📤 COMPARTIR APP
-            </button>
-          </div>
-        )}
 
         {/* Redes Sociales */}
         {(socialMedia.whatsapp || socialMedia.telegram || socialMedia.twitter || socialMedia.facebook || socialMedia.instagram || socialMedia.tiktok) && (
@@ -1000,6 +1012,43 @@ export default function Home() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* CREA TU TOP Block */}
+        <div className="bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-indigo-500/10 border border-purple-500/20 rounded-xl p-6 text-center">
+          <div className="text-4xl mb-3">🏆</div>
+          <h3 className="text-xl font-bold text-foreground mb-2">
+            CREA TU TOP DE HABITANTES
+          </h3>
+          <p className="text-muted-foreground text-sm mb-4">
+            Participa en la encuesta global y ordena a todos los habitantes según tus preferencias. 
+            ¡Tu opinión cuenta para el ranking mundial!
+          </p>
+          <button
+            onClick={() => router.push('/global')}
+            className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+          >
+            🌍 IR AL RANKING GLOBAL
+          </button>
+        </div>
+
+        {/* Share App Banner - Al final de la página */}
+        {session && votingData?.week && (
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
+            <div className="text-4xl mb-3">🎁</div>
+            <h3 className="text-lg font-bold text-foreground mb-2">
+              ¡Comparte esta APP y consigue 50 puntos extra!
+            </h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              Invita a tus amigos a votar y obtén puntos extra para seguir participando
+            </p>
+            <button
+              onClick={handleShareApp}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              📤 COMPARTIR APP
+            </button>
           </div>
         )}
       </div>
