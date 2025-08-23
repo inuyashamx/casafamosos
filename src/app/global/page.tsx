@@ -70,7 +70,7 @@ export default function GlobalPage() {
   const [error, setError] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'personal' | 'global'>('personal');
+  const [activeTab, setActiveTab] = useState<'personal' | 'global'>('global');
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -358,16 +358,6 @@ export default function GlobalPage() {
         {/* Tabs */}
         <div className="flex bg-muted/20 rounded-xl p-1">
           <button
-            onClick={() => setActiveTab('personal')}
-            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-              activeTab === 'personal' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            🎯 Mi Ranking Personal
-          </button>
-          <button
             onClick={() => setActiveTab('global')}
             className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
               activeTab === 'global' 
@@ -376,6 +366,16 @@ export default function GlobalPage() {
             }`}
           >
             🌐 Ranking Global
+          </button>
+          <button
+            onClick={() => setActiveTab('personal')}
+            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+              activeTab === 'personal' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            🎯 Mi Ranking Personal
           </button>
         </div>
 

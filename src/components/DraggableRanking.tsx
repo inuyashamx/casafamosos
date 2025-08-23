@@ -107,45 +107,90 @@ export default function DraggableRanking({
   };
 
   // Touch events for mobile
-  const handleTouchStart = (index: number) => {
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Add non-passive event listeners to prevent scrolling during drag
+  useEffect(() => {
+    const handleTouchMoveNonPassive = (e: TouchEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('touchmove', handleTouchMoveNonPassive, { passive: false });
+    }
+
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMoveNonPassive);
+    };
+  }, [isDragging]);
+
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
+    const touch = e.touches[0];
+    setTouchStartY(touch.clientY);
+    setTouchStartX(touch.clientX);
     setDraggedIndex(index);
+    setIsDragging(false);
     if ('vibrate' in navigator) {
       navigator.vibrate(50);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault();
+    if (touchStartY === null || touchStartX === null || draggedIndex === null) return;
+    
     const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (element) {
-      const cardElement = element.closest('[data-candidate-index]');
-      if (cardElement) {
-        const index = parseInt(cardElement.getAttribute('data-candidate-index') || '0');
-        setDragOverIndex(index);
+    const currentY = touch.clientY;
+    const currentX = touch.clientX;
+    const deltaY = Math.abs(currentY - touchStartY);
+    const deltaX = Math.abs(currentX - touchStartX);
+    
+    // Start dragging if there's any movement
+    if ((deltaY > 5 || deltaX > 5) || isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+      
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (element) {
+        const cardElement = element.closest('[data-candidate-index]');
+        if (cardElement) {
+          const index = parseInt(cardElement.getAttribute('data-candidate-index') || '0');
+          setDragOverIndex(index);
+        }
       }
     }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    e.preventDefault();
-    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
-      const newOrder = [...orderedCandidates];
-      const draggedItem = newOrder[draggedIndex];
+    if (isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
       
-      newOrder.splice(draggedIndex, 1);
-      newOrder.splice(dragOverIndex, 0, draggedItem);
-      
-      setOrderedCandidates(newOrder);
-      setHasChanges(true);
-      
-      if ('vibrate' in navigator) {
-        navigator.vibrate(30);
+      if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+        const newOrder = [...orderedCandidates];
+        const draggedItem = newOrder[draggedIndex];
+        
+        newOrder.splice(draggedIndex, 1);
+        newOrder.splice(dragOverIndex, 0, draggedItem);
+        
+        setOrderedCandidates(newOrder);
+        setHasChanges(true);
+        
+        if ('vibrate' in navigator) {
+          navigator.vibrate(30);
+        }
       }
     }
     
     setDraggedIndex(null);
     setDragOverIndex(null);
+    setTouchStartY(null);
+    setTouchStartX(null);
+    setIsDragging(false);
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -156,6 +201,41 @@ export default function DraggableRanking({
 
   const handleDragLeave = () => {
     setDragOverIndex(null);
+  };
+
+  // Arrow button functions for mobile
+  const moveUp = (index: number) => {
+    if (index === 0) return; // Already at top
+    
+    const newOrder = [...orderedCandidates];
+    const item = newOrder[index];
+    
+    newOrder.splice(index, 1);
+    newOrder.splice(index - 1, 0, item);
+    
+    setOrderedCandidates(newOrder);
+    setHasChanges(true);
+    
+    if ('vibrate' in navigator) {
+      navigator.vibrate(30);
+    }
+  };
+
+  const moveDown = (index: number) => {
+    if (index === orderedCandidates.length - 1) return; // Already at bottom
+    
+    const newOrder = [...orderedCandidates];
+    const item = newOrder[index];
+    
+    newOrder.splice(index, 1);
+    newOrder.splice(index + 1, 0, item);
+    
+    setOrderedCandidates(newOrder);
+    setHasChanges(true);
+    
+    if ('vibrate' in navigator) {
+      navigator.vibrate(30);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
@@ -253,7 +333,7 @@ export default function DraggableRanking({
       <div className="space-y-3">
         {orderedCandidates.map((candidate, index) => {
           const position = index + 1;
-          const isDragging = draggedIndex === index;
+          const isBeingDragged = draggedIndex === index;
           const isDragOver = dragOverIndex === index;
           
           return (
@@ -265,16 +345,17 @@ export default function DraggableRanking({
               onDragOver={(e) => handleDragOver(e, index)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, index)}
-              onTouchStart={() => handleTouchStart(index)}
+              onTouchStart={(e) => handleTouchStart(e, index)}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
+              style={{ touchAction: 'none' }}
               className={`
                 ${getCardStyle(index)}
-                ${isDragging ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}
+                ${isBeingDragged ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}
                 ${isDragOver ? 'ring-2 ring-primary' : ''}
                 border rounded-xl p-4 cursor-grab active:cursor-grabbing
                 transition-all duration-200 hover:scale-105 hover:shadow-lg
-                flex items-center space-x-4 touch-pan-y
+                flex items-center space-x-4 touch-manipulation
               `}
             >
               {/* Número de posición */}
@@ -313,21 +394,51 @@ export default function DraggableRanking({
                 )}
               </div>
 
-              {/* Handle de arrastre */}
-              <div className="flex-shrink-0 text-muted-foreground">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
+              {/* Botones de flecha para reordenar */}
+              <div className="flex-shrink-0 flex flex-col items-center space-y-1">
+                {/* Flecha arriba */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    moveUp(index);
+                  }}
+                  disabled={index === 0}
+                  className={`
+                    w-12 h-10 rounded-lg flex items-center justify-center transition-all
+                    ${index === 0 
+                      ? 'text-muted-foreground/50 cursor-not-allowed bg-muted/20' 
+                      : 'text-muted-foreground hover:text-primary hover:bg-primary/10 active:bg-primary/20 active:scale-95'
+                    }
+                    touch-manipulation
+                  `}
+                  title="Mover arriba"
                 >
-                  <circle cx="9" cy="7" r="1"/>
-                  <circle cx="15" cy="7" r="1"/>
-                  <circle cx="9" cy="12" r="1"/>
-                  <circle cx="15" cy="12" r="1"/>
-                  <circle cx="9" cy="17" r="1"/>
-                  <circle cx="15" cy="17" r="1"/>
-                </svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 14l5-5 5 5z"/>
+                  </svg>
+                </button>
+                
+                {/* Flecha abajo */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    moveDown(index);
+                  }}
+                  disabled={index === orderedCandidates.length - 1}
+                  className={`
+                    w-12 h-10 rounded-lg flex items-center justify-center transition-all
+                    ${index === orderedCandidates.length - 1
+                      ? 'text-muted-foreground/50 cursor-not-allowed bg-muted/20' 
+                      : 'text-muted-foreground hover:text-primary hover:bg-primary/10 active:bg-primary/20 active:scale-95'
+                    }
+                    touch-manipulation
+                  `}
+                  title="Mover abajo"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 10l5 5 5-5z"/>
+                  </svg>
+                </button>
               </div>
             </div>
           );
