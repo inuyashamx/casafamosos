@@ -31,8 +31,6 @@ export default function DraggableRanking({
   saving 
 }: DraggableRankingProps) {
   const [orderedCandidates, setOrderedCandidates] = useState<Candidate[]>([]);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -60,7 +58,13 @@ export default function DraggableRanking({
     }
     
     setOrderedCandidates(ordered);
-  }, [candidates, initialRanking]);
+    
+    // Notificar cambio inicial
+    const initialRankings = ordered.map(candidate => ({
+      candidateId: candidate._id
+    }));
+    onRankingChange(initialRankings);
+  }, [candidates, initialRanking, onRankingChange]);
 
   // Auto-save con debounce
   useEffect(() => {
@@ -95,115 +99,7 @@ export default function DraggableRanking({
     };
   }, [hasChanges, orderedCandidates, isAutoSaving]);
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', '');
-    
-    // Añadir haptic feedback en dispositivos móviles
-    if ('vibrate' in navigator) {
-      navigator.vibrate(50);
-    }
-  };
-
-  // Touch events for mobile
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  // Add non-passive event listeners to prevent scrolling during drag
-  useEffect(() => {
-    const handleTouchMoveNonPassive = (e: TouchEvent) => {
-      if (isDragging) {
-        e.preventDefault();
-      }
-    };
-
-    if (isDragging) {
-      document.addEventListener('touchmove', handleTouchMoveNonPassive, { passive: false });
-    }
-
-    return () => {
-      document.removeEventListener('touchmove', handleTouchMoveNonPassive);
-    };
-  }, [isDragging]);
-
-  const handleTouchStart = (e: React.TouchEvent, index: number) => {
-    const touch = e.touches[0];
-    setTouchStartY(touch.clientY);
-    setTouchStartX(touch.clientX);
-    setDraggedIndex(index);
-    setIsDragging(false);
-    if ('vibrate' in navigator) {
-      navigator.vibrate(50);
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartY === null || touchStartX === null || draggedIndex === null) return;
-    
-    const touch = e.touches[0];
-    const currentY = touch.clientY;
-    const currentX = touch.clientX;
-    const deltaY = Math.abs(currentY - touchStartY);
-    const deltaX = Math.abs(currentX - touchStartX);
-    
-    // Start dragging if there's any movement
-    if ((deltaY > 5 || deltaX > 5) || isDragging) {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(true);
-      
-      const element = document.elementFromPoint(touch.clientX, touch.clientY);
-      if (element) {
-        const cardElement = element.closest('[data-candidate-index]');
-        if (cardElement) {
-          const index = parseInt(cardElement.getAttribute('data-candidate-index') || '0');
-          setDragOverIndex(index);
-        }
-      }
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (isDragging) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
-        const newOrder = [...orderedCandidates];
-        const draggedItem = newOrder[draggedIndex];
-        
-        newOrder.splice(draggedIndex, 1);
-        newOrder.splice(dragOverIndex, 0, draggedItem);
-        
-        setOrderedCandidates(newOrder);
-        setHasChanges(true);
-        
-        if ('vibrate' in navigator) {
-          navigator.vibrate(30);
-        }
-      }
-    }
-    
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setTouchStartY(null);
-    setTouchStartX(null);
-    setIsDragging(false);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverIndex(index);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  // Arrow button functions for mobile
+  // Arrow button functions
   const moveUp = (index: number) => {
     if (index === 0) return; // Already at top
     
@@ -238,59 +134,22 @@ export default function DraggableRanking({
     }
   };
 
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    
-    if (draggedIndex === null || draggedIndex === dropIndex) {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-
-    const newOrder = [...orderedCandidates];
-    const draggedItem = newOrder[draggedIndex];
-    
-    // Remover el elemento arrastrado
-    newOrder.splice(draggedIndex, 1);
-    
-    // Insertar en la nueva posición
-    newOrder.splice(dropIndex, 0, draggedItem);
-    
-    setOrderedCandidates(newOrder);
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setHasChanges(true);
-    
-    // Haptic feedback al soltar
-    if ('vibrate' in navigator) {
-      navigator.vibrate(30);
-    }
+  const getPositionIcon = (position: number) => {
+    if (position === 1) return '🥇';
+    if (position === 2) return '🥈';  
+    if (position === 3) return '🥉';
+    return position.toString();
   };
 
   const getCardStyle = (index: number) => {
-    const position = index + 1;
-    
-    if (position === 1) {
-      return 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border-yellow-500/50 min-h-[100px]';
-    } else if (position === 2) {
-      return 'bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-gray-400/50 min-h-[95px]';
-    } else if (position === 3) {
-      return 'bg-gradient-to-r from-amber-600/20 to-orange-600/20 border-amber-600/50 min-h-[90px]';
-    } else if (position <= 5) {
-      return 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/40 min-h-[85px]';
+    if (index === 0) {
+      return 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200 dark:from-yellow-900/20 dark:to-amber-900/20 dark:border-yellow-700';
+    } else if (index === 1) {
+      return 'bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 dark:from-gray-800/20 dark:to-slate-800/20 dark:border-gray-600';
+    } else if (index === 2) {
+      return 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200 dark:from-orange-900/20 dark:to-amber-900/20 dark:border-orange-700';
     } else {
-      return 'bg-card border-border/20 min-h-[80px]';
-    }
-  };
-
-  const getPositionIcon = (position: number) => {
-    switch (position) {
-      case 1: return '🥇';
-      case 2: return '🥈';
-      case 3: return '🥉';
-      case 4:
-      case 5: return '🏅';
-      default: return `${position}°`;
+      return 'bg-card dark:bg-card border-border';
     }
   };
 
@@ -314,48 +173,26 @@ export default function DraggableRanking({
               <span>Guardando...</span>
             </div>
           )}
-          {hasChanges && !saving && !isAutoSaving && (
-            <div className="flex items-center space-x-2 text-yellow-500 text-sm">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-              <span>Cambios pendientes...</span>
-            </div>
-          )}
-          {!hasChanges && !saving && !isAutoSaving && (
-            <div className="flex items-center space-x-2 text-green-500 text-sm">
-              <span>✓</span>
-              <span>Guardado</span>
-            </div>
-          )}
+        </div>
+        
+        <div className="text-sm text-muted-foreground">
+          {orderedCandidates.length} candidatos
         </div>
       </div>
 
-      {/* Lista de candidatos arrastrables */}
+      {/* Lista de candidatos con botones de flecha */}
       <div className="space-y-3">
         {orderedCandidates.map((candidate, index) => {
           const position = index + 1;
-          const isBeingDragged = draggedIndex === index;
-          const isDragOver = dragOverIndex === index;
           
           return (
             <div
               key={candidate._id}
-              data-candidate-index={index}
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, index)}
-              onTouchStart={(e) => handleTouchStart(e, index)}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              style={{ touchAction: 'none' }}
               className={`
                 ${getCardStyle(index)}
-                ${isBeingDragged ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}
-                ${isDragOver ? 'ring-2 ring-primary' : ''}
-                border rounded-xl p-4 cursor-grab active:cursor-grabbing
-                transition-all duration-200 hover:scale-105 hover:shadow-lg
-                flex items-center space-x-4 touch-manipulation
+                border rounded-xl p-4 
+                transition-all duration-200 
+                flex items-center space-x-4
               `}
             >
               {/* Número de posición */}
@@ -394,8 +231,8 @@ export default function DraggableRanking({
                 )}
               </div>
 
-              {/* Botones de flecha para reordenar */}
-              <div className="flex-shrink-0 flex flex-col items-center space-y-1">
+              {/* Botones de flecha grandes y visibles */}
+              <div className="flex-shrink-0 flex flex-col items-center space-y-2">
                 {/* Flecha arriba */}
                 <button
                   onClick={(e) => {
@@ -404,18 +241,22 @@ export default function DraggableRanking({
                   }}
                   disabled={index === 0}
                   className={`
-                    w-12 h-10 rounded-lg flex items-center justify-center transition-all
+                    w-16 h-12 rounded-xl flex items-center justify-center transition-all
+                    border-2 font-semibold text-sm
                     ${index === 0 
-                      ? 'text-muted-foreground/50 cursor-not-allowed bg-muted/20' 
-                      : 'text-muted-foreground hover:text-primary hover:bg-primary/10 active:bg-primary/20 active:scale-95'
+                      ? 'text-muted-foreground/50 cursor-not-allowed bg-muted/20 border-muted/30' 
+                      : 'text-primary bg-primary/5 border-primary/20 hover:text-white hover:bg-primary hover:border-primary active:bg-primary/90 active:scale-95 shadow-sm hover:shadow-md'
                     }
                     touch-manipulation
                   `}
                   title="Mover arriba"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M7 14l5-5 5 5z"/>
-                  </svg>
+                  <div className="flex flex-col items-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="mb-1">
+                      <path d="M7 14l5-5 5 5z"/>
+                    </svg>
+                    <span className="text-xs">SUBIR</span>
+                  </div>
                 </button>
                 
                 {/* Flecha abajo */}
@@ -426,18 +267,22 @@ export default function DraggableRanking({
                   }}
                   disabled={index === orderedCandidates.length - 1}
                   className={`
-                    w-12 h-10 rounded-lg flex items-center justify-center transition-all
+                    w-16 h-12 rounded-xl flex items-center justify-center transition-all
+                    border-2 font-semibold text-sm
                     ${index === orderedCandidates.length - 1
-                      ? 'text-muted-foreground/50 cursor-not-allowed bg-muted/20' 
-                      : 'text-muted-foreground hover:text-primary hover:bg-primary/10 active:bg-primary/20 active:scale-95'
+                      ? 'text-muted-foreground/50 cursor-not-allowed bg-muted/20 border-muted/30' 
+                      : 'text-primary bg-primary/5 border-primary/20 hover:text-white hover:bg-primary hover:border-primary active:bg-primary/90 active:scale-95 shadow-sm hover:shadow-md'
                     }
                     touch-manipulation
                   `}
                   title="Mover abajo"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M7 10l5 5 5-5z"/>
-                  </svg>
+                  <div className="flex flex-col items-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="mb-1">
+                      <path d="M7 10l5 5 5-5z"/>
+                    </svg>
+                    <span className="text-xs">BAJAR</span>
+                  </div>
                 </button>
               </div>
             </div>
@@ -445,11 +290,9 @@ export default function DraggableRanking({
         })}
       </div>
 
-      {/* Instrucciones */}
-      <div className="text-center text-sm text-muted-foreground mt-6 p-4 bg-muted/20 rounded-lg">
-        <p>📱 <strong>Móvil:</strong> Mantén presionado y arrastra</p>
-        <p>🖱️ <strong>Desktop:</strong> Haz clic y arrastra</p>
-        <p>💾 Se guarda automáticamente después de cada cambio</p>
+      {/* Mensaje explicativo */}
+      <div className="text-center text-sm text-muted-foreground bg-muted/20 rounded-lg p-3">
+        💡 Usa los botones SUBIR/BAJAR para reordenar tu ranking
       </div>
     </div>
   );
