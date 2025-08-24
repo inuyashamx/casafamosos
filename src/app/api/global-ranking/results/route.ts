@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     })
       .populate('userId', 'name team')
       .sort({ lastUpdated: -1 })
-      .limit(10)
+      .limit(30)
       .select('userId lastUpdated updateCount');
 
     return NextResponse.json({
