@@ -524,7 +524,7 @@ export default function GlobalPage() {
               <div className="bg-card rounded-xl p-6 border border-border/20">
                 <h3 className="text-lg font-bold text-foreground mb-4">Actividad Reciente</h3>
                 <div className="space-y-3">
-                  {globalResults.recentActivity.slice(0, 5).map((activity, index) => (
+                  {globalResults.recentActivity.slice(0, 30).map((activity, index) => (
                     <div key={index} className="flex items-center justify-between text-sm">
                       <div className="flex items-center space-x-2">
                         <span className="text-foreground font-medium">{abbreviateName(activity.user)}</span>
