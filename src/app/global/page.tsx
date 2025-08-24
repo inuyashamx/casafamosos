@@ -59,6 +59,31 @@ interface GlobalResults {
   }[];
 }
 
+// Helper function to abbreviate names for privacy
+const abbreviateName = (fullName: string): string => {
+  const parts = fullName.trim().split(' ');
+  if (parts.length === 1) return parts[0];
+  
+  const firstName = parts[0];
+  const lastNameInitial = parts[parts.length - 1][0];
+  return `${firstName} ${lastNameInitial}.`;
+};
+
+// Helper function to format time elapsed
+const formatTimeElapsed = (date: string): string => {
+  const now = new Date();
+  const updated = new Date(date);
+  const diffMs = now.getTime() - updated.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffMinutes < 1) return 'hace menos de 1 minuto';
+  if (diffMinutes < 60) return `hace ${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`;
+  if (diffHours < 24) return `hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+  return `hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
+};
+
 export default function GlobalPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -488,12 +513,6 @@ export default function GlobalPage() {
                         </h3>
                       </div>
 
-                      {/* Points */}
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-primary">
-                          {stat.totalPoints} pts
-                        </div>
-                      </div>
                     </div>
                   );
                 })}
@@ -508,20 +527,12 @@ export default function GlobalPage() {
                   {globalResults.recentActivity.slice(0, 5).map((activity, index) => (
                     <div key={index} className="flex items-center justify-between text-sm">
                       <div className="flex items-center space-x-2">
-                        <span className="text-foreground font-medium">{activity.user}</span>
+                        <span className="text-foreground font-medium">{abbreviateName(activity.user)}</span>
                         {activity.team && <TeamBadge team={activity.team as any} />}
                         <span className="text-muted-foreground">
-                          actualizó su ranking ({activity.updateCount} {activity.updateCount === 1 ? 'vez' : 'veces'})
+                          actualizó su ranking {formatTimeElapsed(activity.lastUpdated)}
                         </span>
                       </div>
-                      <span className="text-muted-foreground">
-                        {new Date(activity.lastUpdated).toLocaleDateString('es-ES', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
                     </div>
                   ))}
                 </div>
