@@ -39,12 +39,15 @@ export async function GET(request: NextRequest) {
           seasonId: activeSeason._id,
         }).populate({
           path: 'rankings.candidateId',
-          select: '_id name photo'
+          select: '_id name photo status',
+          match: { status: 'active' }
         });
         
         console.log('Usuario encontrado:', user._id);
         console.log('Ranking encontrado:', userRanking ? 'Sí' : 'No');
         if (userRanking) {
+          // Filtrar solo los candidatos activos (no null después del populate con match)
+          userRanking.rankings = userRanking.rankings.filter((r: any) => r.candidateId !== null);
           console.log('Rankings length:', userRanking.rankings.length);
           console.log('Rankings data:', userRanking.rankings.slice(0, 3));
         }
@@ -62,10 +65,12 @@ export async function GET(request: NextRequest) {
       },
       candidates,
       userRanking: userRanking ? {
-        rankings: userRanking.rankings.map(r => ({
-          candidateId: r.candidateId._id || r.candidateId,
-          position: r.position
-        })),
+        rankings: userRanking.rankings
+          .filter((r: any) => r.candidateId !== null) // Doble verificación para asegurar que no hay nulls
+          .map((r: any) => ({
+            candidateId: r.candidateId._id || r.candidateId,
+            position: r.position
+          })),
         updateCount: userRanking.updateCount,
         lastUpdated: userRanking.lastUpdated,
       } : null,

@@ -78,6 +78,17 @@ GlobalRankingSchema.statics.getGlobalStats = async function(seasonId: string) {
   rankings.forEach((ranking: any) => {
     totalRankings++;
     ranking.rankings.forEach((item: any, index: number) => {
+      // Verificar que el candidato existe (no fue eliminado de la DB)
+      if (!item.candidateId || !item.candidateId._id) {
+        console.warn('Candidato no encontrado en ranking, saltando...');
+        return;
+      }
+      
+      // Filtrar candidatos eliminados o no activos
+      if (item.candidateId.status !== 'active') {
+        return;
+      }
+      
       const candidateId = item.candidateId._id.toString();
       if (!stats[candidateId]) {
         stats[candidateId] = {
