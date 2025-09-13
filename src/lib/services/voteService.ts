@@ -107,20 +107,24 @@ export class VoteService {
 
   static async getVotingStats(seasonId: string) {
     await dbConnect();
-    
-    const candidates = await Candidate.find({ 
-      seasonId, 
-      isNominated: true 
-    }).sort({ weeklyVotes: -1 });
 
-    const totalVotes = candidates.reduce((sum, candidate) => sum + candidate.weeklyVotes, 0);
+    const candidates = await Candidate.find({
+      seasonId,
+      isNominated: true,
+      isEliminated: false
+    })
+    .select('name photo stats.weeklyVotes') // Solo campos necesarios
+    .sort({ 'stats.weeklyVotes': -1 })
+    .lean(); // Objetos planos, más rápido
+
+    const totalVotes = candidates.reduce((sum, candidate) => sum + candidate.stats.weeklyVotes, 0);
 
     return candidates.map(candidate => ({
       _id: candidate._id,
       name: candidate.name,
       photo: candidate.photo,
-      votes: candidate.weeklyVotes,
-      percentage: totalVotes > 0 ? Math.round((candidate.weeklyVotes / totalVotes) * 100) : 0,
+      votes: candidate.stats.weeklyVotes,
+      percentage: totalVotes > 0 ? Math.round((candidate.stats.weeklyVotes / totalVotes) * 100) : 0,
     }));
   }
 

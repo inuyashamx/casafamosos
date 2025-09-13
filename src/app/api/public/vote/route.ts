@@ -183,25 +183,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Obtener estadísticas de teams
-    await dbConnect();
-    const users = await User.find({ isActive: true });
-    
-    const teamStats = {
-      DIA: users.filter(u => u.team === 'DIA').length,
-      NOCHE: users.filter(u => u.team === 'NOCHE').length,
-      ECLIPSE: users.filter(u => u.team === 'ECLIPSE').length
-    };
-
-    // Total de usuarios CON team (excluye a los sin team)
-    const totalUsersWithTeam = teamStats.DIA + teamStats.NOCHE + teamStats.ECLIPSE;
-
-    // Calcular porcentajes basado solo en usuarios con team
-    const teamPercentages = {
-      DIA: totalUsersWithTeam > 0 ? Math.round((teamStats.DIA / totalUsersWithTeam) * 100) : 0,
-      NOCHE: totalUsersWithTeam > 0 ? Math.round((teamStats.NOCHE / totalUsersWithTeam) * 100) : 0,
-      ECLIPSE: totalUsersWithTeam > 0 ? Math.round((teamStats.ECLIPSE / totalUsersWithTeam) * 100) : 0
-    };
 
     return NextResponse.json({
       nominees,
@@ -221,7 +202,6 @@ export async function GET(request: NextRequest) {
       totalVotes: weekWithResults.results?.totalVotes || 0,
       eliminatedCandidate,
       savedCandidate,
-      teamStats: teamPercentages,
       penaltyMessage,
       penalizedVotes
     });
