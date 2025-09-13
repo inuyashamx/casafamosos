@@ -641,12 +641,48 @@ export default function Home() {
         {votingData?.week && (
           <>
             {votingData.week.isActive && votingData.week.status === 'voting' ? (
-              <button
-                onClick={handleVoteClick}
-                className="w-full bg-gradient-to-r from-primary to-accent text-white py-4 rounded-xl font-bold text-lg glow hover:scale-105 transition-all duration-200 shadow-lg"
-              >
-                🗳️ VOTAR AHORA
-              </button>
+              <div className="space-y-3">
+                {/* Security Badge */}
+                <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-lg py-3 px-4 mb-4">
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="relative">
+                      <div className="w-8 h-8 text-green-500 animate-pulse">
+                        <svg
+                          className="w-full h-full"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                        </svg>
+                      </div>
+                      <div className="absolute inset-0 w-8 h-8 text-green-500 opacity-50 animate-ping">
+                        <svg
+                          className="w-full h-full"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-base font-bold text-green-600 uppercase tracking-wide">
+                        🛡️ PROTECCIÓN ANTIBOTS ACTIVADA
+                      </div>
+                      <div className="text-xs text-green-600/80 mt-1">
+                        Resultados 100% Reales - Sin manipulación
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleVoteClick}
+                  className="w-full bg-gradient-to-r from-primary to-accent text-white py-4 rounded-xl font-bold text-lg glow hover:scale-105 transition-all duration-200 shadow-lg"
+                >
+                  🗳️ VOTAR AHORA
+                </button>
+              </div>
             ) : votingData.week.status === 'completed' ? (
               <div className="w-full bg-muted/30 border border-border/40 text-muted-foreground py-4 rounded-xl font-bold text-lg text-center">
                 🔒 VOTACIONES CERRADAS
@@ -852,64 +888,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Elige tu Team */}
-        <div className="bg-card rounded-xl p-6 border border-border/20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">Elige tu Team</h3>
-            {session?.user && (
-              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                <span>Actual:</span>
-                <TeamBadge team={(session.user as any)?.team} withLabel />
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { key: 'DIA', label: 'Día', icon: '☀️' },
-              { key: 'NOCHE', label: 'Noche', icon: '🌙' },
-              { key: 'ECLIPSE', label: 'Eclipse', icon: '🌘' },
-            ].map(({ key, label, icon }) => {
-              const isSelected = (session?.user as any)?.team === key;
-              const handleClick = async () => {
-                if (!session?.user) {
-                  signIn('google', { callbackUrl: '/' });
-                  return;
-                }
-                try {
-                  setSavingTeam(key);
-                  const res = await fetch('/api/user/profile', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ team: key }),
-                  });
-                  if (res.ok) {
-                    window.location.reload();
-                  }
-                } finally {
-                  setSavingTeam(null);
-                }
-              };
-              return (
-                <button
-                  key={key}
-                  onClick={handleClick}
-                  className={`flex items-center justify-center gap-2 p-4 rounded-lg border transition-all ${
-                    isSelected ? 'bg-primary/10 border-primary/40' : 'bg-background border-border/30 hover:bg-muted/30'
-                  }`}
-                >
-                  <span className="text-2xl" aria-hidden>{icon}</span>
-                  <span className="font-medium">Team {label}</span>
-                  {votingData?.teamStats && (
-                    <span className="text-lg font-bold text-primary">
-                      {votingData.teamStats[key as keyof typeof votingData.teamStats]}%
-                    </span>
-                  )}
-                  {savingTeam === key && <span className="text-xs text-muted-foreground">Guardando...</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
 
         {/* Redes Sociales */}
