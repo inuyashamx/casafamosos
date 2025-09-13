@@ -472,13 +472,6 @@ export default function AdminPage() {
     }
   }, [activeTab]);
 
-  // Cargar datos de análisis de votos cuando se active la pestaña
-  useEffect(() => {
-    if (activeTab === 'vote-analysis') {
-      loadVoteAnalysisData();
-    }
-  }, [activeTab, loadVoteAnalysisData]);
-
   // Cargar estadísticas del dashboard cuando se active la pestaña
   useEffect(() => {
     if (activeTab === 'dashboard') {
@@ -1716,6 +1709,13 @@ export default function AdminPage() {
       setVoteAnalysisLoading(false);
     }
   }, [voteFilters]);
+
+  // Cargar datos de análisis de votos cuando se active la pestaña
+  useEffect(() => {
+    if (activeTab === 'vote-analysis') {
+      loadVoteAnalysisData();
+    }
+  }, [activeTab, loadVoteAnalysisData]);
 
   // Función para buscar usuarios (para el filtro)
   const searchUsers = async (searchTerm: string) => {
