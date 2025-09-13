@@ -91,6 +91,10 @@ export async function GET(request: NextRequest) {
       return total + (stats?.votes || 0);
     }, 0);
 
+    // Aplicar penalización del 60% a Shiki por manipulación de votos
+    let penaltyMessage = null;
+    let penalizedVotes = 0;
+
     // Mapear los nominados con sus porcentajes recalculados
     const nominees = activeNominees.map((nominee: any) => {
       const candidate = nominee.candidateId;
@@ -98,19 +102,33 @@ export async function GET(request: NextRequest) {
         (stat: any) => stat.candidateId.toString() === candidate._id.toString()
       );
 
-      const votes = stats?.votes || 0;
-      // Recalcular el porcentaje basado solo en los votos de candidatos activos
-      const percentage = totalActiveVotes > 0 ? Math.round((votes / totalActiveVotes) * 100) : 0;
+      let votes = stats?.votes || 0;
 
-      console.log(`Candidate ${candidate.name}: votes = ${votes}, new percentage = ${percentage}%`);
+      // Aplicar penalización del 60% si es Shiki
+      if (candidate.name && candidate.name.toLowerCase() === 'shiki') {
+        const originalVotes = votes;
+        const penalty = Math.round(originalVotes * 0.6); // 60% de penalización
+        votes = originalVotes - penalty; // Reducir votos en 60%
+        penalizedVotes = penalty;
+        penaltyMessage = `Se han penalizado ${penalty.toLocaleString()} votos por manipulación detectada`;
+        console.log(`PENALTY APPLIED: Shiki original votes = ${originalVotes}, penalty = ${penalty}, final votes = ${votes}`);
+      }
 
       return {
         id: candidate._id,
         name: candidate.name,
         photo: candidate.photo,
         votes: votes,
-        percentage: percentage,
+        percentage: 0, // Se recalculará después
       };
+    });
+
+    // Recalcular porcentajes después de aplicar penalizaciones
+    const totalVotesAfterPenalties = nominees.reduce((total: number, nominee: any) => total + nominee.votes, 0);
+
+    nominees.forEach((nominee: any) => {
+      nominee.percentage = totalVotesAfterPenalties > 0 ? Math.round((nominee.votes / totalVotesAfterPenalties) * 100) : 0;
+      console.log(`Candidate ${nominee.name}: votes = ${nominee.votes}, final percentage = ${nominee.percentage}%`);
     });
 
     // Obtener información del candidato eliminado si existe
@@ -203,7 +221,9 @@ export async function GET(request: NextRequest) {
       totalVotes: weekWithResults.results?.totalVotes || 0,
       eliminatedCandidate,
       savedCandidate,
-      teamStats: teamPercentages
+      teamStats: teamPercentages,
+      penaltyMessage,
+      penalizedVotes
     });
 
   } catch (error) {
