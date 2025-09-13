@@ -477,21 +477,21 @@ export default function AdminPage() {
     if (activeTab === 'vote-analysis') {
       loadVoteAnalysisData();
     }
-  }, [activeTab, voteFilters]);
+  }, [activeTab, loadVoteAnalysisData]);
 
   // Cargar estadísticas del dashboard cuando se active la pestaña
   useEffect(() => {
     if (activeTab === 'dashboard') {
       loadDashboardStats();
     }
-  }, [activeTab]);
+  }, [activeTab, loadDashboardStats]);
 
   // Cargar estadísticas del dashboard cuando cambie la temporada seleccionada
   useEffect(() => {
     if (activeTab === 'dashboard' && selectedSeason) {
       loadDashboardStats();
     }
-  }, [selectedSeason]);
+  }, [activeTab, selectedSeason, loadDashboardStats]);
 
   // Función para cargar estadísticas de una temporada
   const loadSeasonStats = async (seasonId: string) => {
@@ -1672,7 +1672,7 @@ export default function AdminPage() {
   };
 
   // Función para cargar datos de análisis de votos
-  const loadVoteAnalysisData = async () => {
+  const loadVoteAnalysisData = useCallback(async () => {
     try {
       setVoteAnalysisLoading(true);
       setError(null);
@@ -1715,7 +1715,7 @@ export default function AdminPage() {
     } finally {
       setVoteAnalysisLoading(false);
     }
-  };
+  }, [voteFilters]);
 
   // Función para buscar usuarios (para el filtro)
   const searchUsers = async (searchTerm: string) => {

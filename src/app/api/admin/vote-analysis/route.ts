@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
 
     // Construir query
-    let query: any = {};
+    const query: any = {};
 
     if (weekId) {
       query.weekId = weekId;
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
 
     // Si se pide solo votos sospechosos, usar VoteLog en lugar de Vote
     if (suspicious === 'true') {
-      let suspiciousQuery = { ...query };
+      const suspiciousQuery = { ...query };
       if (suspiciousQuery.weekId) {
         suspiciousQuery.weekId = suspiciousQuery.weekId;
       }
