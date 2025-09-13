@@ -277,13 +277,13 @@ export async function POST(request: NextRequest) {
       multipleAccounts = await checkMultipleAccounts(deviceHash, user._id.toString(), VoteLog);
     }
 
-    // Si la cuenta es muy nueva, rechazar el voto
-    if (suspicious.newAccount) {
-      return NextResponse.json({
-        error: 'Tu cuenta es muy nueva. Por seguridad, debes esperar 7 días desde la creación de tu cuenta para poder votar.',
-        accountAge: Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)) + ' días'
-      }, { status: 403 });
-    }
+    // Si la cuenta es muy nueva, rechazar el voto - DESHABILITADO
+    // if (suspicious.newAccount) {
+    //   return NextResponse.json({
+    //     error: 'Tu cuenta es muy nueva. Por seguridad, debes esperar 7 días desde la creación de tu cuenta para poder votar.',
+    //     accountAge: Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)) + ' días'
+    //   }, { status: 403 });
+    // }
 
     // Si detectamos múltiples cuentas, advertir pero permitir por ahora
     if (multipleAccounts) {
