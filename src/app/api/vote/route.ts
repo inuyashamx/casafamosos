@@ -6,7 +6,9 @@ import { SeasonService } from '@/lib/services/seasonService';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Vote from '@/lib/models/Vote';
-// import Candidate from '@/lib/models/Candidate';
+import VoteLog from '@/lib/models/VoteLog';
+import { generateFingerprintHash, detectSuspiciousActivity, checkMultipleAccounts } from '@/lib/utils/fingerprint';
+import Candidate from '@/lib/models/Candidate';
 
 export async function GET(request: NextRequest) {
   try {
@@ -230,7 +232,7 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
     const data = await request.json();
-    const { votes } = data; // Array de { candidateId, points }
+    const { votes, fingerprint, timeOnPage } = data; // Array de { candidateId, points } + fingerprint data
 
     if (!votes || !Array.isArray(votes) || votes.length === 0) {
       return NextResponse.json({ error: 'Votos requeridos' }, { status: 400 });
@@ -257,6 +259,35 @@ export async function POST(request: NextRequest) {
     const user = await User.findById((session.user as any).id);
     if (!user) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    }
+
+    // Generar fingerprint hash
+    const deviceHash = fingerprint ? generateFingerprintHash(fingerprint) : null;
+
+    // Detectar actividad sospechosa
+    const suspicious = detectSuspiciousActivity(
+      timeOnPage || 0,
+      new Date(),
+      user.createdAt
+    );
+
+    // Verificar múltiples cuentas en el mismo dispositivo
+    let multipleAccounts = false;
+    if (deviceHash) {
+      multipleAccounts = await checkMultipleAccounts(deviceHash, user._id.toString(), VoteLog);
+    }
+
+    // Si la cuenta es muy nueva, rechazar el voto
+    if (suspicious.newAccount) {
+      return NextResponse.json({
+        error: 'Tu cuenta es muy nueva. Por seguridad, debes esperar 7 días desde la creación de tu cuenta para poder votar.',
+        accountAge: Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)) + ' días'
+      }, { status: 403 });
+    }
+
+    // Si detectamos múltiples cuentas, advertir pero permitir por ahora
+    if (multipleAccounts) {
+      console.warn(`⚠️ Múltiples cuentas detectadas en dispositivo: ${deviceHash} para usuario: ${user.email}`);
     }
 
     // NUEVA LÓGICA: Verificar puntos disponibles basado en el último voto
@@ -301,8 +332,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Crear votos
+    // Crear votos y logs
     const votePromises = votes.map(async (vote: any) => {
+      // Obtener información del candidato
+      const candidate = await Candidate.findById(vote.candidateId);
+
+      // Crear el voto
       const newVote = new Vote({
         userId: user._id,
         candidateId: vote.candidateId,
@@ -312,9 +347,40 @@ export async function POST(request: NextRequest) {
         points: vote.points,
         metadata: {
           userAgent: request.headers.get('user-agent'),
-          ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         }
       });
+
+      // Crear log detallado
+      const voteLog = new VoteLog({
+        userId: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        candidateId: vote.candidateId,
+        candidateName: candidate?.name || 'Unknown',
+        weekId: activeWeek._id,
+        points: vote.points,
+
+        deviceFingerprint: {
+          userAgent: request.headers.get('user-agent') || '',
+          ...fingerprint,
+          hash: deviceHash
+        },
+
+        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+
+        suspiciousFactors: {
+          newAccount: suspicious.newAccount,
+          multipleAccountsSameDevice: multipleAccounts,
+          rapidVoting: suspicious.rapidVoting,
+          unusualTime: suspicious.unusualTime
+        },
+
+        timeOnPage: timeOnPage || 0,
+        voteAccepted: true
+      });
+
+      await voteLog.save();
       return await newVote.save();
     });
 

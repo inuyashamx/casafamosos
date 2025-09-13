@@ -73,29 +73,45 @@ export async function GET(request: NextRequest) {
     // Mostrar todos los candidatos que estén en week.nominees, excepto el salvado (no puede votarse)
     const savedRef: any = weekWithResults.results?.saved?.candidateId;
     const savedId = savedRef ? (savedRef._id ? savedRef._id.toString() : savedRef.toString()) : null;
-    const nominees = weekWithResults.nominees
+
+    // Primero filtrar los nominados activos (excluyendo al salvado)
+    const activeNominees = weekWithResults.nominees
       .filter((nominee: any) => nominee.candidateId) // Filtrar nominados válidos
       .filter((nominee: any) => {
         // Excluir al candidato salvado de la votación
         if (!savedId) return true;
         return nominee.candidateId._id.toString() !== savedId;
-      })
-      .map((nominee: any) => {
-        const candidate = nominee.candidateId;
-        const stats = weekWithResults.results?.votingStats?.find(
-          (stat: any) => stat.candidateId.toString() === candidate._id.toString()
-        );
-
-        console.log(`Candidate ${candidate.name}: votes = ${stats?.votes || 0}`);
-
-        return {
-          id: candidate._id,
-          name: candidate.name,
-          photo: candidate.photo,
-          votes: stats?.votes || 0,
-          percentage: stats?.percentage || 0,
-        };
       });
+
+    // Calcular el total de votos solo de los candidatos activos (no salvados)
+    const totalActiveVotes = activeNominees.reduce((total: number, nominee: any) => {
+      const stats = weekWithResults.results?.votingStats?.find(
+        (stat: any) => stat.candidateId.toString() === nominee.candidateId._id.toString()
+      );
+      return total + (stats?.votes || 0);
+    }, 0);
+
+    // Mapear los nominados con sus porcentajes recalculados
+    const nominees = activeNominees.map((nominee: any) => {
+      const candidate = nominee.candidateId;
+      const stats = weekWithResults.results?.votingStats?.find(
+        (stat: any) => stat.candidateId.toString() === candidate._id.toString()
+      );
+
+      const votes = stats?.votes || 0;
+      // Recalcular el porcentaje basado solo en los votos de candidatos activos
+      const percentage = totalActiveVotes > 0 ? Math.round((votes / totalActiveVotes) * 100) : 0;
+
+      console.log(`Candidate ${candidate.name}: votes = ${votes}, new percentage = ${percentage}%`);
+
+      return {
+        id: candidate._id,
+        name: candidate.name,
+        photo: candidate.photo,
+        votes: votes,
+        percentage: percentage,
+      };
+    });
 
     // Obtener información del candidato eliminado si existe
     let eliminatedCandidate = null;

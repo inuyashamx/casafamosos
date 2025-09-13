@@ -54,6 +54,7 @@ export default function VotePage() {
   const [error, setError] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [pageLoadTime] = useState(Date.now());
 
   // Verificar autenticación
   useEffect(() => {
@@ -183,15 +184,28 @@ export default function VotePage() {
           points
         }));
 
+      // Generar device fingerprint
+      const fingerprint = {
+        userAgent: navigator.userAgent,
+        screenResolution: `${window.screen.width}x${window.screen.height}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        language: navigator.language,
+        platform: navigator.platform,
+        cookieEnabled: navigator.cookieEnabled,
+      };
+
+      // Calcular tiempo en la página
+      const timeOnPage = Math.floor((Date.now() - pageLoadTime) / 1000); // en segundos
+
       const response = await fetch('/api/vote', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'submitVotes',
-          weekId: votingData?.week?.id,
-          votes
+          votes,
+          fingerprint,
+          timeOnPage
         }),
       });
 

@@ -71,6 +71,9 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [canReceiveShareBonus, setCanReceiveShareBonus] = useState(false);
   const [savingTeam, setSavingTeam] = useState<string | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
   
   // Redes sociales
   const [socialMedia, setSocialMedia] = useState({
@@ -83,6 +86,143 @@ export default function Home() {
   });
   
   // Contador regresivo
+
+  // PWA Install prompt
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Check if app is already installed
+    const checkIfInstalled = () => {
+      if (window.matchMedia('(display-mode: standalone)').matches ||
+          window.matchMedia('(display-mode: fullscreen)').matches ||
+          window.matchMedia('(display-mode: minimal-ui)').matches) {
+        setIsAppInstalled(true);
+        setShowInstallButton(false);
+      }
+    };
+
+    checkIfInstalled();
+
+    // Show install alert after 30 seconds for first-time visitors
+    const hasSeenInstallAlert = localStorage.getItem('hasSeenInstallAlert');
+    if (!hasSeenInstallAlert && !window.matchMedia('(display-mode: standalone)').matches) {
+      const timer = setTimeout(() => {
+        showInstallAlert();
+        localStorage.setItem('hasSeenInstallAlert', 'true');
+      }, 30000); // 30 seconds
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const showInstallAlert = () => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in';
+    modal.innerHTML = `
+      <div class="bg-card rounded-2xl w-full max-w-md border border-border/40 overflow-hidden shadow-2xl transform scale-95 animate-scale-in">
+        <div class="bg-gradient-to-r from-purple-500 to-indigo-500 p-6 text-center text-white">
+          <div class="text-5xl mb-3">📱</div>
+          <h3 class="text-2xl font-bold">¡Instala Casa Famosos!</h3>
+          <p class="text-sm opacity-90 mt-2">Accede más rápido desde tu dispositivo</p>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="bg-muted/30 rounded-lg p-4 border border-border/20">
+            <div class="flex items-start space-x-3">
+              <span class="text-2xl">✨</span>
+              <div>
+                <p class="font-semibold text-foreground">Ventajas de instalar:</p>
+                <ul class="text-sm text-muted-foreground mt-2 space-y-1">
+                  <li>• Acceso directo desde tu pantalla de inicio</li>
+                  <li>• Carga más rápida</li>
+                  <li>• Experiencia a pantalla completa</li>
+                  <li>• Notificaciones de votaciones</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex space-x-3">
+            <button onclick="installAppFromAlert()" class="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg">
+              Instalar Ahora
+            </button>
+            <button onclick="closeInstallAlert()" class="flex-1 bg-muted hover:bg-muted/80 text-foreground py-3 rounded-lg font-medium transition-colors">
+              Más Tarde
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes scale-in {
+        from { transform: scale(0.9); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+      }
+      .animate-scale-in {
+        animation: scale-in 0.3s ease-out;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Global functions
+    (window as any).installAppFromAlert = async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setShowInstallButton(false);
+          setIsAppInstalled(true);
+        }
+        setDeferredPrompt(null);
+      }
+      document.body.removeChild(modal);
+      document.head.removeChild(style);
+    };
+
+    (window as any).closeInstallAlert = () => {
+      document.body.removeChild(modal);
+      document.head.removeChild(style);
+    };
+
+    document.body.appendChild(modal);
+  };
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+      setShowInstallButton(false);
+      setIsAppInstalled(true);
+    }
+
+    setDeferredPrompt(null);
+  };
 
   // Cargar datos de votación
   useEffect(() => {
@@ -884,6 +1024,31 @@ export default function Home() {
                 <div className="text-2xl font-bold text-accent">{votingData.nominees.length}</div>
                 <div className="text-xs text-muted-foreground">Nominados</div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fixed Install PWA Block - Always visible unless installed */}
+        {!isAppInstalled && (
+          <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="text-3xl">📲</div>
+                <div>
+                  <h3 className="font-bold text-foreground">
+                    Instala la aplicación
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Acceso directo desde tu teléfono
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={showInstallButton ? handleInstallClick : showInstallAlert}
+                className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg whitespace-nowrap"
+              >
+                📱 Instalar
+              </button>
             </div>
           </div>
         )}

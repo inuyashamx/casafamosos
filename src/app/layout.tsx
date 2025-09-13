@@ -14,6 +14,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Casa Famosos",
   description: "Plataforma de entretenimiento y celebridades",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -24,6 +25,14 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <head>
+        {/* PWA Meta Tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Casa Famosos" />
+        <link rel="apple-touch-icon" href="/logo192.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#ff6b6b" />
+
         {/* Twitter conversion tracking base code */}
         <Script
           id="twitter-tracking"
