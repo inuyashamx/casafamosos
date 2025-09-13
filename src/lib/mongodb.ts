@@ -15,12 +15,14 @@ async function dbConnect() {
 
   try {
     const options = {
-      maxPoolSize: 10,
+      maxPoolSize: 5, // Reducir pool size
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      bufferCommands: true, // Cambiar a true para evitar errores
+      bufferCommands: true,
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      maxIdleTimeMS: 30000, // Cerrar conexiones idle después de 30s
+      minPoolSize: 0, // Permitir que el pool se vacíe completamente
     };
 
     await mongoose.connect(MONGODB_URI, options);
