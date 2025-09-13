@@ -32,6 +32,13 @@ export interface IVoteLog extends Document {
     vpnDetected?: boolean;
     rapidVoting?: boolean; // Votó muy rápido después de entrar
     unusualTime?: boolean; // Votó en horario sospechoso (3-6 AM)
+    suspiciousUserAgent?: boolean; // User-Agent sospechoso (bots, automatización)
+    consistentVotingPattern?: boolean; // Patrón consistente de voto (mismo tiempo, mismos puntos)
+    perfectTiming?: boolean; // Timing demasiado perfecto para ser humano
+    sequentialVoting?: boolean; // Votos secuenciales muy cercanos en tiempo
+    multipleAccountsCoordinated?: boolean; // Múltiples cuentas coordinadas
+    suspiciousVoteDistribution?: boolean; // Distribución sospechosa de votos
+    identicalVotingPatterns?: boolean; // Patrones de voto idénticos
   };
 
   // Timing
@@ -72,6 +79,13 @@ const VoteLogSchema = new Schema({
     vpnDetected: Boolean,
     rapidVoting: Boolean,
     unusualTime: Boolean,
+    suspiciousUserAgent: Boolean,
+    consistentVotingPattern: Boolean,
+    perfectTiming: Boolean,
+    sequentialVoting: Boolean,
+    multipleAccountsCoordinated: Boolean,
+    suspiciousVoteDistribution: Boolean,
+    identicalVotingPatterns: Boolean,
   },
 
   timeOnPage: { type: Number, default: 0 },

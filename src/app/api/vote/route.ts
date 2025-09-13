@@ -7,7 +7,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Vote from '@/lib/models/Vote';
 import VoteLog from '@/lib/models/VoteLog';
-import { generateFingerprintHash, detectSuspiciousActivity, checkMultipleAccounts } from '@/lib/utils/fingerprint';
+import { generateFingerprintHash, detectSuspiciousActivity, checkMultipleAccounts, detectCoordinatedVoting } from '@/lib/utils/fingerprint';
 import Candidate from '@/lib/models/Candidate';
 
 export async function GET(request: NextRequest) {
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
     const data = await request.json();
-    const { votes, fingerprint, timeOnPage } = data; // Array de { candidateId, points } + fingerprint data
+    const { votes, fingerprint, timeOnPage, captchaToken } = data; // Array de { candidateId, points } + fingerprint data + captcha
 
     if (!votes || !Array.isArray(votes) || votes.length === 0) {
       return NextResponse.json({ error: 'Votos requeridos' }, { status: 400 });
@@ -264,12 +264,33 @@ export async function POST(request: NextRequest) {
     // Generar fingerprint hash
     const deviceHash = fingerprint ? generateFingerprintHash(fingerprint) : null;
 
+    // Obtener votos previos del usuario para análisis de patrones
+    const previousVotes = await VoteLog.find({
+      userId: user._id,
+      votedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Últimas 24 horas
+    }).sort({ votedAt: -1 }).limit(10);
+
     // Detectar actividad sospechosa
     const suspicious = detectSuspiciousActivity(
       timeOnPage || 0,
       new Date(),
-      user.createdAt
+      user.createdAt,
+      request.headers.get('user-agent') || undefined,
+      previousVotes
     );
+
+    // Obtener votos recientes en una ventana de tiempo para detectar coordinación
+    const recentVotes = deviceHash ? await VoteLog.find({
+      'deviceFingerprint.hash': deviceHash,
+      votedAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) } // Últimos 5 minutos
+    }) : [];
+
+    // Detectar voto coordinado
+    const coordinatedPatterns = deviceHash ? detectCoordinatedVoting(deviceHash, recentVotes, 5) : {
+      multipleAccountsCoordinated: false,
+      suspiciousVoteDistribution: false,
+      identicalVotingPatterns: false
+    };
 
     // Verificar múltiples cuentas en el mismo dispositivo
     let multipleAccounts = false;
@@ -285,7 +306,72 @@ export async function POST(request: NextRequest) {
     //   }, { status: 403 });
     // }
 
-    // Si detectamos múltiples cuentas, advertir pero permitir por ahora
+    // Determinar si necesita CAPTCHA basado en la actividad sospechosa
+    const suspiciousActivityCount = Object.values(suspicious).filter(Boolean).length +
+                                   Object.values(coordinatedPatterns).filter(Boolean).length +
+                                   (multipleAccounts ? 1 : 0);
+
+    // CAPTCHA TEMPORALMENTE DESHABILITADO - Cuando tengas plan pago de hCaptcha, descomenta esto:
+    /*
+    const requiresCaptcha = suspiciousActivityCount >= 2; // Si tiene 2 o más indicadores sospechosos
+
+    // Si requiere CAPTCHA y no se proporcionó, devolver error con indicación
+    if (requiresCaptcha && !captchaToken) {
+      return NextResponse.json({
+        error: 'Verificación CAPTCHA requerida',
+        requiresCaptcha: true,
+        suspiciousActivity: {
+          count: suspiciousActivityCount,
+          factors: {
+            ...suspicious,
+            ...coordinatedPatterns,
+            multipleAccountsSameDevice: multipleAccounts
+          }
+        }
+      }, { status: 428 }); // 428 Precondition Required
+    }
+
+    // Si se proporcionó CAPTCHA, verificarlo
+    if (captchaToken) {
+      try {
+        const captchaResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/verify-captcha`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token: captchaToken }),
+        });
+
+        const captchaResult = await captchaResponse.json();
+
+        if (!captchaResponse.ok || !captchaResult.success) {
+          return NextResponse.json({
+            error: 'CAPTCHA inválido. Por favor, intenta nuevamente.',
+            captchaError: true
+          }, { status: 400 });
+        }
+      } catch (captchaError) {
+        console.error('Error verificando CAPTCHA:', captchaError);
+        return NextResponse.json({
+          error: 'Error verificando CAPTCHA. Por favor, intenta nuevamente.',
+          captchaError: true
+        }, { status: 500 });
+      }
+    }
+    */
+
+    // Por ahora solo loggeamos la actividad sospechosa sin bloquear
+    if (suspiciousActivityCount >= 2) {
+      console.warn(`🚨 Actividad altamente sospechosa detectada - Usuario: ${user.email}, Factores: ${suspiciousActivityCount}`, {
+        factors: {
+          ...suspicious,
+          ...coordinatedPatterns,
+          multipleAccountsSameDevice: multipleAccounts
+        }
+      });
+    }
+
+    // Si detectamos múltiples cuentas, advertir pero permitir si pasó CAPTCHA
     if (multipleAccounts) {
       console.warn(`⚠️ Múltiples cuentas detectadas en dispositivo: ${deviceHash} para usuario: ${user.email}`);
     }
@@ -373,7 +459,14 @@ export async function POST(request: NextRequest) {
           newAccount: suspicious.newAccount,
           multipleAccountsSameDevice: multipleAccounts,
           rapidVoting: suspicious.rapidVoting,
-          unusualTime: suspicious.unusualTime
+          unusualTime: suspicious.unusualTime,
+          suspiciousUserAgent: suspicious.suspiciousUserAgent,
+          consistentVotingPattern: suspicious.consistentVotingPattern,
+          perfectTiming: suspicious.perfectTiming,
+          sequentialVoting: suspicious.sequentialVoting,
+          multipleAccountsCoordinated: coordinatedPatterns.multipleAccountsCoordinated,
+          suspiciousVoteDistribution: coordinatedPatterns.suspiciousVoteDistribution,
+          identicalVotingPatterns: coordinatedPatterns.identicalVotingPatterns
         },
 
         timeOnPage: timeOnPage || 0,

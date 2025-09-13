@@ -268,6 +268,23 @@ export default function AdminPage() {
   const [userTotal, setUserTotal] = useState(0);
   const [userPages, setUserPages] = useState(0);
 
+  // Estados para análisis de votos
+  const [voteAnalysisSummary, setVoteAnalysisSummary] = useState<any>(null);
+  const [analysisVotes, setAnalysisVotes] = useState<any[]>([]);
+  const [voteAnalysisLoading, setVoteAnalysisLoading] = useState(false);
+  const [voteFilters, setVoteFilters] = useState({
+    candidateId: '',
+    userId: '',
+    dateFrom: '',
+    dateTo: '',
+    suspicious: false,
+    page: 1,
+    limit: 50
+  });
+  const [votePagination, setVotePagination] = useState({ page: 1, total: 0, pages: 0 });
+  const [availableCandidates, setAvailableCandidates] = useState<any[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+
   // Estados para imágenes de Cloudinary
   const [cloudinaryImages, setCloudinaryImages] = useState<Array<{
     public_id: string;
@@ -454,6 +471,13 @@ export default function AdminPage() {
       loadSocialMedia();
     }
   }, [activeTab]);
+
+  // Cargar datos de análisis de votos cuando se active la pestaña
+  useEffect(() => {
+    if (activeTab === 'vote-analysis') {
+      loadVoteAnalysisData();
+    }
+  }, [activeTab, voteFilters]);
 
   // Cargar estadísticas del dashboard cuando se active la pestaña
   useEffect(() => {
@@ -1647,6 +1671,70 @@ export default function AdminPage() {
     }
   };
 
+  // Función para cargar datos de análisis de votos
+  const loadVoteAnalysisData = async () => {
+    try {
+      setVoteAnalysisLoading(true);
+      setError(null);
+
+      // Cargar resumen de análisis
+      const summaryResponse = await fetch('/api/admin/vote-analysis?action=summary');
+      if (summaryResponse.ok) {
+        const summaryData = await summaryResponse.json();
+        setVoteAnalysisSummary(summaryData);
+
+        // Extraer candidatos disponibles para los filtros
+        if (summaryData.candidateStats) {
+          setAvailableCandidates(summaryData.candidateStats.map((stat: any) => ({
+            _id: stat._id,
+            name: stat.candidate?.name || 'Unknown'
+          })));
+        }
+      }
+
+      // Construir query parameters para votos detallados
+      const params = new URLSearchParams();
+      if (voteFilters.candidateId) params.append('candidateId', voteFilters.candidateId);
+      if (voteFilters.userId) params.append('userId', voteFilters.userId);
+      if (voteFilters.dateFrom) params.append('dateFrom', voteFilters.dateFrom);
+      if (voteFilters.dateTo) params.append('dateTo', voteFilters.dateTo);
+      if (voteFilters.suspicious) params.append('suspicious', 'true');
+      params.append('page', voteFilters.page.toString());
+      params.append('limit', voteFilters.limit.toString());
+
+      // Cargar votos detallados
+      const votesResponse = await fetch(`/api/admin/vote-analysis?${params.toString()}`);
+      if (votesResponse.ok) {
+        const votesData = await votesResponse.json();
+        setAnalysisVotes(votesData.votes || []);
+        setVotePagination(votesData.pagination || { page: 1, total: 0, pages: 0 });
+      }
+    } catch (error) {
+      console.error('Error cargando datos de análisis de votos:', error);
+      setError(error instanceof Error ? error.message : 'Error cargando datos de análisis');
+    } finally {
+      setVoteAnalysisLoading(false);
+    }
+  };
+
+  // Función para buscar usuarios (para el filtro)
+  const searchUsers = async (searchTerm: string) => {
+    if (searchTerm.length < 2) {
+      setAvailableUsers([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin?action=users&search=${encodeURIComponent(searchTerm)}&limit=10`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableUsers(data.users || []);
+      }
+    } catch (error) {
+      console.error('Error buscando usuarios:', error);
+    }
+  };
+
   // Función para guardar redes sociales
   const saveSocialMedia = async () => {
     try {
@@ -1714,6 +1802,7 @@ export default function AdminPage() {
     { id: 'nominees', label: 'Nominados', icon: '🎯' },
     { id: 'votes', label: 'Votaciones', icon: '🗳️' },
     { id: 'users', label: 'Usuarios', icon: '👤' },
+    { id: 'vote-analysis', label: 'Análisis de Votos', icon: '📊' },
     { id: 'cloudinary', label: 'Imágenes', icon: '🖼️' },
     { id: 'social-media', label: 'Redes Sociales', icon: '📱' },
     { id: 'public', label: 'Página Pública', icon: '🌐' },
@@ -4565,8 +4654,340 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* Pestaña de Análisis de Votos */}
+          {activeTab === 'vote-analysis' && (
+            <div className="space-y-6">
+              {voteAnalysisLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Cargando análisis de votos...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Resumen de Análisis */}
+                  {voteAnalysisSummary && (
+                    <div className="space-y-6">
+                      {/* Información de la semana */}
+                      <div className="bg-card rounded-lg p-6 border border-border/40">
+                        <h3 className="text-lg font-semibold text-foreground mb-4">📅 {voteAnalysisSummary.week?.name || 'Semana Actual'}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-primary">{voteAnalysisSummary.summary?.totalVotes || 0}</div>
+                            <div className="text-sm text-muted-foreground">Total Votos</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-accent">{voteAnalysisSummary.summary?.totalVoters || 0}</div>
+                            <div className="text-sm text-muted-foreground">Votantes Únicos</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-green-500">{(voteAnalysisSummary.summary?.totalPoints || 0).toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground">Puntos Totales</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-orange-500">{voteAnalysisSummary.summary?.averagePointsPerVote || 0}</div>
+                            <div className="text-sm text-muted-foreground">Promedio por Voto</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Estadísticas por Candidato */}
+                      {voteAnalysisSummary.candidateStats && voteAnalysisSummary.candidateStats.length > 0 && (
+                        <div className="bg-card rounded-lg p-6 border border-border/40">
+                          <h3 className="text-lg font-semibold text-foreground mb-4">🏆 Estadísticas por Candidato</h3>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-border/20">
+                                  <th className="text-left p-2">Candidato</th>
+                                  <th className="text-center p-2">Votos</th>
+                                  <th className="text-center p-2">Puntos</th>
+                                  <th className="text-center p-2">Votantes Únicos</th>
+                                  <th className="text-center p-2">Promedio por Voto</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {voteAnalysisSummary.candidateStats.map((stat: any, index: number) => (
+                                  <tr key={index} className="border-b border-border/10">
+                                    <td className="p-2">
+                                      <div className="font-medium text-foreground">{stat.candidate?.name}</div>
+                                    </td>
+                                    <td className="p-2 text-center">{stat.votes}</td>
+                                    <td className="p-2 text-center font-bold text-primary">{stat.points.toLocaleString()}</td>
+                                    <td className="p-2 text-center">{stat.uniqueVoters}</td>
+                                    <td className="p-2 text-center">{Math.round(stat.points / stat.votes)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Distribución por Horas */}
+                      {voteAnalysisSummary.hourlyDistribution && voteAnalysisSummary.hourlyDistribution.length > 0 && (
+                        <div className="bg-card rounded-lg p-6 border border-border/40">
+                          <h3 className="text-lg font-semibold text-foreground mb-4">🕐 Distribución de Votos por Hora</h3>
+                          <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
+                            {Array.from({ length: 24 }, (_, hour) => {
+                              const data = voteAnalysisSummary.hourlyDistribution.find((h: any) => h._id === hour);
+                              const count = data?.count || 0;
+                              const maxCount = Math.max(...voteAnalysisSummary.hourlyDistribution.map((h: any) => h.count));
+                              const height = maxCount > 0 ? Math.max(20, (count / maxCount) * 100) : 20;
+
+                              return (
+                                <div key={hour} className="text-center">
+                                  <div
+                                    className="bg-primary/20 mx-auto mb-1 rounded-t"
+                                    style={{ height: `${height}px`, width: '20px' }}
+                                    title={`${hour}:00 - ${count} votos`}
+                                  ></div>
+                                  <div className="text-xs text-muted-foreground">{hour}</div>
+                                  <div className="text-xs text-foreground">{count}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Filtros Avanzados */}
+                  <div className="bg-card rounded-lg p-6 border border-border/40">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">🔍 Filtros de Análisis</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Filtro por Candidato */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Candidato</label>
+                        <select
+                          value={voteFilters.candidateId}
+                          onChange={(e) => setVoteFilters(prev => ({ ...prev, candidateId: e.target.value, page: 1 }))}
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                        >
+                          <option value="">Todos los candidatos</option>
+                          {availableCandidates.map(candidate => (
+                            <option key={candidate._id} value={candidate._id}>{candidate.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Filtro por Usuario */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Usuario</label>
+                        <input
+                          type="text"
+                          placeholder="Buscar usuario por nombre o email..."
+                          className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
+                          onChange={(e) => {
+                            searchUsers(e.target.value);
+                            if (e.target.value.length < 2) {
+                              setVoteFilters(prev => ({ ...prev, userId: '', page: 1 }));
+                            }
+                          }}
+                        />
+                        {availableUsers.length > 0 && (
+                          <div className="mt-1 bg-background border border-border rounded-lg max-h-32 overflow-y-auto">
+                            {availableUsers.map(user => (
+                              <button
+                                key={user._id}
+                                onClick={() => {
+                                  setVoteFilters(prev => ({ ...prev, userId: user._id, page: 1 }));
+                                  setAvailableUsers([]);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                              >
+                                {user.name} ({user.email})
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Filtro por Fecha */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Rango de Fechas</label>
+                        <div className="space-y-2">
+                          <input
+                            type="datetime-local"
+                            value={voteFilters.dateFrom}
+                            onChange={(e) => setVoteFilters(prev => ({ ...prev, dateFrom: e.target.value, page: 1 }))}
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none text-sm"
+                            placeholder="Desde"
+                          />
+                          <input
+                            type="datetime-local"
+                            value={voteFilters.dateTo}
+                            onChange={(e) => setVoteFilters(prev => ({ ...prev, dateTo: e.target.value, page: 1 }))}
+                            className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none text-sm"
+                            placeholder="Hasta"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <button
+                        onClick={() => setVoteFilters(prev => ({ ...prev, suspicious: !prev.suspicious, page: 1 }))}
+                        className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                          voteFilters.suspicious
+                            ? 'bg-destructive text-destructive-foreground'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                        }`}
+                      >
+                        {voteFilters.suspicious ? '⚠️ Solo Sospechosos' : '📊 Incluir Sospechosos'}
+                      </button>
+
+                      <button
+                        onClick={() => setVoteFilters({
+                          candidateId: '',
+                          userId: '',
+                          dateFrom: '',
+                          dateTo: '',
+                          suspicious: false,
+                          page: 1,
+                          limit: 50
+                        })}
+                        className="px-4 py-2 rounded-lg text-sm bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                      >
+                        🗑️ Limpiar Filtros
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tabla de Votos Detallados */}
+                  <div className="bg-card rounded-lg p-6 border border-border/40">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold text-foreground">🗳️ Votos Detallados</h3>
+                      <div className="text-sm text-muted-foreground">
+                        {votePagination.total} votos total | Página {votePagination.page} de {votePagination.pages}
+                      </div>
+                    </div>
+
+                    {analysisVotes.length > 0 ? (
+                      <>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-border/20">
+                                <th className="text-left p-2">Usuario</th>
+                                <th className="text-left p-2">Candidato</th>
+                                <th className="text-center p-2">Puntos</th>
+                                <th className="text-left p-2">Fecha</th>
+                                <th className="text-left p-2">Info Adicional</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {analysisVotes.map((vote, index) => (
+                                <tr key={index} className="border-b border-border/10">
+                                  <td className="p-2">
+                                    <div>
+                                      <div className="font-medium text-foreground">{vote.userId?.name}</div>
+                                      <div className="text-xs text-muted-foreground">{vote.userId?.email}</div>
+                                    </div>
+                                  </td>
+                                  <td className="p-2">
+                                    <div className="font-medium text-foreground">{vote.candidateId?.name}</div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <span className="font-bold text-primary">{vote.points}</span>
+                                  </td>
+                                  <td className="p-2">
+                                    <div className="text-xs text-muted-foreground">
+                                      {new Date(vote.voteDate || vote.votedAt).toLocaleString('es-ES')}
+                                    </div>
+                                  </td>
+                                  <td className="p-2">
+                                    {vote.log && (
+                                      <div className="space-y-1">
+                                        {vote.log.timeOnPage !== undefined && (
+                                          <div className="text-xs text-muted-foreground">
+                                            ⏱️ {vote.log.timeOnPage}s en página
+                                          </div>
+                                        )}
+                                        {vote.log.ip && (
+                                          <div className="text-xs text-muted-foreground">
+                                            🌐 {vote.log.ip}
+                                          </div>
+                                        )}
+                                        {vote.log.suspiciousFactors && (
+                                          <div className="flex flex-wrap gap-1">
+                                            {vote.log.suspiciousFactors.multipleAccountsSameDevice && (
+                                              <span className="bg-red-100 text-red-800 text-xs px-1 py-0.5 rounded" title="Múltiples cuentas">👥</span>
+                                            )}
+                                            {vote.log.suspiciousFactors.rapidVoting && (
+                                              <span className="bg-yellow-100 text-yellow-800 text-xs px-1 py-0.5 rounded" title="Voto rápido">⚡</span>
+                                            )}
+                                            {vote.log.suspiciousFactors.unusualTime && (
+                                              <span className="bg-purple-100 text-purple-800 text-xs px-1 py-0.5 rounded" title="Horario inusual">🌙</span>
+                                            )}
+                                            {vote.log.suspiciousFactors.suspiciousUserAgent && (
+                                              <span className="bg-orange-100 text-orange-800 text-xs px-1 py-0.5 rounded" title="User-Agent sospechoso">🤖</span>
+                                            )}
+                                            {vote.log.suspiciousFactors.consistentVotingPattern && (
+                                              <span className="bg-blue-100 text-blue-800 text-xs px-1 py-0.5 rounded" title="Patrón consistente">🎯</span>
+                                            )}
+                                            {vote.log.suspiciousFactors.perfectTiming && (
+                                              <span className="bg-pink-100 text-pink-800 text-xs px-1 py-0.5 rounded" title="Timing perfecto">⏰</span>
+                                            )}
+                                            {vote.log.suspiciousFactors.sequentialVoting && (
+                                              <span className="bg-indigo-100 text-indigo-800 text-xs px-1 py-0.5 rounded" title="Voto secuencial">🔄</span>
+                                            )}
+                                            {vote.log.suspiciousFactors.multipleAccountsCoordinated && (
+                                              <span className="bg-red-200 text-red-900 text-xs px-1 py-0.5 rounded" title="Cuentas coordinadas">🎭</span>
+                                            )}
+                                            {vote.log.suspiciousFactors.suspiciousVoteDistribution && (
+                                              <span className="bg-yellow-200 text-yellow-900 text-xs px-1 py-0.5 rounded" title="Distribución sospechosa">📊</span>
+                                            )}
+                                            {vote.log.suspiciousFactors.identicalVotingPatterns && (
+                                              <span className="bg-gray-200 text-gray-800 text-xs px-1 py-0.5 rounded" title="Patrones idénticos">🔁</span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Paginación */}
+                        {votePagination.pages > 1 && (
+                          <div className="flex justify-center items-center space-x-2 mt-4">
+                            <button
+                              onClick={() => setVoteFilters(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                              disabled={votePagination.page === 1}
+                              className="px-3 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              ← Anterior
+                            </button>
+                            <span className="text-sm text-muted-foreground">
+                              Página {votePagination.page} de {votePagination.pages}
+                            </span>
+                            <button
+                              onClick={() => setVoteFilters(prev => ({ ...prev, page: Math.min(votePagination.pages, prev.page + 1) }))}
+                              disabled={votePagination.page === votePagination.pages}
+                              className="px-3 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Siguiente →
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground text-center py-8">
+                        No hay votos que coincidan con los filtros seleccionados
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Otras pestañas */}
-          {activeTab !== 'dashboard' && activeTab !== 'seasons' && activeTab !== 'weeks' && activeTab !== 'candidates' && activeTab !== 'nominees' && activeTab !== 'votes' && activeTab !== 'users' && activeTab !== 'cloudinary' && activeTab !== 'social-media' && (
+          {activeTab !== 'dashboard' && activeTab !== 'seasons' && activeTab !== 'weeks' && activeTab !== 'candidates' && activeTab !== 'nominees' && activeTab !== 'votes' && activeTab !== 'users' && activeTab !== 'cloudinary' && activeTab !== 'social-media' && activeTab !== 'vote-analysis' && (
             <div className="text-center text-muted-foreground py-12">
               <div className="text-4xl lg:text-6xl mb-4">🚧</div>
               <p className="text-lg">Sección en construcción...</p>
