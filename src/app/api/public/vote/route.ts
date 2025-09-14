@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
         (stat: any) => stat.candidateId.toString() === candidate._id.toString()
       );
 
-      let votes = stats?.votes || 0;
+      const votes = stats?.votes || 0;
 
       return {
         id: candidate._id,
