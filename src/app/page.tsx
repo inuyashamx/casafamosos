@@ -973,22 +973,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Ver Historial de Votos */}
-        <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-6 text-center">
-          <div className="text-4xl mb-3">👁️</div>
-          <h3 className="text-xl font-bold text-foreground mb-2">
-            VER HISTORIAL DE VOTOS
-          </h3>
-          <p className="text-muted-foreground text-sm mb-4">
-            Consulta todos los votos emitidos en tiempo real y el historial completo de cada usuario
-          </p>
-          <button
-            onClick={() => router.push('/votes')}
-            className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
-          >
-            👁️ VER TODAS LAS VOTACIONES
-          </button>
-        </div>
 
         {/* Saved Candidate Section */}
         {votingData?.savedCandidate && (
@@ -1033,11 +1017,11 @@ export default function Home() {
           </div>
         )}
 
-        {/* Quick Stats */}
+        {/* Quick Stats + Ver Historial */}
         {votingData?.nominees && (
-          <div className="bg-card rounded-xl p-4 border border-border/20">
-            <h3 className="font-semibold text-foreground mb-3">Estadísticas</h3>
-            <div className="grid grid-cols-2 gap-4 text-center">
+          <div className="bg-card rounded-xl p-6 border border-border/20">
+            <h3 className="font-semibold text-foreground mb-4">Estadísticas</h3>
+            <div className="grid grid-cols-2 gap-4 text-center mb-6">
               <div>
                 <div className="text-2xl font-bold text-primary">
                   {votingData.totalVotes ? votingData.totalVotes.toLocaleString() : votingData.nominees.reduce((sum, n) => sum + n.votes, 0).toLocaleString()}
@@ -1047,6 +1031,24 @@ export default function Home() {
               <div>
                 <div className="text-2xl font-bold text-accent">{votingData.nominees.length}</div>
                 <div className="text-xs text-muted-foreground">Nominados</div>
+              </div>
+            </div>
+
+            {/* Ver Historial de Votos */}
+            <div className="border-t border-border/20 pt-4">
+              <div className="text-center">
+                <h4 className="font-semibold text-foreground mb-2 flex items-center justify-center gap-2">
+                  👁️ Historial de Votos
+                </h4>
+                <p className="text-muted-foreground text-sm mb-3">
+                  Consulta todos los votos en tiempo real
+                </p>
+                <button
+                  onClick={() => router.push('/votes')}
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg font-medium hover:scale-105 transition-all duration-200 shadow-lg text-sm"
+                >
+                  Ver Todas las Votaciones
+                </button>
               </div>
             </div>
           </div>
