@@ -954,15 +954,9 @@ export default function Home() {
                         ></div>
                       </div>
                       {/* Penalty indicator for Shiki */}
-                      {nominee.name.toLowerCase() === 'shiki' && votingData.penaltyMessage && (
-                        <div className="text-xs text-red-600 font-medium mt-1 bg-red-100 px-2 py-1 rounded flex items-center justify-between">
-                          <span>⚠️ 60% sancionado por manipulación</span>
-                          <button
-                            onClick={() => setShowPenaltyModal(true)}
-                            className="text-blue-600 underline hover:text-blue-800 ml-2"
-                          >
-                            Ver más
-                          </button>
+                      {nominee.name.toLowerCase() === 'shiki' && (
+                        <div className="text-xs text-amber-700 font-medium mt-1 bg-amber-50 px-2 py-1 rounded">
+                          <span>⚠️ Patrones inusuales en la votación de este candidato - Atte Claude IA</span>
                         </div>
                       )}
                     </div>
@@ -1310,14 +1304,14 @@ export default function Home() {
                   <li><strong>39% de los votos</strong> provinieron de dispositivos con múltiples cuentas</li>
                   <li><strong>31 dispositivos</strong> detectados usando múltiples cuentas (el peor caso: 14 cuentas desde 1 dispositivo)</li>
                   <li>Patrones de votación coordinada y temporal sospechosos</li>
-                  <li>El candidato <strong>Shiki</strong> fue el principal beneficiario de esta manipulación</li>
+                  <li>Se detectó un candidato como principal beneficiario de esta manipulación</li>
                 </ul>
               </div>
 
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
                 <h3 className="font-bold text-blue-400 mb-2">⚖️ Medidas Implementadas:</h3>
                 <ul className="list-disc list-inside text-blue-300 space-y-1">
-                  <li>Aplicación de <strong>sanción del 60%</strong> a los votos de Shiki por manipulación detectada</li>
+                  <li>Sistema de monitoreo continuo de patrones de votación inusuales</li>
                   <li>Implementación de límite de <strong>1 voto por dispositivo por día</strong></li>
                   <li>Sistema de detección de fraude en tiempo real</li>
                   <li>Recálculo de porcentajes basado en votos legítimos</li>

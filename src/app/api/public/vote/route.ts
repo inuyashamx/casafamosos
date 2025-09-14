@@ -91,10 +91,6 @@ export async function GET(request: NextRequest) {
       return total + (stats?.votes || 0);
     }, 0);
 
-    // Aplicar penalización del 60% a Shiki por manipulación de votos
-    let penaltyMessage = null;
-    let penalizedVotes = 0;
-
     // Mapear los nominados con sus porcentajes recalculados
     const nominees = activeNominees.map((nominee: any) => {
       const candidate = nominee.candidateId;
@@ -103,16 +99,6 @@ export async function GET(request: NextRequest) {
       );
 
       let votes = stats?.votes || 0;
-
-      // Aplicar penalización del 60% si es Shiki
-      if (candidate.name && candidate.name.toLowerCase() === 'shiki') {
-        const originalVotes = votes;
-        const penalty = Math.round(originalVotes * 0.6); // 60% de penalización
-        votes = originalVotes - penalty; // Reducir votos en 60%
-        penalizedVotes = penalty;
-        penaltyMessage = `Se han penalizado ${penalty.toLocaleString()} votos por manipulación detectada`;
-        console.log(`PENALTY APPLIED: Shiki original votes = ${originalVotes}, penalty = ${penalty}, final votes = ${votes}`);
-      }
 
       return {
         id: candidate._id,
@@ -123,7 +109,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Recalcular porcentajes después de aplicar penalizaciones
+    // Recalcular porcentajes
     const totalVotesAfterPenalties = nominees.reduce((total: number, nominee: any) => total + nominee.votes, 0);
 
     nominees.forEach((nominee: any) => {
@@ -201,9 +187,7 @@ export async function GET(request: NextRequest) {
       },
       totalVotes: weekWithResults.results?.totalVotes || 0,
       eliminatedCandidate,
-      savedCandidate,
-      penaltyMessage,
-      penalizedVotes
+      savedCandidate
     });
 
   } catch (error) {
