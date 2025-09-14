@@ -950,12 +950,6 @@ export default function Home() {
                           style={{ width: `${nominee.percentage}%` }}
                         ></div>
                       </div>
-                      {/* Penalty indicator for Shiki */}
-                      {nominee.name.toLowerCase() === 'shiki' && (
-                        <div className="text-xs text-amber-700 font-medium mt-1 bg-amber-50 px-2 py-1 rounded">
-                          <span>⚠️ Patrones inusuales en la votación de este candidato - Atte Claude IA</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                   
