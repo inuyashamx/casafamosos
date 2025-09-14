@@ -11,14 +11,14 @@ export default function Footer() {
           <div className="flex items-center justify-center space-x-2 mb-4">
             <div className="w-6 h-6 bg-gradient-to-r from-primary to-accent rounded-lg glow"></div>
             <span className="text-lg font-bold text-foreground">
-              Casa Famosos 2025
+              lacasavota.com
             </span>
           </div>
-          
+
           <p className="text-sm text-muted-foreground">
-            Plataforma oficial de votación para Casa Famosos
+            lacasavota.com - Encuesta hecha por fans para fans
           </p>
-          
+
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-xs text-muted-foreground">
             <button
               onClick={() => setShowPrivacyPolicy(true)}
@@ -27,7 +27,7 @@ export default function Footer() {
               Política de Privacidad
             </button>
             <span>•</span>
-            <span>© 2025 Casa Famosos. Todos los derechos reservados.</span>
+            <span>© 2025 lacasavota.com. Todos los derechos reservados.</span>
           </div>
         </div>
       </div>
@@ -171,8 +171,8 @@ export default function Footer() {
                     privacidad, contáctenos en:
                   </p>
                   <p className="mt-2">
-                    <strong>Email:</strong> privacidad@casafamosos.com<br />
-                    <strong>Dirección:</strong> Av. Principal 123, Ciudad de México, México
+                    <strong>Email:</strong> xpellitofficial@gmail.com<br />
+                    <strong>Dirección:</strong> En tu corazón
                   </p>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 {
-  "name": "Casa de los Famosos Colombia",
-  "short_name": "Casa Famosos",
-  "description": "Vota por tu participante favorito en La Casa de los Famosos Colombia",
+  "name": "lacasavota.com",
+  "short_name": "lacasavota",
+  "description": "Encuesta hecha por fans para fans - lacasavota.com",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

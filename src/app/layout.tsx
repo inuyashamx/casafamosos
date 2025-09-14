@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Casa Famosos",
-  description: "Plataforma de entretenimiento y celebridades",
+  title: "lacasavota.com",
+  description: "Encuesta hecha por fans para fans",
   manifest: "/manifest.json",
 };
 
@@ -28,7 +28,7 @@ export default function RootLayout({
         {/* PWA Meta Tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Casa Famosos" />
+        <meta name="apple-mobile-web-app-title" content="lacasavota.com" />
         <link rel="apple-touch-icon" href="/logo.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#ff6b6b" />
