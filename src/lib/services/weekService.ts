@@ -322,9 +322,17 @@ export class WeekService {
 
   static async getWeekResults(weekId: string) {
     await dbConnect();
-    
+
     // Actualizar resultados en tiempo real y retornar la semana con los nominados y eliminado poblados
     await this.updateWeekResults(weekId);
+    return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
+  }
+
+  static async getWeekResultsCached(weekId: string) {
+    await dbConnect();
+
+    // Retornar la semana con los resultados ya almacenados sin actualizarlos
+    // Esto es mucho más rápido para consultas públicas frecuentes
     return await Week.findById(weekId).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
