@@ -973,6 +973,23 @@ export default function Home() {
           </div>
         )}
 
+        {/* Ver Historial de Votos */}
+        <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-6 text-center">
+          <div className="text-4xl mb-3">👁️</div>
+          <h3 className="text-xl font-bold text-foreground mb-2">
+            VER HISTORIAL DE VOTOS
+          </h3>
+          <p className="text-muted-foreground text-sm mb-4">
+            Consulta todos los votos emitidos en tiempo real y el historial completo de cada usuario
+          </p>
+          <button
+            onClick={() => router.push('/votes')}
+            className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+          >
+            👁️ VER TODAS LAS VOTACIONES
+          </button>
+        </div>
+
         {/* Saved Candidate Section */}
         {votingData?.savedCandidate && (
           <div className="space-y-4">
