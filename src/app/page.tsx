@@ -248,9 +248,6 @@ export default function Home() {
     };
 
     fetchVotingData();
-    // Actualizar cada 30 segundos
-    const interval = setInterval(fetchVotingData, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   // Cargar redes sociales
