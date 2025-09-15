@@ -7,6 +7,7 @@ import Chat from '@/components/Chat';
 import TeamBadge from '@/components/TeamBadge';
 import Footer from '@/components/Footer';
 import TabComponent from '@/components/TabComponent';
+import InfoModal from '@/components/InfoModal';
 
 interface Nominee {
   id: string;
@@ -101,6 +102,7 @@ export default function Home() {
   const [fandomData, setFandomData] = useState<FandomData | null>(null);
   const [fandomLoading, setFandomLoading] = useState(false);
   const [fandomError, setFandomError] = useState<string | null>(null);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   // Redes sociales
   const [socialMedia, setSocialMedia] = useState({
@@ -963,6 +965,12 @@ export default function Home() {
                         <div className="text-xs text-blue-500/80 mt-1">
                           Si un usuario vota 10 veces por el mismo candidato, cuenta como 10 votos
                         </div>
+                        <button
+                          onClick={() => setShowInfoModal(true)}
+                          className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium underline transition-colors"
+                        >
+                          Leer más
+                        </button>
                       </div>
 
                       {votingData.nominees
@@ -1054,6 +1062,12 @@ export default function Home() {
                         <div className="text-xs text-purple-500/80 mt-1">
                           Si un usuario vota 10 veces por el mismo candidato, cuenta como 1 votante único
                         </div>
+                        <button
+                          onClick={() => setShowInfoModal(true)}
+                          className="mt-2 text-xs text-purple-600 hover:text-purple-700 font-medium underline transition-colors"
+                        >
+                          Leer más
+                        </button>
                       </div>
 
                       {fandomLoading ? (
@@ -1499,6 +1513,12 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Info Modal */}
+      <InfoModal
+        isOpen={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+      />
 
       <Footer />
     </main>
