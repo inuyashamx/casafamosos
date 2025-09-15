@@ -14,10 +14,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No hay temporada activa' }, { status: 404 });
     }
 
-    // Obtener semana activa
-    const activeWeek = await WeekService.getActiveWeek(activeSeason._id.toString());
+    // Buscar la semana activa de manera más eficiente
+    // Primero intentar obtener la semana activa directamente
+    let activeWeek = await WeekService.getActiveWeek(activeSeason._id.toString());
+
+    // Si no hay semana activa, buscar la más reciente con una sola consulta optimizada
     if (!activeWeek) {
-      return NextResponse.json({ error: 'No hay votación activa' }, { status: 404 });
+      const weeks = await WeekService.getWeeksBySeason(activeSeason._id.toString());
+
+      // Buscar primero una semana en curso (por fecha)
+      const now = new Date();
+      activeWeek = weeks.find((w: any) =>
+        w.nominees.length > 0 &&
+        new Date(w.votingStartDate) <= now &&
+        new Date(w.votingEndDate) >= now
+      );
+
+      // Si no hay semana en curso, buscar la completada más reciente
+      if (!activeWeek) {
+        const completedWeeks = weeks.filter((w: any) =>
+          w.status === 'completed' && w.nominees.length > 0
+        );
+        if (completedWeeks.length > 0) {
+          activeWeek = completedWeeks[0]; // Ya vienen ordenadas por fecha
+        }
+      }
+
+      // Si aún no hay semana, buscar la próxima programada
+      if (!activeWeek) {
+        activeWeek = weeks.find((w: any) =>
+          w.status === 'scheduled' && w.nominees.length > 0
+        );
+      }
+    }
+
+    if (!activeWeek) {
+      return NextResponse.json({ error: 'No hay votación disponible' }, { status: 404 });
     }
 
     // Obtener información completa de la semana con resultados
