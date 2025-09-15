@@ -19,8 +19,6 @@ async function dbConnect() {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
       bufferCommands: true,
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       maxIdleTimeMS: 30000, // Cerrar conexiones idle después de 30s
       minPoolSize: 0, // Permitir que el pool se vacíe completamente
     };
