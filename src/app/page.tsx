@@ -864,11 +864,11 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-base font-bold text-green-600 uppercase tracking-wide">
-                        🛡️ PROTECCIÓN ANTIBOTS ACTIVADA
+                      <div className="text-2xl font-black text-yellow-500 uppercase tracking-wider animate-pulse drop-shadow-lg">
+                        ⚔️ GUERRA DE FANDOMS!! ⚔️
                       </div>
-                      <div className="text-xs text-green-600/80 mt-1">
-                        Resultados 100% Reales - Sin manipulación
+                      <div className="text-sm text-yellow-400/90 mt-1 font-bold">
+                        ¡Batalla épica por el primer lugar!
                       </div>
                     </div>
                   </div>
@@ -940,7 +940,7 @@ export default function Home() {
         {votingData?.nominees && votingData.nominees.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground">ENCUESTA DE POPULARIDAD VOTA POR TU FAVORITO</h2>
+              <h2 className="text-xl font-bold text-foreground">¿QUÉ FANDOM ES EL MÁS FUERTE?</h2>
               <button
                 onClick={handleRefresh}
                 className="text-primary hover:text-primary/80 transition-colors"
