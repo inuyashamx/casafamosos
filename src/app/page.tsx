@@ -949,235 +949,81 @@ export default function Home() {
               </button>
             </div>
 
-            <TabComponent
-              tabs={[
-                {
-                  id: 'nominees',
-                  label: 'VOTOS ACUMULADOS',
-                  icon: '🗳️',
-                  content: (
-                    <div className="space-y-4">
-                      {/* Leyenda para Votos Acumulados */}
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
-                        <div className="text-sm text-blue-600 font-medium">
-                          📊 <strong>Votos Acumulados:</strong> Suma total de todos los votos recibidos por cada candidato
-                        </div>
-                        <div className="text-xs text-blue-500/80 mt-1">
-                          Si un usuario vota 10 veces por el mismo candidato, cuenta como 10 votos
-                        </div>
-                        <button
-                          onClick={() => setShowInfoModal(true)}
-                          className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium underline transition-colors"
-                        >
-                          Leer más
-                        </button>
-                      </div>
-
-                      {votingData.nominees
-                        .sort((a, b) => b.votes - a.votes)
-                        .map((nominee, index) => (
-                        <div key={`${nominee.id}-${index}`} className={`rounded-xl p-4 border vote-card ${
-                          index === 0
-                            ? '!bg-violet-600 !border-violet-700 shadow-lg'
-                            : 'bg-card border-border/20'
-                        }`}>
-                          <div className="flex items-center space-x-4">
-                            {/* Position Badge */}
-                            <div className={`position-badge ${
-                              index === 0
-                                ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg'
-                                : index === 1
-                                  ? 'bg-gray-400'
-                                  : index === 2
-                                    ? 'bg-amber-600'
-                                    : 'bg-muted'
-                            }`}>
-                              {index === 0 ? '👑' : `#${index + 1}`}
-                            </div>
-
-                            {/* Avatar */}
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                              index === 0
-                                ? 'bg-gradient-to-br from-yellow-400/30 to-amber-500/30 avatar-glow shadow-lg'
-                                : 'bg-gradient-to-br from-primary/20 to-accent/20 avatar-glow'
-                            }`}>
-                              {nominee.photo ? (
-                                <Image
-                                  src={nominee.photo}
-                                  alt={nominee.name}
-                                  width={48}
-                                  height={48}
-                                  className="rounded-full"
-                                />
-                              ) : (
-                                <span className="text-xl">👤</span>
-                              )}
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1">
-                              <h3 className={`font-semibold ${
-                                index === 0
-                                  ? 'text-white font-bold'
-                                  : 'text-foreground'
-                              }`}>
-                                {nominee.name}
-                                {index === 0 && <span className="ml-2 text-yellow-300">🏆</span>}
-                              </h3>
-                              <div className="mt-1">
-                                <div className="bg-muted rounded-full h-2 progress-bar">
-                                  <div
-                                    className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-500"
-                                    style={{ width: `${nominee.percentage}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Percentage */}
-                            <div className="text-right">
-                              <div className={`text-2xl font-bold ${
-                                index === 0 ? 'text-white' : 'text-primary'
-                              }`}>
-                                {nominee.percentage}%
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+            {/* Resultados directos sin tabs */}
+            <div className="space-y-4">
+              {votingData.nominees
+                .sort((a, b) => b.votes - a.votes)
+                .map((nominee, index) => (
+                <div key={`${nominee.id}-${index}`} className={`rounded-xl p-4 border vote-card ${
+                  index === 0
+                    ? '!bg-violet-600 !border-violet-700 shadow-lg'
+                    : 'bg-card border-border/20'
+                }`}>
+                  <div className="flex items-center space-x-4">
+                    {/* Position Badge */}
+                    <div className={`position-badge ${
+                      index === 0
+                        ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg'
+                        : index === 1
+                          ? 'bg-gray-400'
+                          : index === 2
+                            ? 'bg-amber-600'
+                            : 'bg-muted'
+                    }`}>
+                      {index === 0 ? '👑' : `#${index + 1}`}
                     </div>
-                  )
-                },
-                {
-                  id: 'fandoms',
-                  label: 'VOTOS ÚNICOS',
-                  icon: '👥',
-                  content: (
-                    <div className="space-y-4">
-                      {/* Leyenda para Votos Únicos */}
-                      <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-center">
-                        <div className="text-sm text-purple-600 font-medium">
-                          👥 <strong>Votos Únicos:</strong> Número de personas diferentes que han votado por cada candidato
-                        </div>
-                        <div className="text-xs text-purple-500/80 mt-1">
-                          Si un usuario vota 10 veces por el mismo candidato, cuenta como 1 votante único
-                        </div>
-                        <button
-                          onClick={() => setShowInfoModal(true)}
-                          className="mt-2 text-xs text-purple-600 hover:text-purple-700 font-medium underline transition-colors"
-                        >
-                          Leer más
-                        </button>
-                      </div>
 
-                      {fandomLoading ? (
-                        <div className="text-center py-8">
-                          <div className="animate-pulse">
-                            <div className="h-4 bg-muted rounded w-1/2 mx-auto mb-2"></div>
-                            <div className="h-3 bg-muted rounded w-1/3 mx-auto"></div>
-                          </div>
-                        </div>
-                      ) : fandomError ? (
-                        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-center">
-                          <div className="text-destructive font-medium">Error al cargar votos únicos</div>
-                          <div className="text-destructive/80 text-sm mt-1">{fandomError}</div>
-                          <button
-                            onClick={fetchFandomData}
-                            className="bg-destructive text-destructive-foreground px-3 py-1 rounded-lg text-sm hover:bg-destructive/90 transition-colors mt-2"
-                          >
-                            Reintentar
-                          </button>
-                        </div>
-                      ) : !fandomData?.fandoms?.length ? (
-                        <div className="text-center py-8">
-                          <div className="text-4xl mb-4">👥</div>
-                          <div className="text-lg font-semibold text-foreground mb-2">No hay votos únicos disponibles</div>
-                          <div className="text-muted-foreground text-sm">Los votos únicos aparecerán cuando haya votaciones activas</div>
-                          <button
-                            onClick={fetchFandomData}
-                            className="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-primary/90 transition-colors mt-4"
-                          >
-                            Cargar Votos Únicos
-                          </button>
-                        </div>
+                    {/* Avatar */}
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                      index === 0
+                        ? 'bg-gradient-to-br from-yellow-400/30 to-amber-500/30 avatar-glow shadow-lg'
+                        : 'bg-gradient-to-br from-primary/20 to-accent/20 avatar-glow'
+                    }`}>
+                      {nominee.photo ? (
+                        <Image
+                          src={nominee.photo}
+                          alt={nominee.name}
+                          width={48}
+                          height={48}
+                          className="rounded-full"
+                        />
                       ) : (
-                        fandomData.fandoms.map((fandom, index) => (
-                          <div key={`${fandom.id}-${index}`} className={`rounded-xl p-4 border vote-card ${
-                            index === 0
-                              ? '!bg-violet-600 !border-violet-700 shadow-lg'
-                              : 'bg-card border-border/20'
-                          }`}>
-                            <div className="flex items-center space-x-4">
-                              {/* Position Badge */}
-                              <div className={`position-badge ${
-                                index === 0
-                                  ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg'
-                                  : index === 1
-                                    ? 'bg-gray-400'
-                                    : index === 2
-                                      ? 'bg-amber-600'
-                                      : 'bg-muted'
-                              }`}>
-                                {index === 0 ? '👑' : `#${index + 1}`}
-                              </div>
-
-                              {/* Avatar */}
-                              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                                index === 0
-                                  ? 'bg-gradient-to-br from-yellow-400/30 to-amber-500/30 avatar-glow shadow-lg'
-                                  : 'bg-gradient-to-br from-primary/20 to-accent/20 avatar-glow'
-                              }`}>
-                                {fandom.photo ? (
-                                  <Image
-                                    src={fandom.photo}
-                                    alt={fandom.name}
-                                    width={48}
-                                    height={48}
-                                    className="rounded-full"
-                                  />
-                                ) : (
-                                  <span className="text-xl">👤</span>
-                                )}
-                              </div>
-
-                              {/* Info */}
-                              <div className="flex-1">
-                                <h3 className={`font-semibold ${
-                                  index === 0
-                                    ? 'text-white font-bold'
-                                    : 'text-foreground'
-                                }`}>
-                                  {fandom.name}
-                                  {index === 0 && <span className="ml-2 text-yellow-300">🏆</span>}
-                                </h3>
-                                <div className="mt-1">
-                                  <div className="bg-muted rounded-full h-2 progress-bar">
-                                    <div
-                                      className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-500"
-                                      style={{ width: `${fandom.percentage}%` }}
-                                    ></div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Percentage */}
-                              <div className="text-right">
-                                <div className={`text-2xl font-bold ${
-                                  index === 0 ? 'text-white' : 'text-primary'
-                                }`}>
-                                  {fandom.percentage}%
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))
+                        <span className="text-xl">👤</span>
                       )}
                     </div>
-                  )
-                }
-              ]}
-              defaultTab="nominees"
-            />
+
+                    {/* Info */}
+                    <div className="flex-1">
+                      <h3 className={`font-semibold ${
+                        index === 0
+                          ? 'text-white font-bold'
+                          : 'text-foreground'
+                      }`}>
+                        {nominee.name}
+                        {index === 0 && <span className="ml-2 text-yellow-300">🏆</span>}
+                      </h3>
+                      <div className="mt-1">
+                        <div className="bg-muted rounded-full h-2 progress-bar">
+                          <div
+                            className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${nominee.percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Percentage */}
+                    <div className="text-right">
+                      <div className={`text-2xl font-bold ${
+                        index === 0 ? 'text-white' : 'text-primary'
+                      }`}>
+                        {nominee.percentage}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
