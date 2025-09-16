@@ -8,6 +8,7 @@ import TeamBadge from '@/components/TeamBadge';
 import Footer from '@/components/Footer';
 import TabComponent from '@/components/TabComponent';
 import InfoModal from '@/components/InfoModal';
+import VotesHistoryModal from '@/components/VotesHistoryModal';
 
 interface Nominee {
   id: string;
@@ -103,6 +104,8 @@ export default function Home() {
   const [fandomLoading, setFandomLoading] = useState(false);
   const [fandomError, setFandomError] = useState<string | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showVotesModal, setShowVotesModal] = useState(false);
+  const [votesModalFilter, setVotesModalFilter] = useState<{candidateId?: string; candidateName?: string}>({});
 
   // Redes sociales
   const [socialMedia, setSocialMedia] = useState({
@@ -371,6 +374,18 @@ export default function Home() {
     }
   };
 
+  // Manejar click en candidato para abrir modal filtrado
+  const handleCandidateClick = (candidateId: string, candidateName: string) => {
+    setVotesModalFilter({ candidateId, candidateName });
+    setShowVotesModal(true);
+  };
+
+  // Manejar click en ver historial completo
+  const handleViewAllVotes = () => {
+    setVotesModalFilter({});
+    setShowVotesModal(true);
+  };
+
   // Redirigir a votación después del login si hay votación activa
   useEffect(() => {
     if (session && votingData?.week?.isActive && window.location.search.includes('message=voted')) {
@@ -634,15 +649,6 @@ export default function Home() {
       {/* Header Mobile */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-primary/20">
         <div className="px-4 py-3 flex items-center justify-between">
-          {/* Logo */}
-          <Image
-            src="/logo.png"
-            alt="Casa Famosos"
-            width={32}
-            height={32}
-            className="w-8 h-8 rounded-lg flex-shrink-0"
-          />
-          
           {/* Navigation Icons */}
           <div className="flex items-center space-x-6 flex-1 justify-center">
             <button
@@ -655,12 +661,12 @@ export default function Home() {
               </svg>
             </button>
             <button
-              onClick={() => window.location.href = '/votes'}
+              onClick={() => window.location.href = '/global'}
               className="text-white hover:text-primary transition-colors p-2"
-              title="Ver Votos"
+              title="Global"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
               </svg>
             </button>
             <button
@@ -679,15 +685,6 @@ export default function Home() {
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M7 14H5v5h2v-5zm3-7H8v12h2V7zm3 3h-2v9h2v-9zm3-6h-2v15h2V4z"/>
-              </svg>
-            </button>
-            <button
-              onClick={() => window.location.href = '/global'}
-              className="text-white hover:text-primary transition-colors p-2"
-              title="Global"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
               </svg>
             </button>
           </div>
@@ -954,11 +951,15 @@ export default function Home() {
               {votingData.nominees
                 .sort((a, b) => b.votes - a.votes)
                 .map((nominee, index) => (
-                <div key={`${nominee.id}-${index}`} className={`rounded-xl p-4 border vote-card ${
-                  index === 0
-                    ? '!bg-violet-600 !border-violet-700 shadow-lg'
-                    : 'bg-card border-border/20'
-                }`}>
+                <div
+                  key={`${nominee.id}-${index}`}
+                  className={`rounded-xl p-4 border vote-card cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] ${
+                    index === 0
+                      ? '!bg-violet-600 !border-violet-700 shadow-lg'
+                      : 'bg-card border-border/20 hover:border-primary/30'
+                  }`}
+                  onClick={() => handleCandidateClick(nominee.id, nominee.name)}
+                >
                   <div className="flex items-center space-x-4">
                     {/* Position Badge */}
                     <div className={`position-badge ${
@@ -1056,7 +1057,7 @@ export default function Home() {
                   Consulta todos los votos en tiempo real
                 </p>
                 <button
-                  onClick={() => router.push('/votes')}
+                  onClick={handleViewAllVotes}
                   className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg font-medium hover:scale-105 transition-all duration-200 shadow-lg text-sm"
                 >
                   Ver Todas las Votaciones
@@ -1364,6 +1365,14 @@ export default function Home() {
       <InfoModal
         isOpen={showInfoModal}
         onClose={() => setShowInfoModal(false)}
+      />
+
+      {/* Votes History Modal */}
+      <VotesHistoryModal
+        isOpen={showVotesModal}
+        onClose={() => setShowVotesModal(false)}
+        filteredCandidateId={votesModalFilter.candidateId}
+        filteredCandidateName={votesModalFilter.candidateName}
       />
 
       <Footer />
