@@ -27,13 +27,15 @@ interface VotesHistoryModalProps {
   onClose: () => void;
   filteredCandidateId?: string;
   filteredCandidateName?: string;
+  weekId?: string;
 }
 
 export default function VotesHistoryModal({
   isOpen,
   onClose,
   filteredCandidateId,
-  filteredCandidateName
+  filteredCandidateName,
+  weekId
 }: VotesHistoryModalProps) {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,7 @@ export default function VotesHistoryModal({
   const [error, setError] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
   const [candidates, setCandidates] = useState<{ _id: string; name: string }[]>([]);
+  const [currentWeekId, setCurrentWeekId] = useState<string>('');
 
   // Modal states para historial de usuario
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
@@ -70,7 +73,7 @@ export default function VotesHistoryModal({
   };
 
   // Función para cargar votos
-  const loadVotes = useCallback(async (pageNumber: number, candidateId?: string) => {
+  const loadVotes = useCallback(async (pageNumber: number, candidateId?: string, weekIdParam?: string) => {
     // Prevenir llamadas múltiples usando ref
     if (loadingRef.current) return;
 
@@ -82,6 +85,9 @@ export default function VotesHistoryModal({
       let url = `/api/public/votes?page=${pageNumber}&limit=50`;
       if (candidateId) {
         url += `&candidateId=${candidateId}`;
+      }
+      if (weekIdParam || currentWeekId) {
+        url += `&weekId=${weekIdParam || currentWeekId}`;
       }
 
       const response = await fetch(url);
@@ -106,9 +112,9 @@ export default function VotesHistoryModal({
       setLoading(false);
       loadingRef.current = false;
     }
-  }, []);
+  }, [currentWeekId]);
 
-  // Cargar lista de candidatos
+  // Cargar lista de candidatos y obtener weekId actual
   useEffect(() => {
     if (!isOpen) return;
 
@@ -120,13 +126,17 @@ export default function VotesHistoryModal({
           if (data.nominees) {
             setCandidates(data.nominees.map((n: any) => ({ _id: n.id, name: n.name })));
           }
+          // Obtener weekId de la semana actual
+          if (data.week && data.week.id && !weekId) {
+            setCurrentWeekId(data.week.id);
+          }
         }
       } catch (err) {
         console.error('Error loading candidates:', err);
       }
     };
     fetchCandidates();
-  }, [isOpen]);
+  }, [isOpen, weekId]);
 
   // Establecer filtro inicial si viene un candidato específico
   useEffect(() => {
@@ -135,7 +145,11 @@ export default function VotesHistoryModal({
     } else if (isOpen && !filteredCandidateId) {
       setSelectedCandidate('');
     }
-  }, [isOpen, filteredCandidateId]);
+    // Establecer weekId si viene como prop
+    if (isOpen && weekId) {
+      setCurrentWeekId(weekId);
+    }
+  }, [isOpen, filteredCandidateId, weekId]);
 
   // Cargar votos cuando cambia el filtro o se abre el modal
   useEffect(() => {
@@ -150,11 +164,11 @@ export default function VotesHistoryModal({
 
     // Usar timeout para evitar llamadas múltiples rápidas
     const timeoutId = setTimeout(() => {
-      loadVotes(0, selectedCandidate);
+      loadVotes(0, selectedCandidate, currentWeekId);
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [isOpen, selectedCandidate]);
+  }, [isOpen, selectedCandidate, currentWeekId, loadVotes]);
 
   // Manejar click en usuario
   const handleUserClick = (userId: string, userName: string) => {
@@ -165,7 +179,7 @@ export default function VotesHistoryModal({
   // Manejar carga de más votos
   const handleLoadMore = () => {
     if (!loading && hasMore) {
-      loadVotes(page + 1, selectedCandidate);
+      loadVotes(page + 1, selectedCandidate, currentWeekId);
     }
   };
 
@@ -195,8 +209,8 @@ export default function VotesHistoryModal({
               </h2>
               <p className="text-muted-foreground text-sm mt-1">
                 {filteredCandidateName
-                  ? `Todos los votos recibidos por ${filteredCandidateName}`
-                  : 'Lista completa de todos los votos emitidos en tiempo real'
+                  ? `Votos recibidos por ${filteredCandidateName} en esta encuesta`
+                  : 'Votos emitidos en la encuesta actual'
                 }
               </p>
             </div>
@@ -326,6 +340,7 @@ export default function VotesHistoryModal({
             setShowUserModal(false);
             setSelectedUser(null);
           }}
+          weekId={currentWeekId || weekId}
         />
       )}
     </>

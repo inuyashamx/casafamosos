@@ -36,13 +36,15 @@ interface UserVoteHistoryModalProps {
   userName: string;
   isOpen: boolean;
   onClose: () => void;
+  weekId?: string;
 }
 
 export default function UserVoteHistoryModal({
   userId,
   userName,
   isOpen,
-  onClose
+  onClose,
+  weekId
 }: UserVoteHistoryModalProps) {
   const [history, setHistory] = useState<UserHistory | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,14 +54,18 @@ export default function UserVoteHistoryModal({
     if (isOpen && userId) {
       fetchUserHistory();
     }
-  }, [isOpen, userId]);
+  }, [isOpen, userId, weekId]);
 
   const fetchUserHistory = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/public/votes/user/${userId}`);
+      let url = `/api/public/votes/user/${userId}`;
+      if (weekId) {
+        url += `?weekId=${weekId}`;
+      }
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error('Error al cargar el historial');
