@@ -1013,12 +1013,17 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Percentage */}
+                    {/* Percentage and Votes */}
                     <div className="text-right">
                       <div className={`text-2xl font-bold ${
                         index === 0 ? 'text-white' : 'text-primary'
                       }`}>
                         {nominee.percentage}%
+                      </div>
+                      <div className={`text-xs ${
+                        index === 0 ? 'text-white/80' : 'text-muted-foreground'
+                      }`}>
+                        {nominee.votes.toLocaleString('en-US')}
                       </div>
                     </div>
                   </div>
