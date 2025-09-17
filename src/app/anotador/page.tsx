@@ -71,14 +71,14 @@ export default function AnotadorPage() {
               // Si hay puntos guardados, reordenar inmediatamente
               const hasPoints = Object.values(filteredPoints).some(points => points !== 0);
               if (hasPoints) {
-                const sortedIds = activeCandidates.sort((a, b) => {
+                const sortedIds = activeCandidates.sort((a: Candidate, b: Candidate) => {
                   const pointsA = filteredPoints[a.id] || 0;
                   const pointsB = filteredPoints[b.id] || 0;
                   if (pointsA !== pointsB) {
                     return pointsB - pointsA;
                   }
                   return a.name.localeCompare(b.name);
-                }).map(c => c.id);
+                }).map((c: Candidate) => c.id);
                 setDisplayOrder(sortedIds);
               }
             } else {
