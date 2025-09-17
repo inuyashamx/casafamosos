@@ -143,6 +143,9 @@ interface Candidate {
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [forceLoad, setForceLoad] = useState(false);
+  const [adminVerified, setAdminVerified] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -394,22 +397,55 @@ export default function AdminPage() {
     return { season: null, week: null };
   };
 
-  // Redirigir si no está logueado o no es admin
+  // Verificar admin SOLO por API - ignorar NextAuth completamente para esta página
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/');
-    } else if (status === 'authenticated' && session && !(session.user as { isAdmin?: boolean })?.isAdmin) {
-      // Si está autenticado pero no es admin, redirigir
-      router.push('/');
-    }
-  }, [status, session, router]);
+    const checkAdminStatus = async () => {
+      try {
+        console.log('🔧 ADMIN DEBUG - Checking admin via API (primary method)');
+        setIsLoading(true);
+
+        const response = await fetch('/api/admin?action=checkAdmin');
+        console.log('🔧 ADMIN DEBUG - API response status:', response.status);
+
+        if (response.status === 401) {
+          console.log('❌ ADMIN DEBUG - Not authenticated, redirecting to /');
+          router.push('/');
+          return;
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🔧 ADMIN DEBUG - API response data:', data);
+
+          setAdminVerified(data.isAdmin);
+
+          if (!data.isAdmin) {
+            console.log('❌ ADMIN DEBUG - API says not admin, redirecting to /');
+            router.push('/');
+          } else {
+            console.log('✅ ADMIN DEBUG - API confirms admin, allowing access');
+          }
+        } else {
+          console.log('❌ ADMIN DEBUG - API failed with status:', response.status);
+          router.push('/');
+        }
+      } catch (error) {
+        console.error('❌ ADMIN DEBUG - API error:', error);
+        router.push('/');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [router]); // Solo depende del router, ignora session y status
 
   // Cargar datos iniciales
   useEffect(() => {
-    if (status === 'authenticated' && session && (session.user as { isAdmin?: boolean })?.isAdmin) {
+    if (adminVerified === true) {
       loadSeasons();
     }
-  }, [status, session, loadSeasons]);
+  }, [adminVerified, loadSeasons]);
 
   // Cargar semanas cuando cambie la temporada seleccionada
   useEffect(() => {
@@ -1761,22 +1797,21 @@ export default function AdminPage() {
 
 
 
-  if (status === 'loading') {
+  if (isLoading || adminVerified === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-xl text-primary">Cargando panel de administración...</div>
+        <div className="text-sm text-muted-foreground mt-2">
+          Verificando permisos de administrador...
+        </div>
       </div>
     );
   }
 
-  if (!session) {
-    return null;
-  }
+  // La verificación de admin ahora se hace completamente por API arriba
+  // No necesitamos verificar session aquí porque la API ya maneja la autenticación
 
-  // Verificar si el usuario es admin
-  const isAdmin = (session.user as { isAdmin?: boolean })?.isAdmin;
-  
-  if (!isAdmin) {
+  if (adminVerified === false) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -2328,10 +2363,10 @@ export default function AdminPage() {
         <div className="p-3 lg:p-4 border-t border-border/40">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
-              {session.user?.image ? (
-                <img 
-                  src={session.user.image} 
-                  alt={session.user.name || 'Usuario'}
+              {session?.user?.image ? (
+                <img
+                  src={session.user!.image!}
+                  alt={session.user!.name || 'Usuario'}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     // Si la imagen falla, mostrar la inicial
@@ -2341,16 +2376,16 @@ export default function AdminPage() {
                   }}
                 />
               ) : null}
-              <span className={`text-primary text-sm font-bold ${session.user?.image ? 'hidden' : ''}`}>
-                {session.user?.name?.[0] || 'A'}
+              <span className={`text-primary text-sm font-bold ${session?.user?.image ? 'hidden' : ''}`}>
+                {session?.user?.name?.[0] || 'A'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
-                {session.user?.name}
+                {session?.user?.name || 'Usuario'}
               </p>
               <p className="text-xs text-muted-foreground">
-                {isAdmin ? '👑 Administrador' : 'Usuario'}
+                {adminVerified ? '👑 Administrador' : 'Usuario'}
               </p>
             </div>
             <button
@@ -2524,7 +2559,7 @@ export default function AdminPage() {
                   <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4">Acciones Rápidas</h3>
                   <div className="space-y-2 lg:space-y-3">
                     {/* Botón temporal para convertir en admin (solo desarrollo) */}
-                    {!isAdmin && (
+                    {!adminVerified && (
                       <button 
                         onClick={makeAdmin}
                         className="w-full flex items-center justify-between bg-yellow-500 text-yellow-900 p-3 lg:p-4 rounded-lg font-medium hover:bg-yellow-600 transition-colors group">

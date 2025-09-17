@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "La Casa Vota - Encuestas NO oficiales de La Casa de los Famosos",
-  description: "Plataforma de votaciones y encuestas NO OFICIAL de La Casa de los Famosos. Vota por tus habitantes favoritos, participa en encuestas semanales y gana puntos.",
+  title: "La Casa Vota - Encuestas",
+  description: "Plataforma de votaciones y encuestas de La Casa de los Famosos. Vota por tus habitantes favoritos, participa en encuestas semanales y gana puntos.",
   keywords: "la casa vota, encuestas la casa de los famosos, votaciones no oficial, votar habitantes, lacasavota, reality show encuestas",
   authors: [{ name: "La Casa Vota" }],
   creator: "La Casa Vota",
@@ -24,8 +24,8 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: "La Casa Vota - Encuestas NO oficiales",
-    description: "Vota por tus habitantes favoritos de La Casa de los Famosos. Plataforma NO OFICIAL de encuestas y votaciones.",
+    title: "La Casa Vota - Encuestas",
+    description: "Vota por tus habitantes favoritos de La Casa de los Famosos. Plataforma de encuestas y votaciones.",
     url: 'https://www.lacasavota.com',
     siteName: 'La Casa Vota',
     images: [
@@ -41,8 +41,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "La Casa Vota - Encuestas NO oficiales",
-    description: "Vota por tus habitantes favoritos de La Casa de los Famosos. Plataforma NO OFICIAL 🏠✨",
+    title: "La Casa Vota - Encuestas",
+    description: "Vota por tus habitantes favoritos de La Casa de los Famosos. Plataforma de encuestas 🏠✨",
     images: ['/logo.png'],
   },
   robots: {

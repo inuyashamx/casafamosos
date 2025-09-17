@@ -40,23 +40,33 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      console.log('🔍 SESSION CALLBACK - Token:', { id: token.id, isAdmin: token.isAdmin });
+
       if (token && session.user) {
         (session.user as any).id = token.id as string;
         (session.user as any).isAdmin = token.isAdmin as boolean;
-        
+
+        console.log('🔍 SESSION CALLBACK - Before DB check, isAdmin from token:', token.isAdmin);
+
         // Verificar admin y otros datos desde la base de datos para asegurar que estén actualizados
         try {
           const User = (await import('@/lib/models/User')).default;
           const user = await User.findById(token.id);
           if (user) {
+            console.log('🔍 SESSION CALLBACK - User found in DB:', {
+              id: user._id,
+              email: user.email,
+              isAdmin: user.isAdmin
+            });
+
             (session.user as any).isAdmin = user.isAdmin;
             token.isAdmin = user.isAdmin;
-            
+
             // Actualizar la imagen del usuario desde la base de datos
             if (user.image) {
               session.user.image = user.image;
             }
-            
+
             // Actualizar el nombre si ha cambiado
             if (user.name) {
               session.user.name = user.name;
@@ -64,11 +74,15 @@ export const authOptions: NextAuthOptions = {
 
             // Incluir team del usuario
             (session.user as any).team = user.team || null;
+          } else {
+            console.log('❌ SESSION CALLBACK - User NOT found in DB for token.id:', token.id);
           }
         } catch (error) {
-          console.error('Error verificando datos del usuario:', error);
+          console.error('❌ SESSION CALLBACK - Error verificando datos del usuario:', error);
         }
       }
+
+      console.log('🔍 SESSION CALLBACK - Final session.user.isAdmin:', (session.user as any)?.isAdmin);
       return session;
     },
     async signIn({ user, account, profile }) {
