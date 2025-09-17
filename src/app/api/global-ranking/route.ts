@@ -43,13 +43,9 @@ export async function GET(request: NextRequest) {
           match: { status: 'active' }
         });
         
-        console.log('Usuario encontrado:', user._id);
-        console.log('Ranking encontrado:', userRanking ? 'Sí' : 'No');
         if (userRanking) {
           // Filtrar solo los candidatos activos (no null después del populate con match)
           userRanking.rankings = userRanking.rankings.filter((r: any) => r.candidateId !== null);
-          console.log('Rankings length:', userRanking.rankings.length);
-          console.log('Rankings data:', userRanking.rankings.slice(0, 3));
         }
       }
     }
