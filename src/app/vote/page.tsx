@@ -211,9 +211,10 @@ export default function VotePage() {
       const shareUrl = window.location.origin;
       const shareText = '¡Vota por tus candidatos favoritos en La Casa Vota! 🏠✨';
 
-      // Detectar si es móvil
+      // Detectar si es móvil real (no solo viewport)
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+      // Solo usar Web Share API en móviles reales
       if (isMobile && navigator.share) {
         try {
           await navigator.share({
@@ -221,24 +222,184 @@ export default function VotePage() {
             text: shareText,
             url: shareUrl
           });
+
+          // Después de compartir exitosamente, dar puntos extra
           await giveShareBonus();
           return;
         } catch (err) {
-          console.log('Share cancelado');
+          // Si el usuario cancela el share nativo, mostrar nuestra ventana personalizada
+          console.log('Share nativo cancelado, mostrando ventana personalizada');
         }
       }
 
-      // Fallback: copiar al portapapeles
-      await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-      alert('¡Enlace copiado al portapapeles!');
-      await giveShareBonus();
-    } catch (error) {
-      console.error('Error compartiendo:', error);
+      // En desktop o si falla el share nativo, mostrar ventana personalizada
+      showCustomShareModal(shareUrl, shareText);
+
+    } catch (shareError) {
+      console.error('Error compartiendo app:', shareError);
+      // En caso de error, mostrar ventana personalizada
+      const shareUrl = window.location.origin;
+      const shareText = '¡Vota por tus candidatos favoritos en La Casa Vota! 🏠✨';
+      showCustomShareModal(shareUrl, shareText);
     }
+  };
+
+  const showCustomShareModal = (shareUrl: string, shareText: string) => {
+    // Crear modal personalizado
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+      <div class="bg-card rounded-2xl w-full max-w-md border border-border/40 overflow-hidden shadow-2xl">
+        <div class="bg-gradient-to-r from-primary to-accent p-6 text-center text-white">
+          <div class="text-4xl mb-2">📤</div>
+          <h3 class="text-xl font-bold">¡Comparte Casa Famosos!</h3>
+          <p class="text-sm opacity-90 mt-1">Ayuda a tus candidatos favoritos</p>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="bg-muted/30 rounded-lg p-4 border border-border/20">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-xl">🔗</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-foreground break-all">${shareUrl}</p>
+                <p class="text-xs text-muted-foreground mt-1">Enlace de la aplicación</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="copyToClipboard('${shareUrl}')" class="share-option-btn">
+              <div class="text-3xl mb-2">📋</div>
+              <span class="text-sm font-medium">Copiar Enlace</span>
+            </button>
+            <button onclick="shareToWhatsApp('${shareText} ${shareUrl}')" class="share-option-btn">
+              <div class="text-3xl mb-2">💬</div>
+              <span class="text-sm font-medium">WhatsApp</span>
+            </button>
+            <button onclick="shareToTwitter('${shareText} ${shareUrl}')" class="share-option-btn">
+              <div class="text-3xl mb-2">🐦</div>
+              <span class="text-sm font-medium">Twitter</span>
+            </button>
+            <button onclick="shareToFacebook('${shareText} ${shareUrl}')" class="share-option-btn">
+              <div class="text-3xl mb-2">📘</div>
+              <span class="text-sm font-medium">Facebook</span>
+            </button>
+          </div>
+
+          <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-4 text-center">
+            <p class="text-sm text-amber-600 font-bold">🎁 ¡Gana 50 puntos extra por compartir!</p>
+            <p class="text-xs text-amber-500/80 mt-1">Una vez por día</p>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-border/20 bg-muted/20">
+          <button onclick="closeShareModal()" class="w-full bg-muted hover:bg-muted/80 text-foreground py-3 rounded-lg text-sm font-medium transition-colors">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Agregar estilos CSS mejorados
+    const style = document.createElement('style');
+    style.textContent = `
+      .share-option-btn {
+        @apply bg-card border border-border/20 rounded-xl p-4 text-center hover:bg-muted/50 transition-all duration-200 hover:scale-105 cursor-pointer;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .share-option-btn:hover {
+        @apply border-primary/30 shadow-lg;
+      }
+      .share-option-btn:active {
+        @apply scale-95;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Agregar funciones globales
+    // Función para mostrar mensajes de éxito
+    (window as any).showSuccessMessage = (message: string) => {
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-xl shadow-2xl z-60 transform translate-x-full transition-all duration-500 border border-green-400/20 backdrop-blur-sm';
+      toast.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <div class="text-2xl">🎉</div>
+          <div class="font-semibold">${message}</div>
+        </div>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+        toast.classList.add('scale-105');
+      }, 100);
+
+      setTimeout(() => {
+        toast.classList.remove('scale-105');
+        toast.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+          document.body.removeChild(toast);
+        }, 300);
+      }, 3000);
+    };
+
+    (window as any).copyToClipboard = async (text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        (window as any).showSuccessMessage('¡Enlace copiado al portapapeles!');
+        await giveShareBonus();
+      } catch (err) {
+        // Fallback para navegadores antiguos
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        (window as any).showSuccessMessage('¡Enlace copiado al portapapeles!');
+        await giveShareBonus();
+      }
+    };
+
+    (window as any).shareToWhatsApp = async (text: string) => {
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+      (window as any).showSuccessMessage('¡Abriendo WhatsApp!');
+      await giveShareBonus();
+    };
+
+    (window as any).shareToTwitter = async (text: string) => {
+      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+      (window as any).showSuccessMessage('¡Abriendo Twitter!');
+      await giveShareBonus();
+    };
+
+    (window as any).shareToFacebook = async (_text: string) => {
+      // Facebook tiene limitaciones con parámetros de texto, usar solo la URL
+      const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}`;
+      window.open(url, '_blank');
+      (window as any).showSuccessMessage('¡Abriendo Facebook! El texto se puede agregar manualmente.');
+      await giveShareBonus();
+    };
+
+    (window as any).closeShareModal = () => {
+      document.body.removeChild(modal);
+      document.head.removeChild(style);
+    };
+
+    document.body.appendChild(modal);
   };
 
   const giveShareBonus = async () => {
     try {
+      // Ahora usar POST para realmente otorgar el bonus
       const response = await fetch('/api/vote?action=share-bonus', {
         method: 'POST',
         headers: {
@@ -246,20 +407,27 @@ export default function VotePage() {
         },
         body: JSON.stringify({})
       });
-
       if (response.ok) {
         const data = await response.json();
-        alert(`🎉 ${data.message}`);
-        // Recargar puntos
+        (window as any).showSuccessMessage(`🎉 ${data.message}`);
+        // Recargar puntos del usuario
         const pointsResponse = await fetch('/api/vote?action=points');
         if (pointsResponse.ok) {
           const pointsData = await pointsResponse.json();
           setUserPoints(pointsData.availablePoints);
         }
+        // Actualizar estado del bono
+        setCanReceiveShareBonus(false);
+      } else {
+        const errorData = await response.json();
+        if (!errorData.alreadyReceived) {
+          console.log('Ya recibiste el bono hoy');
+        }
+        // Actualizar estado del bono
         setCanReceiveShareBonus(false);
       }
-    } catch (error) {
-      console.error('Error dando bonus:', error);
+    } catch (bonusError) {
+      console.error('Error dando bono:', bonusError);
     }
   };
 
