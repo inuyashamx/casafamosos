@@ -240,14 +240,6 @@ export async function POST(request: NextRequest) {
       const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const lastShareBonusNormalized = new Date(lastShareBonusDate.getFullYear(), lastShareBonusDate.getMonth(), lastShareBonusDate.getDate());
 
-      console.log('Debug share bonus POST:', {
-        usuario: user.email,
-        today: today.toISOString(),
-        lastShareBonus: user.lastShareBonus,
-        todayNormalized: todayNormalized.toISOString(),
-        lastShareBonusNormalized: lastShareBonusNormalized.toISOString(),
-        isSameDay: todayNormalized.getTime() === lastShareBonusNormalized.getTime()
-      });
 
       if (todayNormalized.getTime() === lastShareBonusNormalized.getTime()) {
         return NextResponse.json({
@@ -265,7 +257,6 @@ export async function POST(request: NextRequest) {
       const baseDailyPoints = typeof activeSeason.defaultDailyPoints === 'number' ? activeSeason.defaultDailyPoints : 60;
       const newDayTotal = baseDailyPoints + bonusPoints;
 
-      console.log('Bonus otorgado a:', user.email, 'fecha guardada:', today.toISOString());
 
       return NextResponse.json({
         success: true,
@@ -322,15 +313,11 @@ export async function POST(request: NextRequest) {
 
     // Verificar que todos los candidatos estén nominados
     const nomineeIds = activeWeek.nominees.map((n: any) => n.candidateId._id.toString());
-    console.log('Debug - nomineeIds:', nomineeIds);
-    console.log('Debug - votes:', votes);
-    console.log('Debug - activeWeek.nominees:', activeWeek.nominees);
     
     // Impedir votos hacia el candidato salvado
     const savedRef: any = activeWeek.results?.saved?.candidateId;
     const savedId = savedRef ? (savedRef._id ? savedRef._id.toString() : savedRef.toString()) : null;
     for (const vote of votes) {
-      console.log('Debug - checking vote:', vote.candidateId, 'in nominees:', nomineeIds.includes(vote.candidateId));
       if (!nomineeIds.includes(vote.candidateId)) {
         return NextResponse.json({ 
           error: 'Uno o más candidatos no están nominados esta semana',

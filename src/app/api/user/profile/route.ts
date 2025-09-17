@@ -27,8 +27,6 @@ export async function PUT(request: NextRequest) {
 
     const data = await request.json();
     const { name, nickname, image, imagePublicId, team } = data;
-    
-    console.log('DEBUG: Datos recibidos en /api/user/profile:', { name, nickname, image, imagePublicId });
 
     // Validaciones básicas
     if (name && typeof name !== 'string') {

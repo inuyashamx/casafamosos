@@ -401,36 +401,27 @@ export default function AdminPage() {
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        console.log('🔧 ADMIN DEBUG - Checking admin via API (primary method)');
         setIsLoading(true);
 
         const response = await fetch('/api/admin?action=checkAdmin');
-        console.log('🔧 ADMIN DEBUG - API response status:', response.status);
 
         if (response.status === 401) {
-          console.log('❌ ADMIN DEBUG - Not authenticated, redirecting to /');
           router.push('/');
           return;
         }
 
         if (response.ok) {
           const data = await response.json();
-          console.log('🔧 ADMIN DEBUG - API response data:', data);
 
           setAdminVerified(data.isAdmin);
 
           if (!data.isAdmin) {
-            console.log('❌ ADMIN DEBUG - API says not admin, redirecting to /');
             router.push('/');
-          } else {
-            console.log('✅ ADMIN DEBUG - API confirms admin, allowing access');
           }
         } else {
-          console.log('❌ ADMIN DEBUG - API failed with status:', response.status);
           router.push('/');
         }
       } catch (error) {
-        console.error('❌ ADMIN DEBUG - API error:', error);
         router.push('/');
       } finally {
         setIsLoading(false);

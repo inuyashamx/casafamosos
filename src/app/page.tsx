@@ -443,7 +443,6 @@ export default function Home() {
           return;
         } catch (err) {
           // Si el usuario cancela el share nativo, mostrar nuestra ventana personalizada
-          console.log('Share nativo cancelado, mostrando ventana personalizada');
         }
       }
       
@@ -636,7 +635,6 @@ export default function Home() {
       } else {
         const errorData = await response.json();
         if (!errorData.alreadyReceived) {
-          console.log('Ya recibiste el bono hoy');
         }
         // Actualizar estado del bono
         setCanReceiveShareBonus(false);
