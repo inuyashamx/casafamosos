@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import TeamBadge from '@/components/TeamBadge';
+import { escapeHtml, sanitizeUrl } from '@/lib/security';
 
 interface Nominee {
   id: string;
@@ -244,62 +245,148 @@ export default function VotePage() {
   };
 
   const showCustomShareModal = (shareUrl: string, shareText: string) => {
-    // Crear modal personalizado
+    // Sanitize inputs to prevent XSS
+    const safeUrl = sanitizeUrl(shareUrl) || window.location.origin;
+    const safeText = escapeHtml(shareText);
+
+    // Create modal safely without innerHTML
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4';
-    modal.innerHTML = `
-      <div class="bg-card rounded-2xl w-full max-w-md border border-border/40 overflow-hidden shadow-2xl">
-        <div class="bg-gradient-to-r from-primary to-accent p-6 text-center text-white">
-          <div class="text-4xl mb-2">📤</div>
-          <h3 class="text-xl font-bold">¡Comparte Casa Famosos!</h3>
-          <p class="text-sm opacity-90 mt-1">Ayuda a tus candidatos favoritos</p>
-        </div>
+    // Create safe modal structure (same as page.tsx)
+    const container = document.createElement('div');
+    container.className = 'bg-card rounded-2xl w-full max-w-md border border-border/40 overflow-hidden shadow-2xl';
 
-        <div class="p-6 space-y-4">
-          <div class="bg-muted/30 rounded-lg p-4 border border-border/20">
-            <div class="flex items-center space-x-3">
-              <div class="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span class="text-xl">🔗</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-foreground break-all">${shareUrl}</p>
-                <p class="text-xs text-muted-foreground mt-1">Enlace de la aplicación</p>
-              </div>
-            </div>
-          </div>
+    // Header
+    const header = document.createElement('div');
+    header.className = 'bg-gradient-to-r from-primary to-accent p-6 text-center text-white';
 
-          <div class="grid grid-cols-2 gap-3">
-            <button onclick="copyToClipboard('${shareUrl}')" class="share-option-btn">
-              <div class="text-3xl mb-2">📋</div>
-              <span class="text-sm font-medium">Copiar Enlace</span>
-            </button>
-            <button onclick="shareToWhatsApp('${shareText} ${shareUrl}')" class="share-option-btn">
-              <div class="text-3xl mb-2">💬</div>
-              <span class="text-sm font-medium">WhatsApp</span>
-            </button>
-            <button onclick="shareToTwitter('${shareText} ${shareUrl}')" class="share-option-btn">
-              <div class="text-3xl mb-2">🐦</div>
-              <span class="text-sm font-medium">Twitter</span>
-            </button>
-            <button onclick="shareToFacebook('${shareText} ${shareUrl}')" class="share-option-btn">
-              <div class="text-3xl mb-2">📘</div>
-              <span class="text-sm font-medium">Facebook</span>
-            </button>
-          </div>
+    const icon = document.createElement('div');
+    icon.className = 'text-4xl mb-2';
+    icon.textContent = '📤';
 
-          <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-4 text-center">
-            <p class="text-sm text-amber-600 font-bold">🎁 ¡Gana 50 puntos extra por compartir!</p>
-            <p class="text-xs text-amber-500/80 mt-1">Una vez por día</p>
-          </div>
-        </div>
+    const title = document.createElement('h3');
+    title.className = 'text-xl font-bold';
+    title.textContent = '¡Comparte Casa Famosos!';
 
-        <div class="p-4 border-t border-border/20 bg-muted/20">
-          <button onclick="closeShareModal()" class="w-full bg-muted hover:bg-muted/80 text-foreground py-3 rounded-lg text-sm font-medium transition-colors">
-            Cerrar
-          </button>
-        </div>
-      </div>
-    `;
+    const description = document.createElement('p');
+    description.className = 'text-sm opacity-90 mt-1';
+    description.textContent = 'Ayuda a tus candidatos favoritos';
+
+    header.appendChild(icon);
+    header.appendChild(title);
+    header.appendChild(description);
+
+    // Content
+    const content = document.createElement('div');
+    content.className = 'p-6 space-y-4';
+
+    // URL display
+    const urlContainer = document.createElement('div');
+    urlContainer.className = 'bg-muted/30 rounded-lg p-4 border border-border/20';
+
+    const urlDisplay = document.createElement('div');
+    urlDisplay.className = 'flex items-center space-x-3';
+
+    const urlIconContainer = document.createElement('div');
+    urlIconContainer.className = 'w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0';
+    const linkIcon = document.createElement('span');
+    linkIcon.className = 'text-xl';
+    linkIcon.textContent = '🔗';
+    urlIconContainer.appendChild(linkIcon);
+
+    const urlInfo = document.createElement('div');
+    urlInfo.className = 'flex-1 min-w-0';
+
+    const urlText = document.createElement('p');
+    urlText.className = 'text-sm font-medium text-foreground break-all';
+    urlText.textContent = safeUrl; // Safe: textContent
+
+    const urlLabel = document.createElement('p');
+    urlLabel.className = 'text-xs text-muted-foreground mt-1';
+    urlLabel.textContent = 'Enlace de la aplicación';
+
+    urlInfo.appendChild(urlText);
+    urlInfo.appendChild(urlLabel);
+    urlDisplay.appendChild(urlIconContainer);
+    urlDisplay.appendChild(urlInfo);
+    urlContainer.appendChild(urlDisplay);
+
+    // Buttons grid
+    const buttonsGrid = document.createElement('div');
+    buttonsGrid.className = 'grid grid-cols-2 gap-3';
+
+    // Helper function to create safe buttons
+    const createShareButton = (emoji: string, text: string, action: () => void) => {
+      const button = document.createElement('button');
+      button.className = 'share-option-btn';
+
+      const emojiDiv = document.createElement('div');
+      emojiDiv.className = 'text-3xl mb-2';
+      emojiDiv.textContent = emoji;
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'text-sm font-medium';
+      textSpan.textContent = text;
+
+      button.appendChild(emojiDiv);
+      button.appendChild(textSpan);
+      button.addEventListener('click', action);
+
+      return button;
+    };
+
+    // Create buttons with safe event handlers
+    buttonsGrid.appendChild(createShareButton('📋', 'Copiar Enlace', () => {
+      (window as any).copyToClipboard(safeUrl);
+    }));
+
+    buttonsGrid.appendChild(createShareButton('💬', 'WhatsApp', () => {
+      (window as any).shareToWhatsApp(`${safeText} ${safeUrl}`);
+    }));
+
+    buttonsGrid.appendChild(createShareButton('🐦', 'Twitter', () => {
+      (window as any).shareToTwitter(`${safeText} ${safeUrl}`);
+    }));
+
+    buttonsGrid.appendChild(createShareButton('📘', 'Facebook', () => {
+      (window as any).shareToFacebook(`${safeText} ${safeUrl}`);
+    }));
+
+    // Bonus info
+    const bonusInfo = document.createElement('div');
+    bonusInfo.className = 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-4 text-center';
+
+    const bonusTitle = document.createElement('p');
+    bonusTitle.className = 'text-sm text-amber-600 font-bold';
+    bonusTitle.textContent = '🎁 ¡Gana 50 puntos extra por compartir!';
+
+    const bonusSubtitle = document.createElement('p');
+    bonusSubtitle.className = 'text-xs text-amber-500/80 mt-1';
+    bonusSubtitle.textContent = 'Una vez por día';
+
+    bonusInfo.appendChild(bonusTitle);
+    bonusInfo.appendChild(bonusSubtitle);
+
+    content.appendChild(urlContainer);
+    content.appendChild(buttonsGrid);
+    content.appendChild(bonusInfo);
+
+    // Footer
+    const footer = document.createElement('div');
+    footer.className = 'p-4 border-t border-border/20 bg-muted/20';
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'w-full bg-muted hover:bg-muted/80 text-foreground py-3 rounded-lg text-sm font-medium transition-colors';
+    closeButton.textContent = 'Cerrar';
+    closeButton.addEventListener('click', () => modal.remove());
+
+    footer.appendChild(closeButton);
+
+    // Assemble modal
+    container.appendChild(header);
+    container.appendChild(content);
+    container.appendChild(footer);
+    modal.appendChild(container);
 
     // Agregar estilos CSS mejorados
     const style = document.createElement('style');
@@ -322,16 +409,26 @@ export default function VotePage() {
     document.head.appendChild(style);
 
     // Agregar funciones globales
-    // Función para mostrar mensajes de éxito
+    // Función para mostrar mensajes de éxito (XSS-safe)
     (window as any).showSuccessMessage = (message: string) => {
       const toast = document.createElement('div');
       toast.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-xl shadow-2xl z-60 transform translate-x-full transition-all duration-500 border border-green-400/20 backdrop-blur-sm';
-      toast.innerHTML = `
-        <div class="flex items-center space-x-3">
-          <div class="text-2xl">🎉</div>
-          <div class="font-semibold">${message}</div>
-        </div>
-      `;
+
+      // Create elements safely without innerHTML
+      const container = document.createElement('div');
+      container.className = 'flex items-center space-x-3';
+
+      const emoji = document.createElement('div');
+      emoji.className = 'text-2xl';
+      emoji.textContent = '🎉';
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'font-semibold';
+      messageDiv.textContent = message; // Safe: textContent prevents XSS
+
+      container.appendChild(emoji);
+      container.appendChild(messageDiv);
+      toast.appendChild(container);
       document.body.appendChild(toast);
 
       setTimeout(() => {
