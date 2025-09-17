@@ -124,20 +124,12 @@ export async function POST(request: NextRequest) {
         const unblockedUser = await AdminService.unblockUser(unblockUserId);
         return NextResponse.json({ user: unblockedUser });
 
-      case 'toggleAdminStatus':
-        const { userId: adminUserId } = body;
-        const adminUser = await AdminService.toggleAdminStatus(adminUserId);
-        return NextResponse.json({ user: adminUser });
 
       case 'deleteUser':
         const { userId: deleteUserId } = body;
         const deleteResult = await AdminService.deleteUser(deleteUserId);
         return NextResponse.json(deleteResult);
 
-      case 'resetUserVotes':
-        const { userId: resetUserId } = body;
-        const resetUserResult = await AdminService.resetUserVotes(resetUserId);
-        return NextResponse.json(resetUserResult);
 
       default:
         return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });

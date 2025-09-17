@@ -81,10 +81,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(week);
     }
 
-    if (action === 'resetVotes') {
-      const week = await WeekService.resetWeekVotes(weekData.weekId);
-      return NextResponse.json(week);
-    }
 
     if (action === 'eliminateCandidate') {
       const week = await WeekService.eliminateCandidate(weekData.weekId, weekData.candidateId);
