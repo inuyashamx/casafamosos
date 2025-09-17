@@ -935,6 +935,37 @@ export default function Home() {
           </div>
         )}
 
+        {/* Nuevo Anotador de Nominaciones */}
+        <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-6">
+          <div className="text-center">
+            {/* Badge NUEVO animado centrado */}
+            <div className="flex justify-center mb-3">
+              <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg animate-bounce">
+                ✨ NUEVO
+              </div>
+            </div>
+
+            <h3 className="text-xl font-bold text-foreground mb-2">
+              Anotador de Nominaciones
+            </h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              Lleva la cuenta de los puntos mientras ves las nominaciones en vivo. Sin papel ni lápiz.
+            </p>
+            <button
+              onClick={() => {
+                if (!session) {
+                  signIn('google');
+                } else {
+                  router.push('/anotador');
+                }
+              }}
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+            >
+              {session ? '📝 Probar Anotador' : '🔑 Iniciar Sesión y Probar'}
+            </button>
+          </div>
+        </div>
+
         {/* Fixed Install PWA Block - Always visible unless installed */}
         {!isAppInstalled && (
           <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-xl p-4">

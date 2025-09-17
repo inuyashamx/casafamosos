@@ -1,0 +1,131 @@
+/* Animaciones para el anotador de nominaciones */
+
+.candidate-card {
+  transition: all 0.3s ease-in-out;
+}
+
+.candidate-card:hover {
+  transform: translateY(-1px);
+}
+
+/* Animación para cuando cambian los puntos */
+@keyframes pointsUpdate {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.points-updated {
+  animation: pointsUpdate 0.3s ease-in-out;
+}
+
+/* Animación para highlight cuando se mueve una card */
+@keyframes cardHighlight {
+  0% {
+    box-shadow: 0 0 0 2px transparent;
+    background-color: var(--card);
+  }
+  50% {
+    box-shadow: 0 0 0 2px var(--primary);
+    background-color: var(--primary-foreground);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+    background-color: var(--card);
+  }
+}
+
+.card-moved {
+  animation: cardHighlight 1s ease-in-out;
+}
+
+/* Transiciones suaves para los botones */
+.point-button {
+  transition: all 0.15s ease-in-out;
+  transform: scale(1);
+}
+
+.point-button:active {
+  transform: scale(0.95);
+}
+
+.point-button:hover {
+  transform: scale(1.05);
+}
+
+/* Efecto de glow para puntos activos */
+.points-glow {
+  text-shadow: 0 0 10px currentColor;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Transición para el grid cuando se reordena */
+.candidates-grid {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Animación para feedback de copy */
+@keyframes copyFeedback {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); background-color: var(--success); }
+  100% { transform: scale(1); }
+}
+
+.copy-success {
+  animation: copyFeedback 0.5s ease-in-out;
+}
+
+/* Badge animation */
+@keyframes badgeIn {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.points-badge {
+  animation: badgeIn 0.3s ease-out;
+}
+
+/* Circular image fix */
+.candidate-photo {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  border-radius: 50% !important;
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .point-button {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Loading state */
+@keyframes shimmer {
+  0% { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+}
+
+.loading-shimmer {
+  animation: shimmer 1.2s ease-in-out infinite;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 468px 100%;
+}
+
+/* Sort mode transition */
+.sort-toggle {
+  transition: all 0.2s ease-in-out;
+}
+
+.sort-toggle.active {
+  transform: scale(1.02);
+}
