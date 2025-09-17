@@ -12,6 +12,7 @@ import VotesHistoryModal from '@/components/VotesHistoryModal';
 import Navbar from '@/components/Navbar';
 import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
+import CountdownTimer from '@/components/CountdownTimer';
 
 interface Nominee {
   id: string;
@@ -733,6 +734,11 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {/* Contador regresivo */}
+                {votingData.week.votingEndDate && (
+                  <CountdownTimer endDate={votingData.week.votingEndDate} />
+                )}
 
                 <button
                   onClick={handleVoteClick}
