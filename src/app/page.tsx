@@ -952,16 +952,10 @@ export default function Home() {
               Lleva la cuenta de los puntos mientras ves las nominaciones en vivo. Sin papel ni lápiz.
             </p>
             <button
-              onClick={() => {
-                if (!session) {
-                  signIn('google');
-                } else {
-                  router.push('/anotador');
-                }
-              }}
+              onClick={() => router.push('/anotador')}
               className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
             >
-              {session ? '📝 Probar Anotador' : '🔑 Iniciar Sesión y Probar'}
+              📝 Probar Anotador
             </button>
           </div>
         </div>

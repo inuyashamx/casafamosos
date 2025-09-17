@@ -29,15 +29,7 @@ export default function AnotadorPage() {
   const previousOrderRef = useRef<string[]>([]);
   const reorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Verificar autenticación
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (!session) {
-      router.push('/');
-      return;
-    }
-  }, [session, status, router]);
+  // Ya no verificamos autenticación - página pública
 
   // Cargar candidatos activos
   useEffect(() => {
@@ -103,10 +95,8 @@ export default function AnotadorPage() {
       }
     };
 
-    if (session) {
-      fetchCandidates();
-    }
-  }, [session]);
+    fetchCandidates();
+  }, []);
 
   // Guardar puntos en localStorage cuando cambien
   useEffect(() => {
@@ -232,7 +222,7 @@ export default function AnotadorPage() {
 
   const totalPoints = Object.values(points).reduce((sum, pts) => sum + pts, 0);
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -241,10 +231,6 @@ export default function AnotadorPage() {
         </div>
       </div>
     );
-  }
-
-  if (!session) {
-    return null; // Será redirigido
   }
 
   if (error) {

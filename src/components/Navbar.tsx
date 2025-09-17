@@ -79,13 +79,7 @@ export default function Navbar() {
           </button>
 
           <button
-            onClick={() => {
-              if (!session) {
-                signIn('google');
-              } else {
-                router.push('/anotador');
-              }
-            }}
+            onClick={() => router.push('/anotador')}
             className={getButtonStyle('/anotador')}
             title="Anotador"
           >
