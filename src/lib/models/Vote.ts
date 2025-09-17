@@ -34,17 +34,7 @@ const VoteSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  metadata: {
-    userAgent: {
-      type: String,
-    },
-    ipAddress: {
-      type: String,
-    },
-    device: {
-      type: String,
-    },
-  },
+  // Removido metadata con IP y userAgent por privacidad
   isValid: {
     type: Boolean,
     default: true,

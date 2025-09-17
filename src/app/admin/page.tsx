@@ -4932,54 +4932,8 @@ export default function AdminPage() {
                                     </div>
                                   </td>
                                   <td className="p-2">
-                                    {vote.log && (
-                                      <div className="space-y-1">
-                                        {vote.log.timeOnPage !== undefined && (
-                                          <div className="text-xs text-muted-foreground">
-                                            ⏱️ {vote.log.timeOnPage}s en página
-                                          </div>
-                                        )}
-                                        {vote.log.ip && (
-                                          <div className="text-xs text-muted-foreground">
-                                            🌐 {vote.log.ip}
-                                          </div>
-                                        )}
-                                        {vote.log.suspiciousFactors && (
-                                          <div className="flex flex-wrap gap-1">
-                                            {vote.log.suspiciousFactors.multipleAccountsSameDevice && (
-                                              <span className="bg-red-100 text-red-800 text-xs px-1 py-0.5 rounded" title="Múltiples cuentas">👥</span>
-                                            )}
-                                            {vote.log.suspiciousFactors.rapidVoting && (
-                                              <span className="bg-yellow-100 text-yellow-800 text-xs px-1 py-0.5 rounded" title="Voto rápido">⚡</span>
-                                            )}
-                                            {vote.log.suspiciousFactors.unusualTime && (
-                                              <span className="bg-purple-100 text-purple-800 text-xs px-1 py-0.5 rounded" title="Horario inusual">🌙</span>
-                                            )}
-                                            {vote.log.suspiciousFactors.suspiciousUserAgent && (
-                                              <span className="bg-orange-100 text-orange-800 text-xs px-1 py-0.5 rounded" title="User-Agent sospechoso">🤖</span>
-                                            )}
-                                            {vote.log.suspiciousFactors.consistentVotingPattern && (
-                                              <span className="bg-blue-100 text-blue-800 text-xs px-1 py-0.5 rounded" title="Patrón consistente">🎯</span>
-                                            )}
-                                            {vote.log.suspiciousFactors.perfectTiming && (
-                                              <span className="bg-pink-100 text-pink-800 text-xs px-1 py-0.5 rounded" title="Timing perfecto">⏰</span>
-                                            )}
-                                            {vote.log.suspiciousFactors.sequentialVoting && (
-                                              <span className="bg-indigo-100 text-indigo-800 text-xs px-1 py-0.5 rounded" title="Voto secuencial">🔄</span>
-                                            )}
-                                            {vote.log.suspiciousFactors.multipleAccountsCoordinated && (
-                                              <span className="bg-red-200 text-red-900 text-xs px-1 py-0.5 rounded" title="Cuentas coordinadas">🎭</span>
-                                            )}
-                                            {vote.log.suspiciousFactors.suspiciousVoteDistribution && (
-                                              <span className="bg-yellow-200 text-yellow-900 text-xs px-1 py-0.5 rounded" title="Distribución sospechosa">📊</span>
-                                            )}
-                                            {vote.log.suspiciousFactors.identicalVotingPatterns && (
-                                              <span className="bg-gray-200 text-gray-800 text-xs px-1 py-0.5 rounded" title="Patrones idénticos">🔁</span>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
+                                    {/* Ya no tenemos logs de IP ni análisis de patrones */}
+                                    <span className="text-xs text-muted-foreground">-</span>
                                   </td>
                                 </tr>
                               ))}

@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
       },
       body: new URLSearchParams({
         secret: hcaptchaSecret,
-        response: token,
-        remoteip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+        response: token
+        // Removido remoteip por privacidad
       }),
     });
 

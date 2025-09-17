@@ -53,7 +53,6 @@ export default function VotePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pageLoadTime] = useState(Date.now());
   const [canReceiveShareBonus, setCanReceiveShareBonus] = useState(false);
 
   // Verificar autenticación
@@ -181,28 +180,14 @@ export default function VotePage() {
           points
         }));
 
-      // Generar device fingerprint
-      const fingerprint = {
-        userAgent: navigator.userAgent,
-        screenResolution: `${window.screen.width}x${window.screen.height}`,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        language: navigator.language,
-        platform: navigator.platform,
-        cookieEnabled: navigator.cookieEnabled,
-      };
-
-      // Calcular tiempo en la página
-      const timeOnPage = Math.floor((Date.now() - pageLoadTime) / 1000); // en segundos
-
+      // Ya no enviamos fingerprint ni timeOnPage
       const response = await fetch('/api/vote', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          votes,
-          fingerprint,
-          timeOnPage
+          votes
         }),
       });
 
