@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Chat from '@/components/Chat';
@@ -9,6 +9,9 @@ import Footer from '@/components/Footer';
 import TabComponent from '@/components/TabComponent';
 import InfoModal from '@/components/InfoModal';
 import VotesHistoryModal from '@/components/VotesHistoryModal';
+import Navbar from '@/components/Navbar';
+import TermsModal from '@/components/TermsModal';
+import PrivacyModal from '@/components/PrivacyModal';
 
 interface Nominee {
   id: string;
@@ -87,13 +90,13 @@ export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [votingData, setVotingData] = useState<VotingData | null>(null);
   const [userPoints, setUserPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [canReceiveShareBonus, setCanReceiveShareBonus] = useState(false);
   const [savingTeam, setSavingTeam] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -339,21 +342,15 @@ export default function Home() {
           setUserPoints(pointsData.availablePoints);
         }
 
-        // Verificar si es admin
-        const adminResponse = await fetch('/api/admin?action=checkAdmin');
-        if (adminResponse.ok) {
-          const adminData = await adminResponse.json();
-          setIsAdmin(adminData.isAdmin || false);
-        }
 
 
-        // Verificar si puede recibir bono de compartir
-        const shareBonusResponse = await fetch('/api/vote?action=share-bonus');
+        // Verificar si puede recibir bono de compartir (solo verificar, no otorgar)
+        const shareBonusResponse = await fetch('/api/vote?action=check-share-bonus');
         if (shareBonusResponse.ok) {
-          setCanReceiveShareBonus(true);
+          const bonusData = await shareBonusResponse.json();
+          setCanReceiveShareBonus(bonusData.canReceiveBonus);
         } else {
-          const errorData = await shareBonusResponse.json();
-          setCanReceiveShareBonus(!errorData.alreadyReceived);
+          setCanReceiveShareBonus(false);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -426,16 +423,16 @@ export default function Home() {
   const handleShareApp = async () => {
     try {
       const shareUrl = window.location.origin;
-      const shareText = '¡Vota por tus candidatos favoritos en Casa Famosos! 🏠✨';
-      
+      const shareText = '¡Vota por tus candidatos favoritos en La Casa Vota! 🏠✨';
+
       // Detectar si es móvil real (no solo viewport)
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
+
       // Solo usar Web Share API en móviles reales
       if (isMobile && navigator.share) {
         try {
           await navigator.share({
-            title: 'Casa Famosos 2025',
+            title: 'La Casa Vota 2025',
             text: shareText,
             url: shareUrl
           });
@@ -456,7 +453,7 @@ export default function Home() {
         console.error('Error compartiendo app:', shareError);
         // En caso de error, mostrar ventana personalizada
         const shareUrl = window.location.origin;
-        const shareText = '¡Vota por tus candidatos favoritos en Casa Famosos! 🏠✨';
+        const shareText = '¡Vota por tus candidatos favoritos en La Casa Vota! 🏠✨';
         showCustomShareModal(shareUrl, shareText);
       }
   };
@@ -616,7 +613,14 @@ export default function Home() {
 
   const giveShareBonus = async () => {
     try {
-      const response = await fetch('/api/vote?action=share-bonus');
+      // Ahora usar POST para realmente otorgar el bonus
+      const response = await fetch('/api/vote?action=share-bonus', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      });
       if (response.ok) {
         const data = await response.json();
         (window as any).showSuccessMessage(`🎉 ${data.message}`);
@@ -646,148 +650,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background pb-20">
-      {/* Header Mobile */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-primary/20">
-        <div className="px-4 py-3 flex items-center justify-between">
-          {/* Navigation Icons */}
-          <div className="flex items-center space-x-6 flex-1 justify-center">
-            <button
-              onClick={() => window.location.href = '/'}
-              className="text-primary transition-colors p-2"
-              title="Inicio"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-              </svg>
-            </button>
-            <button
-              onClick={() => window.location.href = '/global'}
-              className="text-white hover:text-primary transition-colors p-2"
-              title="Global"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-              </svg>
-            </button>
-            <button
-              onClick={() => window.location.href = '/muro'}
-              className="text-white hover:text-primary transition-colors p-2"
-              title="Muro"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-              </svg>
-            </button>
-            <button
-              onClick={() => window.location.href = '/ranking'}
-              className="text-white hover:text-primary transition-colors p-2"
-              title="Ranking"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M7 14H5v5h2v-5zm3-7H8v12h2V7zm3 3h-2v9h2v-9zm3-6h-2v15h2V4z"/>
-              </svg>
-            </button>
-          </div>
-
-          {/* User Menu or Login Button */}
-          {session ? (
-            <div className="flex items-center space-x-3">
-              {/* User Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-primary/30 transition-colors overflow-hidden"
-                >
-                  {session.user?.image ? (
-                    <img 
-                      src={session.user.image} 
-                      alt={session.user.name || 'Usuario'}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Si la imagen falla, mostrar la inicial
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.nextElementSibling?.classList.remove('hidden');
-                      }}
-                    />
-                  ) : null}
-                  <span className={`text-primary text-sm font-bold ${session.user?.image ? 'hidden' : ''}`}>
-                    {session.user?.name?.[0] || 'U'}
-                  </span>
-                </button>
-
-                {showUserMenu && (
-                  <>
-                    {/* Overlay para cerrar el menú */}
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setShowUserMenu(false)}
-                    />
-
-                    {/* Menú desplegable */}
-                    <div className="absolute right-0 mt-2 w-48 bg-card border border-border/40 rounded-lg shadow-lg z-20">
-                <div className="p-3 border-b border-border/20">
-                  <p className="text-sm font-medium text-foreground truncate flex items-center gap-1">
-                    {session.user?.name} <TeamBadge team={(session.user as any)?.team} />
-                  </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {session.user?.email}
-                        </p>
-                      </div>
-
-                      <div className="py-2">
-                        {isAdmin && (
-                          <button
-                            onClick={() => {
-                              setShowUserMenu(false);
-                              window.location.href = '/admin';
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors flex items-center space-x-2"
-                          >
-                            <span>👑</span>
-                            <span>Panel Admin</span>
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => {
-                            setShowUserMenu(false);
-                            window.location.href = '/perfil';
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors flex items-center space-x-2"
-                        >
-                          <span>👤</span>
-                          <span>Perfil</span>
-                        </button>
-
-                        <div className="border-t border-border/20 mt-2 pt-2">
-                          <button
-                            onClick={() => {
-                              setShowUserMenu(false);
-                              signOut({ callbackUrl: '/' });
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-destructive hover:bg-destructive/10 transition-colors flex items-center space-x-2"
-                          >
-                            <span>🚪</span>
-                            <span>Cerrar Sesión</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="text-sm text-primary font-medium bg-primary/10 px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
-            >
-              Iniciar Sesión
-            </button>
-          )}
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -1220,8 +1083,8 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Share App Banner - Al final de la página */}
-        {session && votingData?.week && (
+        {/* Share App Banner - Solo mostrar si puede recibir el bonus */}
+        {session && votingData?.week && canReceiveShareBonus && (
           <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
             <div className="text-4xl mb-3">🎁</div>
             <h3 className="text-lg font-bold text-foreground mb-2">
@@ -1236,6 +1099,19 @@ export default function Home() {
             >
               📤 COMPARTIR APP
             </button>
+          </div>
+        )}
+
+        {/* Mensaje cuando ya recibió el bonus hoy */}
+        {session && votingData?.week && !canReceiveShareBonus && (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
+            <div className="text-2xl mb-2">✅</div>
+            <p className="text-green-600 font-medium">
+              Ya recibiste tu bonus de 50 puntos por compartir hoy
+            </p>
+            <p className="text-muted-foreground text-sm mt-1">
+              ¡Vuelve mañana para obtener otro bonus!
+            </p>
           </div>
         )}
       </div>
@@ -1275,7 +1151,20 @@ export default function Home() {
               
               <div className="text-center">
                 <p className="text-xs text-muted-foreground">
-                  Al continuar, aceptas nuestros términos y condiciones
+                  Al continuar, aceptas nuestros{' '}
+                  <button
+                    onClick={() => setShowTermsModal(true)}
+                    className="text-primary hover:underline"
+                  >
+                    términos y condiciones
+                  </button>
+                  {' '}y{' '}
+                  <button
+                    onClick={() => setShowPrivacyModal(true)}
+                    className="text-primary hover:underline"
+                  >
+                    políticas de privacidad
+                  </button>
                 </p>
               </div>
             </div>
@@ -1381,6 +1270,18 @@ export default function Home() {
       />
 
       <Footer />
+
+      {/* Terms Modal */}
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+      />
+
+      {/* Privacy Modal */}
+      <PrivacyModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
     </main>
   );
 }

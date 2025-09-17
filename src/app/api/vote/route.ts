@@ -167,52 +167,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(votes);
     }
 
-    if (action === 'share-bonus') {
-      // Dar puntos extra por compartir la app
+    if (action === 'check-share-bonus') {
+      // Solo verificar si puede recibir bonus (sin actualizar)
       await dbConnect();
       const user = await User.findById((session.user as any).id);
       if (!user) {
         return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
       }
 
-      // Verificar si ya recibió el bono hoy
       const today = new Date();
       const lastShareBonus = user.lastShareBonus || new Date(0);
       const lastShareBonusDate = new Date(lastShareBonus);
-      
-      // Normalizar fechas para comparación (sin horas/minutos/segundos)
+
       const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const lastShareBonusNormalized = new Date(lastShareBonusDate.getFullYear(), lastShareBonusDate.getMonth(), lastShareBonusDate.getDate());
-      
-      console.log('Debug share bonus:', {
-        today: today.toISOString(),
-        lastShareBonus: lastShareBonusDate.toISOString(),
-        todayNormalized: todayNormalized.toISOString(),
-        lastShareBonusNormalized: lastShareBonusNormalized.toISOString(),
-        isSameDay: todayNormalized.getTime() === lastShareBonusNormalized.getTime()
-      });
-      
-      if (todayNormalized.getTime() === lastShareBonusNormalized.getTime()) {
-        return NextResponse.json({ 
-          error: 'Ya recibiste el bono por compartir hoy. ¡Vuelve mañana!',
-          alreadyReceived: true
-        }, { status: 400 });
-      }
 
-      // Registrar bono de compartir solo para este día (no acumular en dailyPoints)
-      const bonusPoints = 50;
-      user.lastShareBonus = today;
-      await user.save();
-
-      const baseDailyPoints = typeof (activeSeason as any).defaultDailyPoints === 'number' ? (activeSeason as any).defaultDailyPoints : 60;
-      const newDayTotal = baseDailyPoints + bonusPoints;
+      const canReceiveBonus = todayNormalized.getTime() !== lastShareBonusNormalized.getTime();
 
       return NextResponse.json({
-        success: true,
-        message: `¡Recibiste ${bonusPoints} puntos extra por compartir la app!`,
-        bonusPoints,
-        newTotalPoints: newDayTotal
+        canReceiveBonus,
+        lastShareBonus: user.lastShareBonus,
+        nextBonusAvailable: canReceiveBonus ? 'now' : new Date(todayNormalized.getTime() + 24 * 60 * 60 * 1000).toISOString()
       });
+    }
+
+    if (action === 'share-bonus') {
+      // ESTE ENDPOINT AHORA SERA SOLO PARA POST - dar puntos extra por compartir
+      return NextResponse.json({
+        error: 'Este endpoint debe ser llamado con método POST',
+        hint: 'Usa POST para otorgar el bonus, GET con action=check-share-bonus para verificar'
+      }, { status: 405 });
     }
 
     return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
@@ -231,6 +215,69 @@ export async function POST(request: NextRequest) {
     }
 
     await dbConnect();
+
+    // Verificar si es una solicitud de compartir bonus
+    const url = new URL(request.url);
+    const action = url.searchParams.get('action');
+
+    if (action === 'share-bonus') {
+      // Dar puntos extra por compartir la app (solo vía POST)
+      const user = await User.findById((session.user as any).id);
+      if (!user) {
+        return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+      }
+
+      // Obtener temporada activa para defaultDailyPoints
+      const activeSeason = await SeasonService.getActiveSeason();
+      if (!activeSeason) {
+        return NextResponse.json({ error: 'No hay temporada activa' }, { status: 404 });
+      }
+
+      // Verificar si ya recibió el bono hoy
+      const today = new Date();
+      const lastShareBonus = user.lastShareBonus || new Date(0);
+      const lastShareBonusDate = new Date(lastShareBonus);
+
+      // Normalizar fechas para comparación
+      const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const lastShareBonusNormalized = new Date(lastShareBonusDate.getFullYear(), lastShareBonusDate.getMonth(), lastShareBonusDate.getDate());
+
+      console.log('Debug share bonus POST:', {
+        usuario: user.email,
+        today: today.toISOString(),
+        lastShareBonus: user.lastShareBonus,
+        todayNormalized: todayNormalized.toISOString(),
+        lastShareBonusNormalized: lastShareBonusNormalized.toISOString(),
+        isSameDay: todayNormalized.getTime() === lastShareBonusNormalized.getTime()
+      });
+
+      if (todayNormalized.getTime() === lastShareBonusNormalized.getTime()) {
+        return NextResponse.json({
+          error: 'Ya recibiste el bono por compartir hoy. ¡Vuelve mañana!',
+          alreadyReceived: true,
+          nextBonusAvailable: new Date(todayNormalized.getTime() + 24 * 60 * 60 * 1000).toISOString()
+        }, { status: 400 });
+      }
+
+      // AHORA SÍ: Registrar bono de compartir
+      const bonusPoints = 50;
+      user.lastShareBonus = today;
+      await user.save();
+
+      const baseDailyPoints = typeof activeSeason.defaultDailyPoints === 'number' ? activeSeason.defaultDailyPoints : 60;
+      const newDayTotal = baseDailyPoints + bonusPoints;
+
+      console.log('Bonus otorgado a:', user.email, 'fecha guardada:', today.toISOString());
+
+      return NextResponse.json({
+        success: true,
+        message: `¡Recibiste ${bonusPoints} puntos extra por compartir la app!`,
+        bonusPoints,
+        newTotalPoints: newDayTotal
+      });
+    }
+
+    // RESTO DE LA LÓGICA DE VOTACIÓN NORMAL
     const data = await request.json();
     const { votes, fingerprint, timeOnPage, captchaToken } = data; // Array de { candidateId, points } + fingerprint data + captcha
 

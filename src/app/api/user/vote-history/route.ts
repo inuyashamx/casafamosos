@@ -54,8 +54,13 @@ export async function GET(request: NextRequest) {
         const votesByWeek: { [key: string]: any } = {};
         
         votes.forEach(vote => {
+          // Saltar votos que no tienen candidato (candidato eliminado)
+          if (!vote.candidateId) {
+            return;
+          }
+
           const weekKey = vote.weekId ? vote.weekId._id.toString() : `week-${vote.weekNumber}`;
-          
+
           if (!votesByWeek[weekKey]) {
             votesByWeek[weekKey] = {
               weekNumber: vote.weekNumber,
@@ -65,7 +70,7 @@ export async function GET(request: NextRequest) {
               votes: []
             };
           }
-          
+
           votesByWeek[weekKey].totalPoints += vote.points;
           votesByWeek[weekKey].votes.push({
             candidateId: vote.candidateId._id,

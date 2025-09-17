@@ -2,10 +2,14 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import TermsModal from '@/components/TermsModal';
+import PrivacyModal from '@/components/PrivacyModal';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   // const router = useRouter();
 
   const handleGoogleSignIn = async () => {
@@ -61,11 +65,36 @@ export default function LoginPage() {
 
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
-              Al continuar, aceptas nuestros términos y condiciones
+              Al continuar, aceptas nuestros{' '}
+              <button
+                onClick={() => setShowTermsModal(true)}
+                className="text-primary hover:underline"
+              >
+                términos y condiciones
+              </button>
+              {' '}y{' '}
+              <button
+                onClick={() => setShowPrivacyModal(true)}
+                className="text-primary hover:underline"
+              >
+                políticas de privacidad
+              </button>
             </p>
           </div>
         </div>
       </div>
+
+      {/* Terms Modal */}
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+      />
+
+      {/* Privacy Modal */}
+      <PrivacyModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
     </main>
   );
 } 

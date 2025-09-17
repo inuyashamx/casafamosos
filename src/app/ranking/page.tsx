@@ -4,6 +4,7 @@ import Image from 'next/image';
 import TeamBadge from '@/components/TeamBadge';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import Navbar from '@/components/Navbar';
 
 interface RankingUserItem {
   rank: number;
@@ -127,63 +128,7 @@ export default function RankingPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-primary/20">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo */}
-          <Image
-            src="/logo.png"
-            alt="Casa Famosos"
-            width={32}
-            height={32}
-            className="w-8 h-8 rounded-lg flex-shrink-0"
-          />
-          
-          {/* Navigation Icons */}
-          <div className="flex items-center space-x-6 flex-1 justify-center">
-              <button
-                onClick={() => router.push('/')}
-                className="text-white hover:text-primary transition-colors p-2"
-                title="Inicio"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                </svg>
-              </button>
-              <button
-                onClick={() => router.push('/vote')}
-                className="text-white hover:text-primary transition-colors p-2"
-                title="Votar"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7.5v-2H14v2zm2-4H7.5v-2H16v2zm0-4H7.5V7H16v2z"/>
-                </svg>
-              </button>
-              <button
-                onClick={() => router.push('/muro')}
-                className="text-white hover:text-primary transition-colors p-2"
-                title="Muro"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                </svg>
-              </button>
-              <span className="text-primary p-2" title="Ranking">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 14H5v5h2v-5zm3-7H8v12h2V7zm3 3h-2v9h2v-9zm3-6h-2v15h2V4z"/>
-                </svg>
-              </span>
-              <button
-                onClick={() => router.push('/global')}
-                className="text-white hover:text-primary transition-colors p-2"
-                title="Global"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                </svg>
-              </button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Título movido al contenido */}

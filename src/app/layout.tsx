@@ -12,9 +12,50 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "lacasavota.com",
-  description: "Encuesta hecha por fans para fans",
+  title: "La Casa Vota - Encuestas NO oficiales de La Casa de los Famosos",
+  description: "Plataforma de votaciones y encuestas NO OFICIAL de La Casa de los Famosos. Vota por tus habitantes favoritos, participa en encuestas semanales y gana puntos.",
+  keywords: "la casa vota, encuestas la casa de los famosos, votaciones no oficial, votar habitantes, lacasavota, reality show encuestas",
+  authors: [{ name: "La Casa Vota" }],
+  creator: "La Casa Vota",
+  publisher: "La Casa Vota",
   manifest: "/manifest.json",
+  metadataBase: new URL('https://www.lacasavota.com'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: "La Casa Vota - Encuestas NO oficiales",
+    description: "Vota por tus habitantes favoritos de La Casa de los Famosos. Plataforma NO OFICIAL de encuestas y votaciones.",
+    url: 'https://www.lacasavota.com',
+    siteName: 'La Casa Vota',
+    images: [
+      {
+        url: '/logo.png',
+        width: 512,
+        height: 512,
+        alt: 'La Casa Vota Logo',
+      }
+    ],
+    locale: 'es_MX',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "La Casa Vota - Encuestas NO oficiales",
+    description: "Vota por tus habitantes favoritos de La Casa de los Famosos. Plataforma NO OFICIAL 🏠✨",
+    images: ['/logo.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({

@@ -1,8 +1,10 @@
 "use client";
 import { useState } from 'react';
+import TermsModal from '@/components/TermsModal';
 
 export default function Footer() {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   return (
     <footer className="bg-card/50 border-t border-border/20 mt-20">
@@ -16,10 +18,17 @@ export default function Footer() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            lacasavota.com - Encuesta hecha por fans para fans
+            ESTA ENCUESTA NO ES OFICIAL - Encuesta hecha por fans para fans
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-xs text-muted-foreground">
+            <button
+              onClick={() => setShowTermsModal(true)}
+              className="hover:text-foreground transition-colors underline"
+            >
+              Términos y Condiciones
+            </button>
+            <span>•</span>
             <button
               onClick={() => setShowPrivacyPolicy(true)}
               className="hover:text-foreground transition-colors underline"
@@ -49,7 +58,7 @@ export default function Footer() {
               
               <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
                 <p>
-                  <strong className="text-foreground">Última actualización:</strong> 31 de julio de 2025
+                  <strong className="text-foreground">Última actualización:</strong> 17 de septiembre de 2025
                 </p>
                 
                 <div>
@@ -94,37 +103,22 @@ export default function Footer() {
                 </div>
 
                 <div>
-                  <h3 className="text-foreground font-semibold mb-2">4. Publicidad y Marketing</h3>
+                  <h3 className="text-foreground font-semibold mb-2">4. Compartir Información</h3>
                   <p>
-                    Podemos utilizar servicios de terceros como Twitter Ads y Facebook Ads para mostrar 
-                    anuncios relevantes. Estos servicios pueden recopilar información sobre su uso de 
-                    nuestra aplicación para personalizar la publicidad.
+                    <strong className="text-foreground">NO compartimos su información personal con terceros bajo ninguna circunstancia.</strong> Su información permanece privada y segura en nuestra plataforma únicamente para el funcionamiento del servicio.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-foreground font-semibold mb-2">5. Compartir Información</h3>
+                  <h3 className="text-foreground font-semibold mb-2">5. Seguridad de Datos</h3>
                   <p>
-                    No vendemos, alquilamos ni compartimos su información personal con terceros, excepto:
-                  </p>
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Con su consentimiento explícito</li>
-                    <li>Para cumplir con obligaciones legales</li>
-                    <li>Con proveedores de servicios que nos ayudan a operar la plataforma</li>
-                    <li>Para proteger nuestros derechos y seguridad</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="text-foreground font-semibold mb-2">6. Seguridad de Datos</h3>
-                  <p>
-                    Implementamos medidas de seguridad técnicas y organizativas apropiadas para proteger 
+                    Implementamos medidas de seguridad técnicas y organizativas apropiadas para proteger
                     su información personal contra acceso no autorizado, alteración, divulgación o destrucción.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-foreground font-semibold mb-2">7. Sus Derechos</h3>
+                  <h3 className="text-foreground font-semibold mb-2">6. Sus Derechos</h3>
                   <p>
                     Usted tiene derecho a:
                   </p>
@@ -138,41 +132,37 @@ export default function Footer() {
                 </div>
 
                 <div>
-                  <h3 className="text-foreground font-semibold mb-2">8. Retención de Datos</h3>
+                  <h3 className="text-foreground font-semibold mb-2">7. Retención de Datos</h3>
                   <p>
-                    Conservamos su información personal solo durante el tiempo necesario para cumplir 
-                    con los propósitos descritos en esta política, a menos que la ley requiera un 
+                    Conservamos su información personal solo durante el tiempo necesario para cumplir
+                    con los propósitos descritos en esta política, a menos que la ley requiera un
                     período de retención más largo.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-foreground font-semibold mb-2">9. Menores de Edad</h3>
+                  <h3 className="text-foreground font-semibold mb-2">8. Menores de Edad</h3>
                   <p>
-                    Nuestros servicios no están dirigidos a menores de 13 años. No recopilamos 
-                    intencionalmente información personal de menores de 13 años. Si cree que hemos 
+                    Nuestros servicios no están dirigidos a menores de 13 años. No recopilamos
+                    intencionalmente información personal de menores de 13 años. Si cree que hemos
                     recopilado información de un menor, contáctenos inmediatamente.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-foreground font-semibold mb-2">10. Cambios a esta Política</h3>
+                  <h3 className="text-foreground font-semibold mb-2">9. Cambios a esta Política</h3>
                   <p>
-                    Podemos actualizar esta política de privacidad ocasionalmente. Le notificaremos 
-                    sobre cualquier cambio significativo publicando la nueva política en esta página 
+                    Podemos actualizar esta política de privacidad ocasionalmente. Le notificaremos
+                    sobre cualquier cambio significativo publicando la nueva política en esta página
                     y actualizando la fecha de &quot;Última actualización&quot;.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-foreground font-semibold mb-2">11. Contacto</h3>
+                  <h3 className="text-foreground font-semibold mb-2">10. Contacto</h3>
                   <p>
-                    Si tiene preguntas sobre esta política de privacidad o nuestras prácticas de 
-                    privacidad, contáctenos en:
-                  </p>
-                  <p className="mt-2">
-                    <strong>Email:</strong> xpellitofficial@gmail.com<br />
-                    <strong>Dirección:</strong> En tu corazón
+                    Si tiene preguntas sobre esta política de privacidad o nuestras prácticas de
+                    privacidad, contáctenos en: <strong>xpellitofficial@gmail.com</strong>
                   </p>
                 </div>
               </div>
@@ -180,6 +170,12 @@ export default function Footer() {
           </div>
         </div>
       )}
+
+      {/* Modal de Términos y Condiciones */}
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+      />
     </footer>
   );
 } 
