@@ -39,7 +39,7 @@ export default function TermsModal({ isOpen, onClose }: TermsModalProps) {
               <h3 className="text-foreground font-semibold mb-2">2. DESCRIPCIÓN DEL SERVICIO</h3>
               <p>
                 La Casa Vota es una plataforma <strong className="text-foreground">NO OFICIAL</strong> de entretenimiento que permite a los usuarios
-                participar en encuestas y votaciones sobre el programa "La Casa de los Famosos".
+                participar en encuestas y votaciones sobre el programa &quot;La Casa de los Famosos&quot;.
               </p>
               <p className="mt-2">
                 <strong className="text-foreground">IMPORTANTE:</strong> Esta plataforma no tiene afiliación oficial con Telemundo, VIX,
@@ -101,7 +101,7 @@ export default function TermsModal({ isOpen, onClose }: TermsModalProps) {
             <div>
               <h3 className="text-foreground font-semibold mb-2">8. LIMITACIÓN DE RESPONSABILIDAD</h3>
               <ul className="list-disc list-inside space-y-1">
-                <li>El servicio se proporciona "tal como está"</li>
+                <li>El servicio se proporciona &quot;tal como está&quot;</li>
                 <li>No garantizamos disponibilidad continua</li>
                 <li>No somos responsables por pérdidas directas o indirectas</li>
               </ul>
