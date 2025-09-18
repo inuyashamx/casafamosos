@@ -35,14 +35,14 @@ export default function AnotadorPage() {
   useEffect(() => {
     const fetchCandidates = async () => {
       try {
-        const response = await fetch('/api/public/vote');
+        const response = await fetch('/api/public/candidates');
         if (response.ok) {
           const data = await response.json();
-          if (data.nominees && data.nominees.length > 0) {
-            const activeCandidates = data.nominees.map((nominee: any) => ({
-              id: nominee.id,
-              name: nominee.name,
-              photo: nominee.photo
+          if (data.candidates && data.candidates.length > 0) {
+            const activeCandidates = data.candidates.map((candidate: any) => ({
+              id: candidate._id,
+              name: candidate.name,
+              photo: candidate.photo
             }));
             setCandidates(activeCandidates);
 
@@ -60,19 +60,16 @@ export default function AnotadorPage() {
               });
               setPoints(filteredPoints);
 
-              // Si hay puntos guardados, reordenar inmediatamente
-              const hasPoints = Object.values(filteredPoints).some(points => points !== 0);
-              if (hasPoints) {
-                const sortedIds = activeCandidates.sort((a: Candidate, b: Candidate) => {
-                  const pointsA = filteredPoints[a.id] || 0;
-                  const pointsB = filteredPoints[b.id] || 0;
-                  if (pointsA !== pointsB) {
-                    return pointsB - pointsA;
-                  }
-                  return a.name.localeCompare(b.name);
-                }).map((c: Candidate) => c.id);
-                setDisplayOrder(sortedIds);
-              }
+              // Reordenar con puntos guardados (siempre incluir todos los candidatos)
+              const sortedIds = activeCandidates.sort((a: Candidate, b: Candidate) => {
+                const pointsA = filteredPoints[a.id] || 0;
+                const pointsB = filteredPoints[b.id] || 0;
+                if (pointsA !== pointsB) {
+                  return pointsB - pointsA;
+                }
+                return a.name.localeCompare(b.name);
+              }).map((c: Candidate) => c.id);
+              setDisplayOrder(sortedIds);
             } else {
               // Inicializar todos en 0
               const initialPoints: CandidatePoints = {};
@@ -178,8 +175,13 @@ export default function AnotadorPage() {
 
 
   const getDisplayCandidates = () => {
-    // Usar displayOrder para mantener el orden actual hasta el debounce
-    return displayOrder.map(id => candidates.find(c => c.id === id)).filter(Boolean) as Candidate[];
+    // Mostrar todos los candidatos activos ordenados por displayOrder
+    if (displayOrder.length === 0) {
+      return candidates; // Si no hay displayOrder, mostrar todos los candidatos
+    }
+    // Filtrar duplicados usando Set para asegurar IDs únicos
+    const uniqueIds = [...new Set(displayOrder)];
+    return uniqueIds.map(id => candidates.find(c => c.id === id)).filter(Boolean) as Candidate[];
   };
 
   const getNominees = () => {
@@ -267,12 +269,18 @@ export default function AnotadorPage() {
         {/* Candidates Grid - Diseño Compacto */}
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 candidates-grid mb-8">
           {getDisplayCandidates().map((candidate, index) => {
+            // Validar que el candidato tenga ID válido
+            if (!candidate || !candidate.id) {
+              console.warn('Invalid candidate:', candidate);
+              return null;
+            }
+
             const nominees = getNominees();
             const isNominee = nominees.has(candidate.id);
 
             return (
             <div
-              key={candidate.id}
+              key={`candidate-${candidate.id}`}
               className={`relative text-center candidate-card mb-8 ${
                 animatingCards.has(candidate.id) ? 'card-moved' : ''
               }`}
