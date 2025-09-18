@@ -802,6 +802,30 @@ export default function Home() {
                   </div>
                 )}
 
+                {/* Share App Banner Compacto con animaciones */}
+                {session && votingData?.week && canReceiveShareBonus && (
+                  <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-3 text-center animate-pulse shadow-lg hover:shadow-xl transition-all duration-300">
+                    <p className="text-sm font-medium text-foreground mb-2 animate-bounce">
+                      🎁 ¡Comparte y obtén 50 puntos extra!
+                    </p>
+                    <button
+                      onClick={handleShareApp}
+                      className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:scale-110 hover:shadow-lg transform transition-all duration-200 animate-pulse"
+                    >
+                      📤 COMPARTIR
+                    </button>
+                  </div>
+                )}
+
+                {/* Mensaje compacto cuando ya recibió el bonus hoy */}
+                {session && votingData?.week && !canReceiveShareBonus && (
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 text-center shadow-md transition-all duration-300">
+                    <p className="text-green-600 text-sm font-medium animate-pulse">
+                      ✅ Bonus recibido hoy
+                    </p>
+                  </div>
+                )}
+
                 <button
                   onClick={handleVoteClick}
                   className="w-full bg-gradient-to-r from-primary to-accent text-white py-4 rounded-xl font-bold text-lg glow hover:scale-105 transition-all duration-200 shadow-lg"
@@ -1176,37 +1200,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Share App Banner - Solo mostrar si puede recibir el bonus */}
-        {session && votingData?.week && canReceiveShareBonus && (
-          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 text-center">
-            <div className="text-4xl mb-3">🎁</div>
-            <h3 className="text-lg font-bold text-foreground mb-2">
-              ¡Comparte esta APP y consigue 50 puntos extra!
-            </h3>
-            <p className="text-muted-foreground text-sm mb-4">
-              Invita a tus amigos a votar y obtén puntos extra para seguir participando
-            </p>
-            <button
-              onClick={handleShareApp}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
-            >
-              📤 COMPARTIR APP
-            </button>
-          </div>
-        )}
-
-        {/* Mensaje cuando ya recibió el bonus hoy */}
-        {session && votingData?.week && !canReceiveShareBonus && (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
-            <div className="text-2xl mb-2">✅</div>
-            <p className="text-green-600 font-medium">
-              Ya recibiste tu bonus de 50 puntos por compartir hoy
-            </p>
-            <p className="text-muted-foreground text-sm mt-1">
-              ¡Vuelve mañana para obtener otro bonus!
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Floating Chat Button - Oculto por ahora */}
