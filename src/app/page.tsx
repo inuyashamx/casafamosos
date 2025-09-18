@@ -795,43 +795,11 @@ export default function Home() {
           <>
             {votingData.week.isActive && votingData.week.status === 'voting' ? (
               <div className="space-y-3">
-                {/* Security Badge */}
-                <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-lg py-3 px-4 mb-4">
-                  <div className="flex items-center justify-center space-x-3">
-                    <div className="relative">
-                      <div className="w-8 h-8 text-green-500 animate-pulse">
-                        <svg
-                          className="w-full h-full"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                        </svg>
-                      </div>
-                      <div className="absolute inset-0 w-8 h-8 text-green-500 opacity-50 animate-ping">
-                        <svg
-                          className="w-full h-full"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-black text-yellow-500 uppercase tracking-wider animate-pulse drop-shadow-lg">
-                        ⚔️ GUERRA DE FANDOMS!! ⚔️
-                      </div>
-                      <div className="text-sm text-yellow-400/90 mt-1 font-bold">
-                        ¡Batalla épica por el primer lugar!
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contador regresivo */}
+                {/* Contador regresivo - oculto temporalmente */}
                 {votingData.week.votingEndDate && (
-                  <CountdownTimer endDate={votingData.week.votingEndDate} />
+                  <div style={{ display: 'none' }}>
+                    <CountdownTimer endDate={votingData.week.votingEndDate} />
+                  </div>
                 )}
 
                 <button
