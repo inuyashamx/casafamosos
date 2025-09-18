@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
-import './anotador.css';
+import './simulador.css';
 
 interface Candidate {
   id: string;
@@ -259,7 +259,7 @@ export default function AnotadorPage() {
         {/* Header Compacto */}
         <div className="text-center mb-14">
           <h1 className="text-2xl font-bold text-primary">
-            📝 Anotador de Nominaciones de lacasavota.com
+            📝 Simulador de Nominaciones de lacasavota.com
           </h1>
         </div>
 

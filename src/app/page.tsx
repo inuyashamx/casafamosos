@@ -1003,7 +1003,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Nuevo Anotador de Nominaciones */}
+        {/* Nuevo Simulador de Nominaciones */}
         <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-6">
           <div className="text-center">
             {/* Badge NUEVO animado centrado */}
@@ -1014,16 +1014,16 @@ export default function Home() {
             </div>
 
             <h3 className="text-xl font-bold text-foreground mb-2">
-              Anotador de Nominaciones
+              Simulador de Nominaciones
             </h3>
             <p className="text-muted-foreground text-sm mb-4">
               Lleva la cuenta de los puntos mientras ves las nominaciones en vivo. Sin papel ni lápiz.
             </p>
             <button
-              onClick={() => router.push('/anotador')}
+              onClick={() => router.push('/simulador')}
               className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
             >
-              📝 Probar Anotador
+              📝 Probar Simulador
             </button>
           </div>
         </div>

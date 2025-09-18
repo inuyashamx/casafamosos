@@ -79,9 +79,9 @@ export default function Navbar() {
           </button>
 
           <button
-            onClick={() => router.push('/anotador')}
-            className={getButtonStyle('/anotador')}
-            title="Anotador"
+            onClick={() => router.push('/simulador')}
+            className={getButtonStyle('/simulador')}
+            title="Simulador"
           >
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
               <path d="M6 2c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2H6zm0 2h12v16H6V4z"/>
