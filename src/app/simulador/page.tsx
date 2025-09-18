@@ -197,19 +197,19 @@ export default function AnotadorPage() {
 
     const nominees = new Set<string>();
 
-    // Agregar los primeros 5
-    for (let i = 0; i < Math.min(5, sorted.length); i++) {
+    // Agregar los primeros 4
+    for (let i = 0; i < Math.min(4, sorted.length); i++) {
       nominees.add(sorted[i].id);
     }
 
-    // Si hay empate en el 5to lugar, incluir todos los empatados
-    if (sorted.length > 5) {
-      const fifthPlacePoints = points[sorted[4].id] || 0;
+    // Si hay empate en el 4to lugar, incluir todos los empatados
+    if (sorted.length > 4) {
+      const fourthPlacePoints = points[sorted[3].id] || 0;
 
-      // Buscar todos los que empatan con el 5to lugar
-      for (let i = 5; i < sorted.length; i++) {
+      // Buscar todos los que empatan con el 4to lugar
+      for (let i = 4; i < sorted.length; i++) {
         const candidatePoints = points[sorted[i].id] || 0;
-        if (candidatePoints === fifthPlacePoints) {
+        if (candidatePoints === fourthPlacePoints) {
           nominees.add(sorted[i].id);
         } else {
           break; // Ya no hay más empates
