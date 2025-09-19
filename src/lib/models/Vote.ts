@@ -52,6 +52,18 @@ VoteSchema.index({ userId: 1, seasonId: 1, weekNumber: 1 });
 VoteSchema.index({ voteDate: -1 });
 VoteSchema.index({ isValid: 1 });
 
+// Índice específico para el endpoint de tendencias de votación
+VoteSchema.index({ weekId: 1, isValid: 1 });
+
+// Log para verificar creación de índices (opcional, puedes quitar después)
+VoteSchema.on('index', function(error) {
+  if (error) {
+    console.error('Error creating Vote indexes:', error);
+  } else {
+    console.log('Vote indexes created successfully');
+  }
+});
+
 // Métodos estáticos
 VoteSchema.statics.getUserVotesForWeek = function(userId: string, weekId: string) {
   return this.find({ userId, weekId, isValid: true });

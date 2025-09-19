@@ -13,6 +13,7 @@ import Navbar from '@/components/Navbar';
 import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
 import CountdownTimer from '@/components/CountdownTimer';
+import VotingTrends from '@/components/VotingTrends';
 import { escapeHtml, sanitizeUrl } from '@/lib/security';
 
 interface Nominee {
@@ -111,6 +112,7 @@ export default function Home() {
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showVotesModal, setShowVotesModal] = useState(false);
   const [votesModalFilter, setVotesModalFilter] = useState<{candidateId?: string; candidateName?: string}>({});
+  const [activeTab, setActiveTab] = useState<'current' | 'trends'>('current');
 
   // Redes sociales
   const [socialMedia, setSocialMedia] = useState({
@@ -888,7 +890,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Nominees and Fandoms Tabs */}
+        {/* Nominees and Trends Tabs */}
         {votingData?.nominees && votingData.nominees.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -901,89 +903,119 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Resultados directos sin tabs */}
-            <div className="space-y-4">
-              {votingData.nominees
-                .sort((a, b) => b.votes - a.votes)
-                .map((nominee, index) => (
-                <div
-                  key={`${nominee.id}-${index}`}
-                  className={`rounded-xl p-4 border vote-card cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] ${
-                    index === 0
-                      ? '!bg-violet-600 !border-violet-700 shadow-lg'
-                      : 'bg-card border-border/20 hover:border-primary/30'
-                  }`}
-                  onClick={() => handleCandidateClick(nominee.id, nominee.name)}
-                >
-                  <div className="flex items-center space-x-4">
-                    {/* Position Badge */}
-                    <div className={`position-badge ${
-                      index === 0
-                        ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg'
-                        : index === 1
-                          ? 'bg-gray-400'
-                          : index === 2
-                            ? 'bg-amber-600'
-                            : 'bg-muted'
-                    }`}>
-                      {index === 0 ? '👑' : `#${index + 1}`}
-                    </div>
+            {/* Tab Navigation */}
+            <div className="flex space-x-1 bg-muted/30 p-1 rounded-lg">
+              <button
+                onClick={() => setActiveTab('current')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'current'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+              >
+                🗳️ Votación Actual
+              </button>
+              <button
+                onClick={() => setActiveTab('trends')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'trends'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+              >
+                📊 Tendencias
+              </button>
+            </div>
 
-                    {/* Avatar */}
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      index === 0
-                        ? 'bg-gradient-to-br from-yellow-400/30 to-amber-500/30 avatar-glow shadow-lg'
-                        : 'bg-gradient-to-br from-primary/20 to-accent/20 avatar-glow'
-                    }`}>
-                      {nominee.photo ? (
-                        <Image
-                          src={nominee.photo}
-                          alt={nominee.name}
-                          width={48}
-                          height={48}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <span className="text-xl">👤</span>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1">
-                      <h3 className={`font-semibold ${
+            {/* Tab Content */}
+            <div className="min-h-[400px]">
+              {activeTab === 'current' ? (
+                <div className="space-y-4">
+                  {votingData.nominees
+                    .sort((a, b) => b.votes - a.votes)
+                    .map((nominee, index) => (
+                    <div
+                      key={`${nominee.id}-${index}`}
+                      className={`rounded-xl p-4 border vote-card cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] ${
                         index === 0
-                          ? 'text-white font-bold'
-                          : 'text-foreground'
-                      }`}>
-                        {nominee.name}
-                        {index === 0 && <span className="ml-2 text-yellow-300">🏆</span>}
-                      </h3>
-                      <div className="mt-1">
-                        <div className="bg-muted rounded-full h-2 progress-bar">
-                          <div
-                            className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${nominee.percentage}%` }}
-                          ></div>
+                          ? '!bg-violet-600 !border-violet-700 shadow-lg'
+                          : 'bg-card border-border/20 hover:border-primary/30'
+                      }`}
+                      onClick={() => handleCandidateClick(nominee.id, nominee.name)}
+                    >
+                      <div className="flex items-center space-x-4">
+                        {/* Position Badge */}
+                        <div className={`position-badge ${
+                          index === 0
+                            ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg'
+                            : index === 1
+                              ? 'bg-gray-400'
+                              : index === 2
+                                ? 'bg-amber-600'
+                                : 'bg-muted'
+                        }`}>
+                          {index === 0 ? '👑' : `#${index + 1}`}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                          index === 0
+                            ? 'bg-gradient-to-br from-yellow-400/30 to-amber-500/30 avatar-glow shadow-lg'
+                            : 'bg-gradient-to-br from-primary/20 to-accent/20 avatar-glow'
+                        }`}>
+                          {nominee.photo ? (
+                            <Image
+                              src={nominee.photo}
+                              alt={nominee.name}
+                              width={48}
+                              height={48}
+                              className="rounded-full"
+                            />
+                          ) : (
+                            <span className="text-xl">👤</span>
+                          )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1">
+                          <h3 className={`font-semibold ${
+                            index === 0
+                              ? 'text-white font-bold'
+                              : 'text-foreground'
+                          }`}>
+                            {nominee.name}
+                            {index === 0 && <span className="ml-2 text-yellow-300">🏆</span>}
+                          </h3>
+                          <div className="mt-1">
+                            <div className="bg-muted rounded-full h-2 progress-bar">
+                              <div
+                                className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${nominee.percentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Percentage and Votes */}
+                        <div className="text-right">
+                          <div className={`text-2xl font-bold ${
+                            index === 0 ? 'text-white' : 'text-primary'
+                          }`}>
+                            {nominee.percentage}%
+                          </div>
+                          <div className={`text-xs ${
+                            index === 0 ? 'text-white/80' : 'text-muted-foreground'
+                          }`}>
+                            {nominee.votes.toLocaleString('en-US')}
+                          </div>
                         </div>
                       </div>
                     </div>
-
-                    {/* Percentage and Votes */}
-                    <div className="text-right">
-                      <div className={`text-2xl font-bold ${
-                        index === 0 ? 'text-white' : 'text-primary'
-                      }`}>
-                        {nominee.percentage}%
-                      </div>
-                      <div className={`text-xs ${
-                        index === 0 ? 'text-white/80' : 'text-muted-foreground'
-                      }`}>
-                        {nominee.votes.toLocaleString('en-US')}
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <VotingTrends onRefresh={handleRefresh} />
+              )}
             </div>
           </div>
         )}
