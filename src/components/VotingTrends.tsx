@@ -34,7 +34,7 @@ export default function VotingTrends({ onRefresh }: VotingTrendsProps) {
   const [trendsData, setTrendsData] = useState<VotingTrendsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState<string>('');
+  const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
   const fetchTrendsData = async () => {
     try {
@@ -75,12 +75,6 @@ export default function VotingTrends({ onRefresh }: VotingTrendsProps) {
     )
   ).slice(0, 4) : []; // Máximo 4 candidatos
 
-  // Seleccionar automáticamente el primer candidato cuando se cargan los datos
-  useEffect(() => {
-    if (trendsData && uniqueCandidates.length > 0 && selectedFilter === '') {
-      setSelectedFilter(uniqueCandidates[0]);
-    }
-  }, [trendsData, uniqueCandidates, selectedFilter]);
 
   // Filtrar combinaciones basado en el filtro seleccionado
   const filteredCombinations = trendsData?.combinations.filter(combo => {
