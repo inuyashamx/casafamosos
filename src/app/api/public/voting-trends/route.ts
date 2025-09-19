@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     }).select('_id name isEliminated').lean();
 
     console.log('All candidates in season:', allCandidates.length);
-    console.log('Candidates details:', allCandidates.map(c => ({
+    console.log('Candidates details:', allCandidates.map((c: any) => ({
       id: c._id.toString(),
       name: c.name,
       isEliminated: c.isEliminated
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
 
     // Crear un mapa de candidateId a nombre para referencia rápida
     const candidateMap = new Map();
-    finalCandidates.forEach(candidate => {
+    finalCandidates.forEach((candidate: any) => {
       candidateMap.set(candidate._id.toString(), candidate.name);
     });
 
@@ -163,8 +163,8 @@ export async function GET(request: NextRequest) {
 
     userVotes.forEach(userVote => {
       // Obtener los candidatos únicos que votó este usuario
-      const candidateIds = userVote.votes.map((v: any) => v.candidateId.toString());
-      const uniqueCandidateIds = Array.from(new Set(candidateIds));
+      const candidateIds: string[] = userVote.votes.map((v: any) => v.candidateId.toString());
+      const uniqueCandidateIds: string[] = Array.from(new Set(candidateIds));
 
       // Crear la clave de combinación (ordenada para consistencia)
       const sortedCandidateIds = uniqueCandidateIds.sort();
