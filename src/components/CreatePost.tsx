@@ -181,10 +181,6 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
   if (!session) {
     return (
       <div className="bg-card rounded-xl p-6 border border-border/20 text-center">
-        <div className="text-4xl mb-4">💬</div>
-        <h3 className="text-lg font-semibold text-foreground mb-2">
-          Déjale un mensaje a la PRODUCCIÓN
-        </h3>
         <button
           onClick={() => signIn('google', {
             callbackUrl: window.location.href,

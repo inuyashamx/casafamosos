@@ -174,13 +174,9 @@ export default function Feed({ userId }: FeedProps) {
       {!userId && (
         <div className="space-y-4">
           <div className="text-center mb-6">
-            <div className="text-4xl mb-4">💛</div>
             <h2 className="text-xl font-bold text-foreground mb-2">
-              Hemos suspendido la encuesta TEMPORALMENTE en apoyo a Abelito
+              Puedes escribir lo que piensas de la produccion aqui:
             </h2>
-            <p className="text-muted-foreground">
-              Nos vemos mañana
-            </p>
           </div>
           <CreatePost onPostCreated={handlePostCreated} />
         </div>
