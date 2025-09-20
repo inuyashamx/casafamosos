@@ -173,8 +173,14 @@ export default function Feed({ userId }: FeedProps) {
     <div className="space-y-6">
       {!userId && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground">Muro</h2>
+          <div className="text-center mb-6">
+            <div className="text-4xl mb-4">💛</div>
+            <h2 className="text-xl font-bold text-foreground mb-2">
+              Hemos suspendido la encuesta en apoyo a Abelito
+            </h2>
+            <p className="text-muted-foreground">
+              Nos vemos la próxima semana
+            </p>
           </div>
           <CreatePost onPostCreated={handlePostCreated} />
         </div>

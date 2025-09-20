@@ -1,6 +1,10 @@
 import dbConnect from '@/lib/mongodb';
 import Post from '@/lib/models/Post';
 import User from '@/lib/models/User';
+import Season from '@/lib/models/Season';
+import Vote from '@/lib/models/Vote';
+import Week from '@/lib/models/Week';
+import Candidate from '@/lib/models/Candidate';
 import mongoose from 'mongoose';
 import { CloudinaryService } from '@/lib/cloudinary';
 
@@ -36,7 +40,14 @@ export class PostService {
 
   static async getPosts(page: number = 1, limit: number = 20) {
     await dbConnect();
-    
+
+    // Asegurar que todos los modelos estén registrados
+    User; // Esto forza el registro del modelo
+    Season;
+    Vote;
+    Week;
+    Candidate;
+
     const skip = (page - 1) * limit;
     
     const posts = await Post.find({ isActive: true })

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import Image from 'next/image';
 import EmojiPicker from './EmojiPicker';
 
@@ -178,7 +178,30 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     }
   };
 
-  if (!session) return null;
+  if (!session) {
+    return (
+      <div className="bg-card rounded-xl p-6 border border-border/20 text-center">
+        <div className="text-4xl mb-4">💬</div>
+        <h3 className="text-lg font-semibold text-foreground mb-2">
+          Déjale un mensaje a la PRODUCCIÓN
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          Inicia sesión para enviar tu mensaje con todo tu amor
+        </p>
+        <button
+          onClick={() => signIn('google', {
+            callbackUrl: window.location.href,
+            redirect: true
+          }, {
+            prompt: 'select_account'
+          })}
+          className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+        >
+          🔐 Iniciar Sesión para Escribir
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card rounded-xl p-6 border border-border/20 space-y-4">
