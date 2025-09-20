@@ -176,7 +176,7 @@ export default function Feed({ userId }: FeedProps) {
           <div className="text-center mb-6">
             <div className="text-4xl mb-4">💛</div>
             <h2 className="text-xl font-bold text-foreground mb-2">
-              Hemos suspendido la encuesta en apoyo a Abelito
+              Hemos suspendido la encuesta TEMPORALMENTE en apoyo a Abelito
             </h2>
             <p className="text-muted-foreground">
               Nos vemos mañana
