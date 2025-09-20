@@ -185,9 +185,6 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         <h3 className="text-lg font-semibold text-foreground mb-2">
           Déjale un mensaje a la PRODUCCIÓN
         </h3>
-        <p className="text-muted-foreground mb-4">
-          Inicia sesión para enviar tu mensaje con todo tu amor
-        </p>
         <button
           onClick={() => signIn('google', {
             callbackUrl: window.location.href,
