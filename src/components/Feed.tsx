@@ -179,7 +179,7 @@ export default function Feed({ userId }: FeedProps) {
               Hemos suspendido la encuesta en apoyo a Abelito
             </h2>
             <p className="text-muted-foreground">
-              Nos vemos la próxima semana
+              Nos vemos mañana
             </p>
           </div>
           <CreatePost onPostCreated={handlePostCreated} />
