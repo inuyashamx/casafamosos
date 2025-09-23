@@ -73,7 +73,7 @@ export default function VotingTrends({ onRefresh }: VotingTrendsProps) {
     new Set(
       trendsData.combinations.flatMap(combo => combo.candidateNames)
     )
-  ).slice(0, 4) : []; // Máximo 4 candidatos
+  ) : []; // Mostrar todos los candidatos
 
 
   // Filtrar combinaciones basado en el filtro seleccionado
