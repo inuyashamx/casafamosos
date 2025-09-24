@@ -175,7 +175,7 @@ export default function Feed({ userId }: FeedProps) {
         <div className="space-y-4">
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold text-foreground mb-2">
-              Puedes escribir lo que piensas de la produccion aqui:
+              Muro
             </h2>
           </div>
           <CreatePost onPostCreated={handlePostCreated} />

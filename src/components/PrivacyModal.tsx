@@ -36,8 +36,6 @@ export default function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Información de perfil (nombre, email, foto de perfil)</li>
                 <li>Datos de votación y participación</li>
-                <li>Información de dispositivo y navegador</li>
-                <li>Datos de uso de la aplicación</li>
               </ul>
             </div>
 
