@@ -1122,17 +1122,24 @@ export default function Home() {
                     📱 Únete a los grupos
                   </h3>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
-                    {socialMedia.whatsapp && (
-                      <a
-                        href={socialMedia.whatsapp}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center space-x-2"
-                      >
-                        <span>💚</span>
-                        <span>WhatsApp</span>
-                      </a>
-                    )}
+                    <a
+                      href="https://chat.whatsapp.com/JcD2WE30f4OINpjG8UVfiD"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <span>☀️</span>
+                      <span>WhatsApp Team Día</span>
+                    </a>
+                    <a
+                      href="https://chat.whatsapp.com/C9HqSTyQYyaBadMTLuLv0h"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <span>🌙</span>
+                      <span>WhatsApp Team Noche</span>
+                    </a>
                     {socialMedia.telegram && (
                       <a
                         href={socialMedia.telegram}
