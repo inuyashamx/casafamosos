@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 export class WeekService {
   static async getWeeksBySeason(seasonId: string) {
     await dbConnect();
-    return await Week.find({ seasonId }).sort({ weekNumber: 1 }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
+    return await Week.find({ seasonId }).sort({ weekNumber: -1 }).populate('nominees.candidateId results.eliminated.candidateId results.saved.candidateId');
   }
 
   static async getActiveWeek(seasonId: string) {

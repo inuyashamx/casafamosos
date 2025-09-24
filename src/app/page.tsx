@@ -797,11 +797,9 @@ export default function Home() {
           <>
             {votingData.week.isActive && votingData.week.status === 'voting' ? (
               <div className="space-y-3">
-                {/* Contador regresivo - oculto temporalmente */}
+                {/* Contador regresivo */}
                 {votingData.week.votingEndDate && (
-                  <div style={{ display: 'none' }}>
-                    <CountdownTimer endDate={votingData.week.votingEndDate} />
-                  </div>
+                  <CountdownTimer endDate={votingData.week.votingEndDate} />
                 )}
 
                 {/* Share App Banner Compacto con animaciones */}
