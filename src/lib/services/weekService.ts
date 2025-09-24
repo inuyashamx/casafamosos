@@ -249,7 +249,7 @@ export class WeekService {
       'results.votingStats': results.map((r: any) => ({
         candidateId: r._id,
         votes: r.totalVotes,
-        percentage: totalVotes > 0 ? Math.round((r.totalVotes / totalVotes) * 100) : 0
+        percentage: totalVotes > 0 ? parseFloat(((r.totalVotes / totalVotes) * 100).toFixed(2)) : 0
       }))
     };
 

@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     const totalVotesAfterPenalties = nominees.reduce((total: number, nominee: any) => total + nominee.votes, 0);
 
     nominees.forEach((nominee: any) => {
-      nominee.percentage = totalVotesAfterPenalties > 0 ? Math.round((nominee.votes / totalVotesAfterPenalties) * 100) : 0;
+      nominee.percentage = totalVotesAfterPenalties > 0 ? parseFloat(((nominee.votes / totalVotesAfterPenalties) * 100).toFixed(2)) : 0;
     });
 
     // Obtener información del candidato eliminado si existe

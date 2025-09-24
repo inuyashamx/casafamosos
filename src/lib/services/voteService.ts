@@ -124,7 +124,7 @@ export class VoteService {
       name: candidate.name,
       photo: candidate.photo,
       votes: candidate.stats.weeklyVotes,
-      percentage: totalVotes > 0 ? Math.round((candidate.stats.weeklyVotes / totalVotes) * 100) : 0,
+      percentage: totalVotes > 0 ? parseFloat(((candidate.stats.weeklyVotes / totalVotes) * 100).toFixed(2)) : 0,
     }));
   }
 

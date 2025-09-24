@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       fandomSize: stat.fandomSize,
       totalVotes: stat.totalVotes,
       totalPoints: stat.totalPoints,
-      percentage: totalFandoms > 0 ? Math.round((stat.fandomSize / totalFandoms) * 100) : 0,
+      percentage: totalFandoms > 0 ? parseFloat(((stat.fandomSize / totalFandoms) * 100).toFixed(2)) : 0,
       position: index + 1
     }));
 

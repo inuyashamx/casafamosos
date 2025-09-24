@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
           candidateIds: data.candidateIds,
           candidateNames: data.candidateNames,
           totalVotes: data.totalVotes,
-          percentage: grandTotalVotes > 0 ? Math.round((data.totalVotes / grandTotalVotes) * 100) : 0,
+          percentage: grandTotalVotes > 0 ? parseFloat(((data.totalVotes / grandTotalVotes) * 100).toFixed(2)) : 0,
           description
         };
       })
