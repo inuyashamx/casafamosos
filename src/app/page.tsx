@@ -14,6 +14,7 @@ import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
 import CountdownTimer from '@/components/CountdownTimer';
 import VotingTrends from '@/components/VotingTrends';
+import TeamInfluenceChart from '@/components/TeamInfluenceChart';
 import { escapeHtml, sanitizeUrl } from '@/lib/security';
 
 interface Nominee {
@@ -902,6 +903,9 @@ export default function Home() {
                 🔄
               </button>
             </div>
+
+            {/* Team Influence Chart */}
+            <TeamInfluenceChart nominees={votingData.nominees} />
 
             {/* Tab Navigation */}
             <div className="flex space-x-1 bg-muted/30 p-1 rounded-lg">
