@@ -557,9 +557,6 @@ export default function Home() {
       (window as any).copyToClipboard(safeUrl);
     }));
 
-    buttonsGrid.appendChild(createShareButton('💬', 'WhatsApp', () => {
-      (window as any).shareToWhatsApp(`${safeText} ${safeUrl}`);
-    }));
 
     buttonsGrid.appendChild(createShareButton('🐦', 'Twitter', () => {
       (window as any).shareToTwitter(`${safeText} ${safeUrl}`);
@@ -680,12 +677,6 @@ export default function Home() {
       }
     };
     
-    (window as any).shareToWhatsApp = async (text: string) => {
-      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-      window.open(url, '_blank');
-      (window as any).showSuccessMessage('¡Abriendo WhatsApp!');
-      await giveShareBonus();
-    };
     
     (window as any).shareToTwitter = async (text: string) => {
       const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
@@ -1116,45 +1107,25 @@ export default function Home() {
 
 
         {/* Redes Sociales */}
-        {(socialMedia.whatsapp || socialMedia.telegram || socialMedia.twitter || socialMedia.facebook || socialMedia.instagram || socialMedia.tiktok) && (
+        {(socialMedia.telegram || socialMedia.twitter || socialMedia.facebook || socialMedia.instagram || socialMedia.tiktok) && (
           <div className="bg-card rounded-xl p-6 border border-border/20">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Grupos */}
-              {(socialMedia.whatsapp || socialMedia.telegram) && (
+              {socialMedia.telegram && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-bold text-foreground text-center md:text-left">
-                    📱 Únete a los grupos
+                    📱 Únete al grupo
                   </h3>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
                     <a
-                      href="https://chat.whatsapp.com/JcD2WE30f4OINpjG8UVfiD"
+                      href={socialMedia.telegram}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center space-x-2"
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"
                     >
-                      <span>☀️</span>
-                      <span>WhatsApp Team Día</span>
+                      <span>💙</span>
+                      <span>Telegram</span>
                     </a>
-                    <a
-                      href="https://chat.whatsapp.com/C9HqSTyQYyaBadMTLuLv0h"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center space-x-2"
-                    >
-                      <span>🌙</span>
-                      <span>WhatsApp Team Noche</span>
-                    </a>
-                    {socialMedia.telegram && (
-                      <a
-                        href={socialMedia.telegram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"
-                      >
-                        <span>💙</span>
-                        <span>Telegram</span>
-                      </a>
-                    )}
                   </div>
                 </div>
               )}
