@@ -799,7 +799,9 @@ export default function Home() {
               <div className="space-y-3">
                 {/* Contador regresivo */}
                 {votingData.week.votingEndDate && (
-                  <CountdownTimer endDate={votingData.week.votingEndDate} />
+                  <div style={{display: 'none'}}>
+                    <CountdownTimer endDate={votingData.week.votingEndDate} />
+                  </div>
                 )}
 
                 {/* Share App Banner Compacto con animaciones */}
@@ -892,7 +894,7 @@ export default function Home() {
         {votingData?.nominees && votingData.nominees.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground">Encuesta de popularidad - lacasavota.com</h2>
+              <h2 className="text-xl font-bold text-foreground">Nominados de la semana - lacasavota.com</h2>
               <button
                 onClick={handleRefresh}
                 className="text-primary hover:text-primary/80 transition-colors"
