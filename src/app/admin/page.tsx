@@ -4627,7 +4627,7 @@ export default function AdminPage() {
                           type="url"
                           value={socialMedia.twitter}
                           onChange={(e) => setSocialMedia(prev => ({ ...prev, twitter: e.target.value }))}
-                          placeholder="https://twitter.com/..."
+                          placeholder="https://x.com/lacasavota"
                           className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                         />
                       </div>

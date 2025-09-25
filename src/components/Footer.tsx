@@ -160,7 +160,7 @@ export default function Footer() {
                   <h3 className="text-foreground font-semibold mb-2">10. Contacto</h3>
                   <p>
                     Si tiene preguntas sobre esta política de privacidad o nuestras prácticas de
-                    privacidad, contáctenos en: <strong>xpellitofficial@gmail.com</strong>
+                    privacidad, contáctenos en: <strong>casadelosfamosos36@gmail.com</strong>
                   </p>
                 </div>
               </div>

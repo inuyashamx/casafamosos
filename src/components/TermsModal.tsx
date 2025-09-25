@@ -134,7 +134,7 @@ export default function TermsModal({ isOpen, onClose }: TermsModalProps) {
               <h3 className="text-foreground font-semibold mb-2">12. CONTACTO</h3>
               <p>
                 Para preguntas sobre estos términos, contacte:
-                <strong className="text-foreground"> xpellitofficial@gmail.com</strong>
+                <strong className="text-foreground"> casadelosfamosos36@gmail.com</strong>
               </p>
             </div>
           </div>
