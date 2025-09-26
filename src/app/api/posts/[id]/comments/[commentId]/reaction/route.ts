@@ -13,17 +13,23 @@ export async function POST(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    const { reactionType } = await request.json();
+
+    if (!reactionType || !['like', 'laugh', 'angry', 'wow', 'sad', 'poop'].includes(reactionType)) {
+      return NextResponse.json({ error: 'Tipo de reacción inválido' }, { status: 400 });
+    }
+
     const resolvedParams = await params;
     const post = await PostService.addCommentReaction(
       resolvedParams.id,
       resolvedParams.commentId,
       (session.user as any).id,
-      'like'
+      reactionType
     );
-    
+
     return NextResponse.json(post);
   } catch (error: any) {
-    console.error('Error en POST /api/posts/[id]/comments/[commentId]/like:', error);
+    console.error('Error en POST /api/posts/[id]/comments/[commentId]/reaction:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -44,10 +50,10 @@ export async function DELETE(
       resolvedParams.commentId,
       (session.user as any).id
     );
-    
+
     return NextResponse.json(post);
   } catch (error: any) {
-    console.error('Error en DELETE /api/posts/[id]/comments/[commentId]/like:', error);
+    console.error('Error en DELETE /api/posts/[id]/comments/[commentId]/reaction:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-} 
+}

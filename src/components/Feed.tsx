@@ -9,8 +9,8 @@ interface PostData {
   userId: {
     _id: string;
     name: string;
-    email: string;
     image?: string;
+    team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
   };
   content: string;
   media?: Array<{
@@ -26,13 +26,14 @@ interface PostData {
     image?: string;
   }>;
   likes: Array<{ userId: string; likedAt: string }>;
+  reactions: Array<{ userId: string; type: string; reactedAt: string }>;
   comments: Array<{
     _id: string;
     userId: {
       _id: string;
       name: string;
-      email: string;
       image?: string;
+      team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
     };
     content: string;
     media?: {
@@ -42,6 +43,7 @@ interface PostData {
       thumbnail?: string;
     };
     likes: Array<{ userId: string; likedAt: string }>;
+    reactions: Array<{ userId: string; type: string; reactedAt: string }>;
     createdAt: string;
   }>;
   createdAt: string;

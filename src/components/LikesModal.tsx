@@ -6,7 +6,6 @@ import TeamBadge from '@/components/TeamBadge';
 interface User {
   _id: string;
   name: string;
-  email: string;
   image?: string;
   team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
 }
@@ -17,39 +16,54 @@ interface Like {
   user: User;
 }
 
+interface Reaction {
+  userId: string;
+  type: string;
+  reactedAt: string;
+  user: User;
+}
+
 interface LikesModalProps {
   isOpen: boolean;
   onClose: () => void;
   postId: string;
+  initialTab?: string;
 }
 
-export default function LikesModal({ isOpen, onClose, postId }: LikesModalProps) {
-  const [likes, setLikes] = useState<Like[]>([]);
+export default function LikesModal({ isOpen, onClose, postId, initialTab = 'all' }: LikesModalProps) {
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+  const [reactionsByType, setReactionsByType] = useState<Record<string, Reaction[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
 
   useEffect(() => {
     if (isOpen && postId) {
-      fetchLikes();
+      fetchReactions();
     }
   }, [isOpen, postId]);
 
-  const fetchLikes = async () => {
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  const fetchReactions = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch(`/api/posts/${postId}/likes`);
-      
+
       if (!response.ok) {
-        throw new Error('Error al cargar los likes');
+        throw new Error('Error al cargar las reacciones');
       }
-      
+
       const data = await response.json();
-      setLikes(data.likes);
+      setReactions(data.reactions || []);
+      setReactionsByType(data.reactionsByType || {});
     } catch (err: any) {
-      console.error('Error fetching likes:', err);
-      setError(err.message || 'Error al cargar los likes');
+      console.error('Error fetching reactions:', err);
+      setError(err.message || 'Error al cargar las reacciones');
     } finally {
       setLoading(false);
     }
@@ -72,7 +86,42 @@ export default function LikesModal({ isOpen, onClose, postId }: LikesModalProps)
     });
   };
 
+  // Obtener datos para mostrar según tab activo
+  const getCurrentTabData = () => {
+    if (activeTab === 'all') {
+      return reactions;
+    }
+    return reactionsByType[activeTab] || [];
+  };
+
+  const getReactionEmoji = (type: string) => {
+    const emojis: Record<string, string> = {
+      like: '❤️',
+      laugh: '😂',
+      angry: '😠',
+      wow: '😮',
+      sad: '😢',
+      poop: '💩'
+    };
+    return emojis[type] || '❤️';
+  };
+
+  const getReactionLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      like: 'Me gusta',
+      laugh: 'Me divierte',
+      angry: 'Me enoja',
+      wow: 'Me asombra',
+      sad: 'Me entristece',
+      poop: 'Caca'
+    };
+    return labels[type] || 'Reacción';
+  };
+
   if (!isOpen) return null;
+
+  const totalReactions = reactions.length;
+  const currentTabData = getCurrentTabData();
 
   return (
     <>
@@ -81,14 +130,14 @@ export default function LikesModal({ isOpen, onClose, postId }: LikesModalProps)
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="bg-card border border-border/40 rounded-xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border/20">
             <h3 className="text-lg font-semibold text-foreground">
-              Me gusta ({likes.length})
+              Reacciones ({totalReactions})
             </h3>
             <button
               onClick={onClose}
@@ -97,6 +146,38 @@ export default function LikesModal({ isOpen, onClose, postId }: LikesModalProps)
               ✕
             </button>
           </div>
+
+          {/* Tabs */}
+          {totalReactions > 0 && (
+            <div className="flex items-center space-x-1 p-2 border-b border-border/20 overflow-x-auto">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap ${
+                  activeTab === 'all'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                }`}
+              >
+                <span>Todas {totalReactions}</span>
+              </button>
+
+              {Object.entries(reactionsByType).map(([type, typeReactions]) => (
+                <button
+                  key={type}
+                  onClick={() => setActiveTab(type)}
+                  className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap ${
+                    activeTab === type
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                  }`}
+                >
+                  <span>{getReactionEmoji(type)}</span>
+                  <span>{typeReactions.length}</span>
+                </button>
+              ))}
+
+            </div>
+          )}
 
           {/* Content */}
           <div className="overflow-y-auto max-h-[60vh]">
@@ -110,48 +191,48 @@ export default function LikesModal({ isOpen, onClose, postId }: LikesModalProps)
                 <div className="text-4xl mb-4">⚠️</div>
                 <p className="text-destructive mb-4">{error}</p>
                 <button
-                  onClick={fetchLikes}
+                  onClick={fetchReactions}
                   className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Reintentar
                 </button>
               </div>
-            ) : likes.length === 0 ? (
+            ) : totalReactions === 0 ? (
               <div className="p-6 text-center">
-                <div className="text-4xl mb-4">🤍</div>
-                <p className="text-muted-foreground">Aún no hay me gusta</p>
+                <div className="text-4xl mb-4">😊</div>
+                <p className="text-muted-foreground">Aún no hay reacciones</p>
               </div>
             ) : (
               <div className="p-4 space-y-3">
-                {likes.map((like) => (
-                  <div key={like.userId} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                {currentTabData.map((reaction: Reaction) => (
+                  <div key={`${reaction.userId}-${reaction.type}`} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                      {like.user.image ? (
+                      {reaction.user.image ? (
                         <Image
-                          src={like.user.image}
-                          alt={like.user.name}
+                          src={reaction.user.image}
+                          alt={reaction.user.name}
                           width={40}
                           height={40}
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm font-medium">
-                          {like.user.name[0]}
+                          {reaction.user.name[0]}
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground truncate flex items-center gap-1">
-                        {like.user.name} <TeamBadge team={like.user.team} />
+                        {reaction.user.name} <TeamBadge team={reaction.user.team} />
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(like.likedAt)}
+                        {formatDate(reaction.reactedAt)}
                       </p>
                     </div>
-                    
-                    <div className="text-red-500 text-lg">
-                      ❤️
+
+                    <div className="text-lg">
+                      {getReactionEmoji(reaction.type)}
                     </div>
                   </div>
                 ))}

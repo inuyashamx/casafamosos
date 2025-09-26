@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 export interface CreateNotificationData {
   userId: string;
   fromUserId: string;
-  type: 'POST_LIKE' | 'COMMENT' | 'COMMENT_LIKE';
+  type: 'POST_LIKE' | 'COMMENT' | 'COMMENT_LIKE' | 'POST_REACTION' | 'COMMENT_REACTION';
   postId: string;
   commentId?: string;
   message: string;
@@ -180,6 +180,49 @@ export class NotificationService {
       postId,
       commentId,
       message: `${likerName} le dio like a tu comentario`,
+    });
+  }
+
+  static async createPostReactionNotification(postOwnerId: string, reactorId: string, postId: string, reactorName: string, reactionType: string) {
+    const reactionMessages: Record<string, string> = {
+      like: 'le dio like',
+      laugh: 'se divirtió con',
+      angry: 'se enojó con',
+      wow: 'se asombró con',
+      sad: 'se entristeció con',
+      poop: 'reaccionó 💩 a'
+    };
+
+    const message = `${reactorName} ${reactionMessages[reactionType] || 'reaccionó a'} tu post`;
+
+    return await this.create({
+      userId: postOwnerId,
+      fromUserId: reactorId,
+      type: 'POST_REACTION',
+      postId,
+      message,
+    });
+  }
+
+  static async createCommentReactionNotification(commentOwnerId: string, reactorId: string, postId: string, commentId: string, reactorName: string, reactionType: string) {
+    const reactionMessages: Record<string, string> = {
+      like: 'le dio like',
+      laugh: 'se divirtió con',
+      angry: 'se enojó con',
+      wow: 'se asombró con',
+      sad: 'se entristeció con',
+      poop: 'reaccionó 💩 a'
+    };
+
+    const message = `${reactorName} ${reactionMessages[reactionType] || 'reaccionó a'} tu comentario`;
+
+    return await this.create({
+      userId: commentOwnerId,
+      fromUserId: reactorId,
+      type: 'COMMENT_REACTION',
+      postId,
+      commentId,
+      message,
     });
   }
 }

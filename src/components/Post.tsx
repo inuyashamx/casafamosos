@@ -1,16 +1,16 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import TeamBadge from '@/components/TeamBadge';
 import ImageCarousel from './ImageCarousel';
 import ConfirmDialog from './ConfirmDialog';
 import LikesModal from './LikesModal';
+import ReactionSelector from './ReactionSelector';
 
 interface User {
   _id: string;
   name: string;
-  email: string;
   image?: string;
   team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
 }
@@ -34,7 +34,6 @@ interface Comment {
   userId: {
     _id: string;
     name: string;
-    email: string;
     image?: string;
     team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
   };
@@ -46,6 +45,7 @@ interface Comment {
     thumbnail?: string;
   };
   likes: Array<{ userId: string; likedAt: string }>;
+  reactions: Array<{ userId: string; type: string; reactedAt: string }>;
   createdAt: string;
 }
 
@@ -56,6 +56,7 @@ interface PostData {
   media?: MediaItem[];
   links?: Link[];
   likes: Array<{ userId: string; likedAt: string }>;
+  reactions: Array<{ userId: string; type: string; reactedAt: string }>;
   comments: Comment[];
   createdAt: string;
   updatedAt: string;
@@ -70,20 +71,25 @@ interface PostProps {
 
 export default function Post({ post: initialPost, onPostUpdate, showBorder = true }: PostProps) {
   const { data: session } = useSession();
-  const [post, setPost] = useState(initialPost);
+  const [post, setPost] = useState({
+    ...initialPost,
+    reactions: initialPost.reactions || []
+  });
   const [showComments, setShowComments] = useState(true);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [initialVisibleComments, setInitialVisibleComments] = useState(2);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [isLiking, setIsLiking] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
 
   // Sincronizar estado local cuando cambie el prop inicial
   useEffect(() => {
-    setPost(initialPost);
+    setPost({
+      ...initialPost,
+      reactions: initialPost.reactions || []
+    });
     setEditContent(initialPost.content);
   }, [initialPost]);
   const [showCarousel, setShowCarousel] = useState(false);
@@ -96,6 +102,9 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
   const [showCommentDeleteConfirm, setShowCommentDeleteConfirm] = useState<string | null>(null);
   const [commentMenuOpen, setCommentMenuOpen] = useState<string | null>(null);
   const [showLikesModal, setShowLikesModal] = useState(false);
+  const [modalInitialTab, setModalInitialTab] = useState<string>('all');
+  const [showReactionSelector, setShowReactionSelector] = useState(false);
+  const reactionButtonRef = useRef<HTMLButtonElement>(null);
 
   // Cerrar menús cuando se hace clic fuera - DEBE estar antes de cualquier return
   useEffect(() => {
@@ -124,7 +133,9 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
   }
 
   const isOwner = session?.user && (session.user as any).id === post.userId._id;
-  const isLiked = session?.user ? post.likes.some(like => like.userId === (session.user as any).id) : false;
+  const userReaction = session?.user
+    ? post.reactions?.find(reaction => reaction.userId === (session.user as any).id)?.type
+    : null;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -143,18 +154,22 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
     });
   };
 
-  const handleLike = async () => {
-    if (!session?.user || isLiking) return;
+  const handleReaction = async (reactionType: string) => {
+    if (!session?.user) return;
 
     const userId = (session.user as any).id;
-    const wasLiked = isLiked;
+    const hadReaction = userReaction;
+    const isSameReaction = hadReaction === reactionType;
 
     // Update optimista inmediato
     const updatedPost = {
       ...post,
-      likes: wasLiked
-        ? post.likes.filter(like => like.userId !== userId)
-        : [...post.likes, { userId, likedAt: new Date().toISOString() }]
+      reactions: isSameReaction
+        ? post.reactions?.filter(reaction => reaction.userId !== userId) || []
+        : [
+            ...(post.reactions?.filter(reaction => reaction.userId !== userId) || []),
+            { userId, type: reactionType, reactedAt: new Date().toISOString() }
+          ]
     };
     setPost(updatedPost);
 
@@ -163,29 +178,33 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
       onPostUpdate(updatedPost);
     }
 
-    setIsLiking(true);
     try {
-      const method = wasLiked ? 'DELETE' : 'POST';
-      const response = await fetch(`/api/posts/${post._id}/like`, {
-        method,
-      });
+      if (isSameReaction) {
+        // Quitar reacción si es la misma
+        await fetch(`/api/posts/${post._id}/reaction`, {
+          method: 'DELETE',
+        });
+      } else {
+        // Agregar/cambiar reacción
+        const response = await fetch(`/api/posts/${post._id}/reaction`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ reactionType }),
+        });
 
-      if (!response.ok) {
-        // Revertir si falla
-        setPost(post);
-        if (onPostUpdate) {
-          onPostUpdate(post);
+        if (!response.ok) {
+          throw new Error('Error al reaccionar');
         }
       }
     } catch (error) {
-      console.error('Error toggling like:', error);
+      console.error('Error handling reaction:', error);
       // Revertir si falla
       setPost(post);
       if (onPostUpdate) {
         onPostUpdate(post);
       }
-    } finally {
-      setIsLiking(false);
     }
   };
 
@@ -763,43 +782,67 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center space-x-4 pt-2 border-t border-border/20">
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleLike}
-            disabled={!session?.user || isLiking}
-            className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-              isLiked
-                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
-                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            <span>{isLiked ? '❤️' : '🤍'}</span>
-            <span className="text-sm">{post.likes.length}</span>
-          </button>
-          
-          {post.likes.length > 0 && (
-            <button
-              onClick={() => setShowLikesModal(true)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
-              title="Ver quién dio like"
-            >
-              Ver likes
-            </button>
-          )}
-        </div>
+      {/* Actions - Línea única */}
+      <div className="flex items-center space-x-2 pt-2 border-t border-border/20">
+        <button
+          ref={reactionButtonRef}
+          onClick={() => setShowReactionSelector(!showReactionSelector)}
+          disabled={!session?.user}
+          className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+            userReaction
+              ? 'bg-primary/10 text-primary hover:bg-primary/20'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
+          title="Like"
+        >
+          Like
+        </button>
 
+        {/* Mostrar emojis individuales con contadores */}
+        {post.reactions && post.reactions.length > 0 && (
+          <>
+            {Object.entries(
+              post.reactions.reduce((acc, reaction) => {
+                acc[reaction.type] = (acc[reaction.type] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>)
+            ).map(([type, count]) => (
+              <button
+                key={type}
+                onClick={() => {
+                  setModalInitialTab(type);
+                  setShowLikesModal(true);
+                }}
+                className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-sm transition-colors hover:bg-muted/30 ${
+                  userReaction === type ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                }`}
+                title={`Ver quién reaccionó con ${type === 'like' ? 'me gusta' : type === 'laugh' ? 'me divierte' : type === 'angry' ? 'me enoja' : type === 'wow' ? 'me asombra' : type === 'sad' ? 'me entristece' : 'caca'}`}
+              >
+                <span>
+                  {type === 'like' && '❤️'}
+                  {type === 'laugh' && '😂'}
+                  {type === 'angry' && '😠'}
+                  {type === 'wow' && '😮'}
+                  {type === 'sad' && '😢'}
+                  {type === 'poop' && '💩'}
+                </span>
+                <span>{count}</span>
+              </button>
+            ))}
+          </>
+        )}
+
+        {/* Botón de comentarios */}
         <button
           onClick={() => {
             const next = !showComments;
             setShowComments(next);
             if (!next) setCommentsExpanded(false);
           }}
-          className="flex items-center space-x-2 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+          className="flex items-center space-x-1 px-2 py-1 rounded-lg text-sm text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
         >
           <span>💬</span>
-          <span className="text-sm">{post.comments.length}</span>
+          <span>{post.comments.length}</span>
         </button>
       </div>
 
@@ -1099,11 +1142,21 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
         type="danger"
       />
 
-      {/* Modal de likes */}
+      {/* Modal de reacciones */}
       <LikesModal
         isOpen={showLikesModal}
         onClose={() => setShowLikesModal(false)}
         postId={post._id}
+        initialTab={modalInitialTab}
+      />
+
+      {/* Selector de reacciones */}
+      <ReactionSelector
+        isOpen={showReactionSelector}
+        onClose={() => setShowReactionSelector(false)}
+        onReact={handleReaction}
+        currentUserReaction={userReaction}
+        triggerRef={reactionButtonRef as React.RefObject<HTMLElement>}
       />
     </article>
   );

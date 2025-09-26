@@ -36,7 +36,7 @@ export class PostService {
     });
 
     await post.save();
-    return await Post.findById(post._id).populate('userId', 'name email image team');
+    return await Post.findById(post._id).populate('userId', 'name image team');
   }
 
   static async getPosts(page: number = 1, limit: number = 20) {
@@ -52,8 +52,8 @@ export class PostService {
     const skip = (page - 1) * limit;
     
     const posts = await Post.find({ isActive: true })
-      .populate('userId', 'name email image team')
-      .populate('comments.userId', 'name email image team')
+      .populate('userId', 'name image team')
+      .populate('comments.userId', 'name image team')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -77,8 +77,8 @@ export class PostService {
     await dbConnect();
     
     const post = await Post.findById(postId)
-      .populate('userId', 'name email image team')
-      .populate('comments.userId', 'name email image team')
+      .populate('userId', 'name image team')
+      .populate('comments.userId', 'name image team')
       .lean();
 
     if (!post || !(post as any).userId) return null; // Verificar que el post existe y tiene usuario válido
@@ -101,8 +101,8 @@ export class PostService {
     const skip = (page - 1) * limit;
     
     const posts = await Post.find({ userId, isActive: true })
-      .populate('userId', 'name email image team')
-      .populate('comments.userId', 'name email image team')
+      .populate('userId', 'name image team')
+      .populate('comments.userId', 'name image team')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -122,53 +122,6 @@ export class PostService {
       }));
   }
 
-  static async likePost(postId: string, userId: string) {
-    await dbConnect();
-
-    const post = await Post.findById(postId).populate('userId', 'name');
-    if (!post) {
-      throw new Error('Post no encontrado');
-    }
-
-    // Verificar si ya tiene like para evitar duplicados
-    const existingLike = post.likes.find((like: any) => like.userId.toString() === userId);
-    if (existingLike) {
-      return post; // Ya tiene like, no hacer nada
-    }
-
-    const updatedPost = await post.addLike(userId);
-
-    // Crear notificación solo si no es el dueño del post
-    if (post.userId._id.toString() !== userId) {
-      try {
-        const liker = await User.findById(userId).select('name');
-        if (liker) {
-          await NotificationService.createPostLikeNotification(
-            post.userId._id.toString(),
-            userId,
-            postId,
-            liker.name
-          );
-        }
-      } catch (error) {
-        console.error('Error creando notificación de like:', error);
-        // No lanzar error para no afectar el funcionamiento del like
-      }
-    }
-
-    return updatedPost;
-  }
-
-  static async unlikePost(postId: string, userId: string) {
-    await dbConnect();
-    
-    const post = await Post.findById(postId);
-    if (!post) {
-      throw new Error('Post no encontrado');
-    }
-
-    return await post.removeLike(userId);
-  }
 
   static async addComment(postId: string, userId: string, content: string, media?: {
     type: 'image' | 'video';
@@ -183,7 +136,17 @@ export class PostService {
       throw new Error('Post no encontrado');
     }
 
-    await post.addComment(userId, content, media);
+    // Agregar comentario directamente
+    const newComment = {
+      userId,
+      content,
+      media,
+      reactions: [],
+      createdAt: new Date()
+    };
+
+    post.comments.push(newComment);
+    await post.save();
 
     // Crear notificación solo si no es el dueño del post
     if (post.userId._id.toString() !== userId) {
@@ -204,8 +167,8 @@ export class PostService {
     }
 
     return await Post.findById(postId)
-      .populate('userId', 'name email image team')
-      .populate('comments.userId', 'name email image team');
+      .populate('userId', 'name image team')
+      .populate('comments.userId', 'name image team');
   }
 
   static async removeComment(postId: string, commentId: string, userId: string) {
@@ -227,7 +190,7 @@ export class PostService {
     }
 
     // Eliminar imagen de Cloudinary si existe
-    if (comment.media && comment.media.publicId) {
+    if (comment.media && comment.media.publicId && comment.media.type) {
       try {
         await CloudinaryService.deleteMedia(comment.media.publicId, comment.media.type);
         console.log(`Imagen de comentario eliminada de Cloudinary: ${comment.media.publicId}`);
@@ -237,7 +200,12 @@ export class PostService {
       }
     }
 
-    return await post.removeComment(commentId);
+    // Remover comentario usando Mongoose
+    const commentIndex = post.comments.findIndex((comment: any) => comment._id.toString() === commentId);
+    if (commentIndex > -1) {
+      post.comments.splice(commentIndex, 1);
+    }
+    return await post.save();
   }
 
   static async updateComment(postId: string, commentId: string, userId: string, content: string) {
@@ -263,63 +231,152 @@ export class PostService {
     await post.save();
 
     return await Post.findById(postId)
-      .populate('userId', 'name email image team')
-      .populate('comments.userId', 'name email image team');
+      .populate('userId', 'name image team')
+      .populate('comments.userId', 'name image team');
   }
 
-  static async likeComment(postId: string, commentId: string, userId: string) {
+
+  // Métodos para reacciones en posts
+  static async addReaction(postId: string, userId: string, reactionType: string) {
     await dbConnect();
 
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate('userId', 'name');
     if (!post) {
       throw new Error('Post no encontrado');
     }
 
-    // Encontrar el comentario
-    const comment = post.comments.find((c: any) => c._id.toString() === commentId);
-    if (!comment) {
-      throw new Error('Comentario no encontrado');
+    // Remover reacción existente del usuario si existe
+    const existingIndex = post.reactions.findIndex((reaction: any) =>
+      reaction.userId.toString() === userId
+    );
+    if (existingIndex > -1) {
+      post.reactions.splice(existingIndex, 1);
     }
 
-    // Verificar si ya tiene like para evitar duplicados
-    const existingLike = comment.likes.find((like: any) => like.userId.toString() === userId);
-    if (existingLike) {
-      return post; // Ya tiene like, no hacer nada
-    }
+    // Agregar nueva reacción
+    post.reactions.push({
+      userId,
+      type: reactionType,
+      reactedAt: new Date()
+    });
 
-    const updatedPost = await post.addCommentLike(commentId, userId);
+    const updatedPost = await post.save();
 
-    // Crear notificación solo si no es el dueño del comentario
-    if (comment.userId.toString() !== userId) {
+    // Crear notificación solo si no es el dueño del post
+    if (post.userId._id.toString() !== userId) {
       try {
-        const liker = await User.findById(userId).select('name');
-        if (liker) {
-          await NotificationService.createCommentLikeNotification(
-            comment.userId.toString(),
+        const reactor = await User.findById(userId).select('name');
+        if (reactor) {
+          await NotificationService.createPostReactionNotification(
+            post.userId._id.toString(),
             userId,
             postId,
-            commentId,
-            liker.name
+            reactor.name,
+            reactionType
           );
         }
       } catch (error) {
-        console.error('Error creando notificación de like en comentario:', error);
-        // No lanzar error para no afectar el funcionamiento del like
+        console.error('Error creando notificación de reacción:', error);
       }
     }
 
     return updatedPost;
   }
 
-  static async unlikeComment(postId: string, commentId: string, userId: string) {
+  static async removeReaction(postId: string, userId: string) {
     await dbConnect();
-    
+
     const post = await Post.findById(postId);
     if (!post) {
       throw new Error('Post no encontrado');
     }
 
-    return await post.removeCommentLike(commentId, userId);
+    // Remover la reacción del usuario
+    const reactionIndex = post.reactions.findIndex((reaction: any) =>
+      reaction.userId.toString() === userId
+    );
+    if (reactionIndex > -1) {
+      post.reactions.splice(reactionIndex, 1);
+    }
+
+    return await post.save();
+  }
+
+  // Métodos para reacciones en comentarios
+  static async addCommentReaction(postId: string, commentId: string, userId: string, reactionType: string) {
+    await dbConnect();
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      throw new Error('Post no encontrado');
+    }
+
+    const comment = post.comments.find((c: any) => c._id.toString() === commentId);
+    if (!comment) {
+      throw new Error('Comentario no encontrado');
+    }
+
+    // Remover reacción existente del usuario en este comentario si existe
+    const existingIndex = comment.reactions.findIndex((reaction: any) =>
+      reaction.userId.toString() === userId
+    );
+    if (existingIndex > -1) {
+      comment.reactions.splice(existingIndex, 1);
+    }
+
+    // Agregar nueva reacción
+    comment.reactions.push({
+      userId,
+      type: reactionType,
+      reactedAt: new Date()
+    });
+
+    const updatedPost = await post.save();
+
+    // Crear notificación solo si no es el dueño del comentario
+    if (comment.userId.toString() !== userId) {
+      try {
+        const reactor = await User.findById(userId).select('name');
+        if (reactor) {
+          await NotificationService.createCommentReactionNotification(
+            comment.userId.toString(),
+            userId,
+            postId,
+            commentId,
+            reactor.name,
+            reactionType
+          );
+        }
+      } catch (error) {
+        console.error('Error creando notificación de reacción en comentario:', error);
+      }
+    }
+
+    return updatedPost;
+  }
+
+  static async removeCommentReaction(postId: string, commentId: string, userId: string) {
+    await dbConnect();
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      throw new Error('Post no encontrado');
+    }
+
+    const comment = post.comments.find((c: any) => c._id.toString() === commentId);
+    if (!comment) {
+      throw new Error('Comentario no encontrado');
+    }
+
+    // Remover la reacción del usuario en este comentario
+    const reactionIndex = comment.reactions.findIndex((reaction: any) =>
+      reaction.userId.toString() === userId
+    );
+    if (reactionIndex > -1) {
+      comment.reactions.splice(reactionIndex, 1);
+    }
+
+    return await post.save();
   }
 
   static async deletePost(postId: string, userId: string) {
@@ -391,8 +448,8 @@ export class PostService {
 
     await post.save();
     return await Post.findById(postId)
-      .populate('userId', 'name email image')
-      .populate('comments.userId', 'name email image');
+      .populate('userId', 'name image team')
+      .populate('comments.userId', 'name image team');
   }
 
   static async getPostsCount() {

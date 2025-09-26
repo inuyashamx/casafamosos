@@ -56,6 +56,22 @@ const PostSchema = new mongoose.Schema({
       default: Date.now,
     },
   }],
+  reactions: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: ['like', 'laugh', 'angry', 'wow', 'sad', 'poop'],
+      required: true,
+    },
+    reactedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
   comments: [{
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -92,6 +108,22 @@ const PostSchema = new mongoose.Schema({
         default: Date.now,
       },
     }],
+    reactions: [{
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      type: {
+        type: String,
+        enum: ['like', 'laugh', 'angry', 'wow', 'sad', 'poop'],
+        required: true,
+      },
+      reactedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
   }],
   isActive: {
     type: Boolean,
@@ -106,6 +138,8 @@ PostSchema.index({ userId: 1 });
 PostSchema.index({ createdAt: -1 });
 PostSchema.index({ isActive: 1 });
 PostSchema.index({ 'likes.userId': 1 });
+PostSchema.index({ 'reactions.userId': 1 });
+PostSchema.index({ 'reactions.type': 1 });
 
 // Métodos virtuales
 PostSchema.virtual('likesCount').get(function() {
@@ -114,6 +148,14 @@ PostSchema.virtual('likesCount').get(function() {
 
 PostSchema.virtual('commentsCount').get(function() {
   return this.comments.length;
+});
+
+PostSchema.virtual('reactionsCount').get(function() {
+  return this.reactions.length;
+});
+
+PostSchema.virtual('totalEngagementCount').get(function() {
+  return this.likes.length + this.reactions.length;
 });
 
 // Métodos
@@ -165,8 +207,48 @@ PostSchema.methods.removeCommentLike = function(commentId: string, userId: strin
   if (!comment) {
     throw new Error('Comentario no encontrado');
   }
-  
+
   comment.likes = comment.likes.filter((like: any) => like.userId.toString() !== userId);
+  return this.save();
+};
+
+// Métodos para reacciones en posts
+PostSchema.methods.addReaction = function(userId: string, reactionType: string) {
+  // Remover reacción anterior del mismo usuario si existe
+  this.reactions = this.reactions.filter((reaction: any) => reaction.userId.toString() !== userId);
+
+  // Agregar nueva reacción
+  this.reactions.push({ userId, type: reactionType });
+  return this.save();
+};
+
+PostSchema.methods.removeReaction = function(userId: string) {
+  this.reactions = this.reactions.filter((reaction: any) => reaction.userId.toString() !== userId);
+  return this.save();
+};
+
+// Métodos para reacciones en comentarios
+PostSchema.methods.addCommentReaction = function(commentId: string, userId: string, reactionType: string) {
+  const comment = this.comments.find((c: any) => c._id.toString() === commentId);
+  if (!comment) {
+    throw new Error('Comentario no encontrado');
+  }
+
+  // Remover reacción anterior del mismo usuario si existe
+  comment.reactions = comment.reactions.filter((reaction: any) => reaction.userId.toString() !== userId);
+
+  // Agregar nueva reacción
+  comment.reactions.push({ userId, type: reactionType });
+  return this.save();
+};
+
+PostSchema.methods.removeCommentReaction = function(commentId: string, userId: string) {
+  const comment = this.comments.find((c: any) => c._id.toString() === commentId);
+  if (!comment) {
+    throw new Error('Comentario no encontrado');
+  }
+
+  comment.reactions = comment.reactions.filter((reaction: any) => reaction.userId.toString() !== userId);
   return this.save();
 };
 
@@ -174,4 +256,9 @@ PostSchema.methods.removeCommentLike = function(commentId: string, userId: strin
 PostSchema.set('toJSON', { virtuals: true });
 PostSchema.set('toObject', { virtuals: true });
 
-export default mongoose.models.Post || mongoose.model('Post', PostSchema);
+// Limpiar modelo cacheado si existe para forzar actualización del schema
+if (mongoose.models.Post) {
+  delete mongoose.models.Post;
+}
+
+export default mongoose.model('Post', PostSchema);

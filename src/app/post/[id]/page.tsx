@@ -9,7 +9,6 @@ interface PostData {
   userId: {
     _id: string;
     name: string;
-    email: string;
     image?: string;
     team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
   };
@@ -30,12 +29,16 @@ interface PostData {
     userId: string;
     likedAt: string;
   }>;
+  reactions: Array<{
+    userId: string;
+    type: string;
+    reactedAt: string;
+  }>;
   comments: Array<{
     _id: string;
     userId: {
       _id: string;
       name: string;
-      email: string;
       image?: string;
       team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
     };
@@ -50,6 +53,11 @@ interface PostData {
     likes: Array<{
       userId: string;
       likedAt: string;
+    }>;
+    reactions: Array<{
+      userId: string;
+      type: string;
+      reactedAt: string;
     }>;
   }>;
   createdAt: string;

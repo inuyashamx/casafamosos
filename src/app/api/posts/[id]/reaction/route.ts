@@ -13,12 +13,18 @@ export async function POST(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    const { reactionType } = await request.json();
+
+    if (!reactionType || !['like', 'laugh', 'angry', 'wow', 'sad', 'poop'].includes(reactionType)) {
+      return NextResponse.json({ error: 'Tipo de reacción inválido' }, { status: 400 });
+    }
+
     const resolvedParams = await params;
-    const post = await PostService.addReaction(resolvedParams.id, (session.user as any).id, 'like');
-    
-    return NextResponse.json({ success: true, reactionsCount: post.reactions?.length || 0 });
+    const post = await PostService.addReaction(resolvedParams.id, (session.user as any).id, reactionType);
+
+    return NextResponse.json({ success: true, reactions: post.reactions });
   } catch (error: any) {
-    console.error('Error en POST /api/posts/[id]/like:', error);
+    console.error('Error en POST /api/posts/[id]/reaction:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -35,10 +41,10 @@ export async function DELETE(
 
     const resolvedParams = await params;
     const post = await PostService.removeReaction(resolvedParams.id, (session.user as any).id);
-    
-    return NextResponse.json({ success: true, reactionsCount: post.reactions?.length || 0 });
+
+    return NextResponse.json({ success: true, reactions: post.reactions });
   } catch (error: any) {
-    console.error('Error en DELETE /api/posts/[id]/like:', error);
+    console.error('Error en DELETE /api/posts/[id]/reaction:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
