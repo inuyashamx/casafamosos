@@ -2,14 +2,19 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Notification, useNotifications } from '@/hooks/useNotifications';
+import { Notification, useNotifications } from '@/contexts/NotificationContext';
 import Navbar from '@/components/Navbar';
 
 export default function NotificationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { clearAllNotifications: hookClearAll, markAllAsRead: hookMarkAllAsRead } = useNotifications();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const {
+    clearAllNotifications: hookClearAll,
+    markAllAsRead: hookMarkAllAsRead,
+    refetch,
+    refetchUnreadCount
+  } = useNotifications();
+  const [pageNotifications, setPageNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -39,9 +44,9 @@ export default function NotificationsPage() {
         }
 
         if (pageNum === 1) {
-          setNotifications(filteredNotifications);
+          setPageNotifications(filteredNotifications);
         } else {
-          setNotifications(prev => [...prev, ...filteredNotifications]);
+          setPageNotifications(prev => [...prev, ...filteredNotifications]);
         }
 
         setHasMore(data.pagination.page < data.pagination.pages);
@@ -61,7 +66,7 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        setNotifications(prev =>
+        setPageNotifications(prev =>
           prev.map(notification =>
             notification._id === notificationId
               ? { ...notification, read: true }
@@ -79,8 +84,12 @@ export default function NotificationsPage() {
       // Llamar al hook para sincronizar el estado del dropdown
       await hookMarkAllAsRead();
 
+      // Forzar actualización del hook
+      await refetch();
+      await refetchUnreadCount();
+
       // Actualizar el estado local de la página
-      setNotifications(prev =>
+      setPageNotifications(prev =>
         prev.map(notification => ({ ...notification, read: true }))
       );
     } catch (error) {
@@ -94,8 +103,12 @@ export default function NotificationsPage() {
         // Llamar al hook para sincronizar el estado del dropdown
         await hookClearAll();
 
+        // Forzar actualización del hook
+        await refetch();
+        await refetchUnreadCount();
+
         // Actualizar el estado local de la página
-        setNotifications([]);
+        setPageNotifications([]);
       } catch (error) {
         console.error('Error clearing notifications:', error);
       }
@@ -175,12 +188,12 @@ export default function NotificationsPage() {
           </div>
 
           <div className="divide-y divide-border">
-            {loading && notifications.length === 0 ? (
+            {loading && pageNotifications.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-4 text-muted-foreground">Cargando notificaciones...</p>
               </div>
-            ) : notifications.length === 0 ? (
+            ) : pageNotifications.length === 0 ? (
               <div className="p-12 text-center">
                 <svg
                   className="mx-auto h-12 w-12 text-muted-foreground"
@@ -200,7 +213,7 @@ export default function NotificationsPage() {
               </div>
             ) : (
               <>
-                {notifications.map((notification) => (
+                {pageNotifications.map((notification) => (
                   <div
                     key={notification._id}
                     onClick={() => handleNotificationClick(notification)}

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+"use client";
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 
 export interface Notification {
@@ -18,14 +19,32 @@ export interface Notification {
   navigationLink: string;
 }
 
-export function useNotifications() {
+interface NotificationContextType {
+  notifications: Notification[];
+  unreadCount: number;
+  loading: boolean;
+  error: string | null;
+  markAsRead: (notificationId: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
+  refetch: () => Promise<void>;
+  refetchUnreadCount: () => Promise<void>;
+}
+
+const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+
+interface NotificationProviderProps {
+  children: ReactNode;
+}
+
+export function NotificationProvider({ children }: NotificationProviderProps) {
   const { data: session } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     if (!session?.user) return;
 
     try {
@@ -37,9 +56,9 @@ export function useNotifications() {
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }
-  };
+  }, [session?.user]);
 
-  const fetchRecentNotifications = async () => {
+  const fetchRecentNotifications = useCallback(async () => {
     if (!session?.user) return;
 
     try {
@@ -57,7 +76,7 @@ export function useNotifications() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user]);
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -121,7 +140,7 @@ export function useNotifications() {
       setNotifications([]);
       setUnreadCount(0);
     }
-  }, [session]);
+  }, [session, fetchUnreadCount, fetchRecentNotifications]);
 
   // Polling para actualizar el contador cada 3 minutos
   useEffect(() => {
@@ -129,9 +148,9 @@ export function useNotifications() {
 
     const interval = setInterval(fetchUnreadCount, 180000); // 3 minutos
     return () => clearInterval(interval);
-  }, [session]);
+  }, [session, fetchUnreadCount]);
 
-  return {
+  const value = {
     notifications,
     unreadCount,
     loading,
@@ -142,4 +161,18 @@ export function useNotifications() {
     refetch: fetchRecentNotifications,
     refetchUnreadCount: fetchUnreadCount,
   };
+
+  return (
+    <NotificationContext.Provider value={value}>
+      {children}
+    </NotificationContext.Provider>
+  );
+}
+
+export function useNotifications() {
+  const context = useContext(NotificationContext);
+  if (context === undefined) {
+    throw new Error('useNotifications must be used within a NotificationProvider');
+  }
+  return context;
 }
