@@ -9,12 +9,13 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const userId = searchParams.get('userId');
+    const sortBy = searchParams.get('sortBy') as 'recent' | 'activity' || 'activity';
 
     if (userId) {
       // Obtener posts de un usuario específico
       const posts = await PostService.getUserPosts(userId, page, limit);
       const totalPosts = await PostService.getUserPostsCount(userId);
-      
+
       return NextResponse.json({
         posts,
         pagination: {
@@ -26,9 +27,9 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Obtener todos los posts (feed general)
-      const posts = await PostService.getPosts(page, limit);
+      const posts = await PostService.getPosts(page, limit, sortBy);
       const totalPosts = await PostService.getPostsCount();
-      
+
       return NextResponse.json({
         posts,
         pagination: {

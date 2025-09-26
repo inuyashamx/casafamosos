@@ -39,7 +39,7 @@ export class PostService {
     return await Post.findById(post._id).populate('userId', 'name image team');
   }
 
-  static async getPosts(page: number = 1, limit: number = 20) {
+  static async getPosts(page: number = 1, limit: number = 20, sortBy: 'recent' | 'activity' = 'activity') {
     await dbConnect();
 
     // Asegurar que todos los modelos estén registrados
@@ -50,14 +50,72 @@ export class PostService {
     Candidate;
 
     const skip = (page - 1) * limit;
-    
-    const posts = await Post.find({ isActive: true })
-      .populate('userId', 'name image team')
-      .populate('comments.userId', 'name image team')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+
+    let posts;
+
+    if (sortBy === 'activity') {
+      // Para ordenar por actividad, necesitamos calcular la última actividad
+      posts = await Post.aggregate([
+        { $match: { isActive: true } },
+        {
+          $addFields: {
+            lastCommentDate: {
+              $max: {
+                $map: {
+                  input: "$comments",
+                  as: "comment",
+                  in: "$$comment.createdAt"
+                }
+              }
+            },
+            lastReactionDate: {
+              $max: {
+                $map: {
+                  input: "$reactions",
+                  as: "reaction",
+                  in: "$$reaction.reactedAt"
+                }
+              }
+            },
+            lastActivity: {
+              $max: [
+                "$createdAt",
+                {
+                  $ifNull: [
+                    { $max: { $map: { input: "$comments", as: "comment", in: "$$comment.createdAt" } } },
+                    "$createdAt"
+                  ]
+                },
+                {
+                  $ifNull: [
+                    { $max: { $map: { input: "$reactions", as: "reaction", in: "$$reaction.reactedAt" } } },
+                    "$createdAt"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        { $sort: { lastActivity: -1 } },
+        { $skip: skip },
+        { $limit: limit }
+      ]);
+
+      // Poblar los datos después del aggregate
+      posts = await Post.populate(posts, [
+        { path: 'userId', select: 'name image team' },
+        { path: 'comments.userId', select: 'name image team' }
+      ]);
+    } else {
+      // Ordenamiento normal por fecha de creación
+      posts = await Post.find({ isActive: true })
+        .populate('userId', 'name image team')
+        .populate('comments.userId', 'name image team')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+    }
 
     // Filtrar posts que tienen userId válido y comentarios con userId válido
     return posts

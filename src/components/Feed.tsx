@@ -63,6 +63,7 @@ export default function Feed({ userId }: FeedProps) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [sortBy, setSortBy] = useState<'recent' | 'activity'>('activity');
 
   const fetchPosts = useCallback(async (pageNum: number = 1, reset: boolean = true) => {
     try {
@@ -79,6 +80,9 @@ export default function Feed({ userId }: FeedProps) {
 
       if (userId) {
         params.append('userId', userId);
+      } else {
+        // Solo agregar sortBy para el feed general, no para posts de usuario específico
+        params.append('sortBy', sortBy);
       }
 
       const response = await fetch(`/api/posts?${params}`);
@@ -110,7 +114,7 @@ export default function Feed({ userId }: FeedProps) {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [userId]);
+  }, [userId, sortBy]);
 
   useEffect(() => {
     fetchPosts(1, true);
@@ -118,6 +122,12 @@ export default function Feed({ userId }: FeedProps) {
 
   const handlePostCreated = () => {
     fetchPosts(1, true);
+  };
+
+  const handleSortChange = (newSortBy: 'recent' | 'activity') => {
+    setSortBy(newSortBy);
+    setPage(1);
+    setHasMore(true);
   };
 
   const handlePostUpdate = (updatedPost: PostData) => {
@@ -189,6 +199,32 @@ export default function Feed({ userId }: FeedProps) {
             </h2>
           </div>
           <CreatePost onPostCreated={handlePostCreated} />
+
+          {/* Selector de ordenamiento */}
+          <div className="flex justify-center">
+            <div className="bg-muted rounded-lg p-1 inline-flex">
+              <button
+                onClick={() => handleSortChange('activity')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  sortBy === 'activity'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Última actividad
+              </button>
+              <button
+                onClick={() => handleSortChange('recent')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  sortBy === 'recent'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Más recientes
+              </button>
+            </div>
+          </div>
         </div>
       )}
       
