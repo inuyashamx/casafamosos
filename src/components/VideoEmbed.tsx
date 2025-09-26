@@ -49,7 +49,7 @@ export default function VideoEmbed({ embed }: VideoEmbedProps) {
               title="YouTube video"
               className="absolute top-0 left-0 w-full h-full"
               frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               onLoad={handleLoad}
               onError={handleError}
@@ -64,7 +64,7 @@ export default function VideoEmbed({ embed }: VideoEmbedProps) {
               title="TikTok video"
               className="absolute top-0 left-0 w-full h-full"
               frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               onLoad={handleLoad}
               onError={handleError}
@@ -79,7 +79,7 @@ export default function VideoEmbed({ embed }: VideoEmbedProps) {
               title="Facebook video"
               className="absolute top-0 left-0 w-full h-full"
               frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               onLoad={handleLoad}
               onError={handleError}
