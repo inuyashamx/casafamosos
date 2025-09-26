@@ -58,13 +58,13 @@ export default function VideoEmbed({ embed }: VideoEmbedProps) {
         )}
 
         {embed.type === 'tiktok' && (
-          <div className="relative pb-[177.78%] h-0 max-w-[325px] mx-auto"> {/* TikTok aspect ratio */}
+          <div className="relative pb-[177.78%] h-0 max-w-[325px] mx-auto">
             <iframe
               src={embed.embedUrl}
               title="TikTok video"
               className="absolute top-0 left-0 w-full h-full"
               frameBorder="0"
-              allow="clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               loading="lazy"
               onLoad={handleLoad}
