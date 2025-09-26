@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import Image from 'next/image';
 import EmojiPicker from './EmojiPicker';
+import LoginModal from './LoginModal';
 
 interface MediaItem {
   type: 'image' | 'video';
@@ -24,6 +25,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,6 +83,19 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const matches = text.match(urlRegex);
     return matches ? matches.map(url => ({ url })) : [];
+  };
+
+  const handleSignInClick = () => {
+    setShowLoginModal(true);
+  };
+
+  const handleAcceptLogin = () => {
+    setShowLoginModal(false);
+    signIn('google', { callbackUrl: window.location.href });
+  };
+
+  const handleCloseLogin = () => {
+    setShowLoginModal(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -180,19 +195,22 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
 
   if (!session) {
     return (
-      <div className="bg-card rounded-xl p-6 border border-border/20 text-center">
-        <button
-          onClick={() => signIn('google', {
-            callbackUrl: window.location.href,
-            redirect: true
-          }, {
-            prompt: 'select_account'
-          })}
-          className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
-        >
-          🔐 Iniciar Sesión para Escribir
-        </button>
-      </div>
+      <>
+        <div className="bg-card rounded-xl p-6 border border-border/20 text-center">
+          <button
+            onClick={handleSignInClick}
+            className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+          >
+            🔐 Iniciar Sesión para Escribir
+          </button>
+        </div>
+
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={handleCloseLogin}
+          onAccept={handleAcceptLogin}
+        />
+      </>
     );
   }
 

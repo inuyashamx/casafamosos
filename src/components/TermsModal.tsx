@@ -3,14 +3,15 @@
 interface TermsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onAccept?: () => void;
 }
 
-export default function TermsModal({ isOpen, onClose }: TermsModalProps) {
+export default function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-card rounded-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto border border-border/40">
+    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center min-h-screen">
+      <div className="bg-card rounded-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto border border-border/40 m-4">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-foreground">Términos y Condiciones</h2>
@@ -138,6 +139,24 @@ export default function TermsModal({ isOpen, onClose }: TermsModalProps) {
               </p>
             </div>
           </div>
+
+          {/* Botones de acción */}
+          {onAccept && (
+            <div className="border-t border-border/20 p-6 flex space-x-4">
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2 text-sm font-medium text-muted-foreground bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={onAccept}
+                className="flex-1 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors"
+              >
+                Acepto los términos y condiciones
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

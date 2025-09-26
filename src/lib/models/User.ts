@@ -173,7 +173,6 @@ UserSchema.methods.getUsedPointsInActiveWeek = async function() {
     
     // Sumar puntos usados hoy
     const usedPoints = userVotes.reduce((sum, vote) => sum + vote.points, 0);
-    console.log(`Usuario ${this.email}: Votos encontrados hoy: ${userVotes.length}, puntos usados: ${usedPoints}`);
     return usedPoints;
   } catch (error) {
     console.error(`Error calculando puntos usados para usuario ${this.email}:`, error);

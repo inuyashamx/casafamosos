@@ -4,6 +4,8 @@ import { useSession, signOut, signIn } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import TeamBadge from '@/components/TeamBadge';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import LoginModal from '@/components/LoginModal';
 
 export default function Navbar() {
   const router = useRouter();
@@ -11,6 +13,7 @@ export default function Navbar() {
   const { data: session } = useSession();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Verificar si es admin
   useEffect(() => {
@@ -30,6 +33,22 @@ export default function Navbar() {
 
     checkAdminStatus();
   }, [session]);
+
+  // Función para manejar el clic en "Iniciar Sesión"
+  const handleSignInClick = () => {
+    setShowLoginModal(true);
+  };
+
+  // Función para aceptar términos y proceder con el login
+  const handleAcceptLogin = () => {
+    setShowLoginModal(false);
+    signIn('google');
+  };
+
+  // Función para cancelar/cerrar el modal
+  const handleCloseLogin = () => {
+    setShowLoginModal(false);
+  };
 
   // Función para determinar si un botón está activo
   const isActive = (path: string) => {
@@ -68,15 +87,6 @@ export default function Navbar() {
             </svg>
           </button>
 
-          <button
-            onClick={() => router.push('/global')}
-            className={getButtonStyle('/global')}
-            title="Global"
-          >
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-            </svg>
-          </button>
 
           <button
             onClick={() => router.push('/simulador')}
@@ -105,6 +115,7 @@ export default function Navbar() {
         {/* User Menu or Login Button */}
         {session ? (
           <div className="flex items-center space-x-3">
+            <NotificationBell />
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -205,13 +216,20 @@ export default function Navbar() {
           </div>
         ) : (
           <button
-            onClick={() => signIn('google')}
+            onClick={handleSignInClick}
             className="text-sm text-primary font-medium bg-primary/10 px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
           >
             Iniciar Sesión
           </button>
         )}
       </div>
+
+      {/* Modal de inicio de sesión */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={handleCloseLogin}
+        onAccept={handleAcceptLogin}
+      />
     </header>
   );
 }

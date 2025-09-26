@@ -9,8 +9,8 @@ export default function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-card rounded-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto border border-border/40">
+    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center min-h-screen">
+      <div className="bg-card rounded-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto border border-border/40 m-4">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-foreground">Política de Privacidad</h2>

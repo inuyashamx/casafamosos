@@ -7,6 +7,7 @@ import Week from '@/lib/models/Week';
 import Candidate from '@/lib/models/Candidate';
 import mongoose from 'mongoose';
 import { CloudinaryService } from '@/lib/cloudinary';
+import { NotificationService } from '@/lib/services/notificationService';
 
 export class PostService {
   static async createPost(data: {
@@ -123,13 +124,39 @@ export class PostService {
 
   static async likePost(postId: string, userId: string) {
     await dbConnect();
-    
-    const post = await Post.findById(postId);
+
+    const post = await Post.findById(postId).populate('userId', 'name');
     if (!post) {
       throw new Error('Post no encontrado');
     }
 
-    return await post.addLike(userId);
+    // Verificar si ya tiene like para evitar duplicados
+    const existingLike = post.likes.find((like: any) => like.userId.toString() === userId);
+    if (existingLike) {
+      return post; // Ya tiene like, no hacer nada
+    }
+
+    const updatedPost = await post.addLike(userId);
+
+    // Crear notificación solo si no es el dueño del post
+    if (post.userId._id.toString() !== userId) {
+      try {
+        const liker = await User.findById(userId).select('name');
+        if (liker) {
+          await NotificationService.createPostLikeNotification(
+            post.userId._id.toString(),
+            userId,
+            postId,
+            liker.name
+          );
+        }
+      } catch (error) {
+        console.error('Error creando notificación de like:', error);
+        // No lanzar error para no afectar el funcionamiento del like
+      }
+    }
+
+    return updatedPost;
   }
 
   static async unlikePost(postId: string, userId: string) {
@@ -150,13 +177,32 @@ export class PostService {
     thumbnail?: string;
   }) {
     await dbConnect();
-    
-    const post = await Post.findById(postId);
+
+    const post = await Post.findById(postId).populate('userId', 'name');
     if (!post) {
       throw new Error('Post no encontrado');
     }
 
     await post.addComment(userId, content, media);
+
+    // Crear notificación solo si no es el dueño del post
+    if (post.userId._id.toString() !== userId) {
+      try {
+        const commenter = await User.findById(userId).select('name');
+        if (commenter) {
+          await NotificationService.createCommentNotification(
+            post.userId._id.toString(),
+            userId,
+            postId,
+            commenter.name
+          );
+        }
+      } catch (error) {
+        console.error('Error creando notificación de comentario:', error);
+        // No lanzar error para no afectar el funcionamiento del comentario
+      }
+    }
+
     return await Post.findById(postId)
       .populate('userId', 'name email image team')
       .populate('comments.userId', 'name email image team');
@@ -223,13 +269,46 @@ export class PostService {
 
   static async likeComment(postId: string, commentId: string, userId: string) {
     await dbConnect();
-    
+
     const post = await Post.findById(postId);
     if (!post) {
       throw new Error('Post no encontrado');
     }
 
-    return await post.addCommentLike(commentId, userId);
+    // Encontrar el comentario
+    const comment = post.comments.find((c: any) => c._id.toString() === commentId);
+    if (!comment) {
+      throw new Error('Comentario no encontrado');
+    }
+
+    // Verificar si ya tiene like para evitar duplicados
+    const existingLike = comment.likes.find((like: any) => like.userId.toString() === userId);
+    if (existingLike) {
+      return post; // Ya tiene like, no hacer nada
+    }
+
+    const updatedPost = await post.addCommentLike(commentId, userId);
+
+    // Crear notificación solo si no es el dueño del comentario
+    if (comment.userId.toString() !== userId) {
+      try {
+        const liker = await User.findById(userId).select('name');
+        if (liker) {
+          await NotificationService.createCommentLikeNotification(
+            comment.userId.toString(),
+            userId,
+            postId,
+            commentId,
+            liker.name
+          );
+        }
+      } catch (error) {
+        console.error('Error creando notificación de like en comentario:', error);
+        // No lanzar error para no afectar el funcionamiento del like
+      }
+    }
+
+    return updatedPost;
   }
 
   static async unlikeComment(postId: string, commentId: string, userId: string) {

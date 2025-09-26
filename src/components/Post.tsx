@@ -31,7 +31,13 @@ interface Link {
 
 interface Comment {
   _id: string;
-  userId: User | null;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+    image?: string;
+    team?: 'DIA' | 'NOCHE' | 'ECLIPSE' | null;
+  };
   content: string;
   media?: {
     type: 'image' | 'video';
@@ -47,21 +53,24 @@ interface PostData {
   _id: string;
   userId: User;
   content: string;
-  media: MediaItem[];
-  links: Link[];
+  media?: MediaItem[];
+  links?: Link[];
   likes: Array<{ userId: string; likedAt: string }>;
   comments: Comment[];
   createdAt: string;
   updatedAt: string;
+  isActive: boolean;
 }
 
 interface PostProps {
   post: PostData;
-  onPostUpdate?: () => void;
+  onPostUpdate?: (updatedPost: PostData) => void;
+  showBorder?: boolean;
 }
 
-export default function Post({ post, onPostUpdate }: PostProps) {
+export default function Post({ post: initialPost, onPostUpdate, showBorder = true }: PostProps) {
   const { data: session } = useSession();
+  const [post, setPost] = useState(initialPost);
   const [showComments, setShowComments] = useState(true);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [initialVisibleComments, setInitialVisibleComments] = useState(2);
@@ -71,6 +80,12 @@ export default function Post({ post, onPostUpdate }: PostProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
+
+  // Sincronizar estado local cuando cambie el prop inicial
+  useEffect(() => {
+    setPost(initialPost);
+    setEditContent(initialPost.content);
+  }, [initialPost]);
   const [showCarousel, setShowCarousel] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [commentImage, setCommentImage] = useState<File | null>(null);
@@ -131,18 +146,44 @@ export default function Post({ post, onPostUpdate }: PostProps) {
   const handleLike = async () => {
     if (!session?.user || isLiking) return;
 
+    const userId = (session.user as any).id;
+    const wasLiked = isLiked;
+
+    // Update optimista inmediato
+    const updatedPost = {
+      ...post,
+      likes: wasLiked
+        ? post.likes.filter(like => like.userId !== userId)
+        : [...post.likes, { userId, likedAt: new Date().toISOString() }]
+    };
+    setPost(updatedPost);
+
+    // Notificar al componente padre inmediatamente
+    if (onPostUpdate) {
+      onPostUpdate(updatedPost);
+    }
+
     setIsLiking(true);
     try {
-      const method = isLiked ? 'DELETE' : 'POST';
+      const method = wasLiked ? 'DELETE' : 'POST';
       const response = await fetch(`/api/posts/${post._id}/like`, {
         method,
       });
 
-      if (response.ok && onPostUpdate) {
-        onPostUpdate();
+      if (!response.ok) {
+        // Revertir si falla
+        setPost(post);
+        if (onPostUpdate) {
+          onPostUpdate(post);
+        }
       }
     } catch (error) {
       console.error('Error toggling like:', error);
+      // Revertir si falla
+      setPost(post);
+      if (onPostUpdate) {
+        onPostUpdate(post);
+      }
     } finally {
       setIsLiking(false);
     }
@@ -193,11 +234,13 @@ export default function Post({ post, onPostUpdate }: PostProps) {
       });
 
       if (response.ok) {
+        const updatedPostData = await response.json();
+        setPost(updatedPostData);
         setNewComment('');
         setCommentImage(null);
         setCommentImagePreview(null);
         if (onPostUpdate) {
-          onPostUpdate();
+          onPostUpdate(updatedPostData);
         }
       }
     } catch (error) {
@@ -216,8 +259,21 @@ export default function Post({ post, onPostUpdate }: PostProps) {
         method: 'DELETE',
       });
 
-      if (response.ok && onPostUpdate) {
-        onPostUpdate();
+      if (response.ok) {
+        // Update local state by removing the deleted comment
+        setPost(prev => ({
+          ...prev,
+          comments: prev.comments.filter(comment => comment._id !== commentId)
+        }));
+
+        // Notify parent with updated post data
+        if (onPostUpdate) {
+          const updatedPost = {
+            ...post,
+            comments: post.comments.filter(comment => comment._id !== commentId)
+          };
+          onPostUpdate(updatedPost);
+        }
       }
     } catch (error) {
       console.error('Error deleting comment:', error);
@@ -239,11 +295,31 @@ export default function Post({ post, onPostUpdate }: PostProps) {
       });
 
       if (response.ok) {
+        // Update local state with edited comment
+        setPost(prev => ({
+          ...prev,
+          comments: prev.comments.map(comment =>
+            comment._id === commentId
+              ? { ...comment, content: editCommentContent.trim() }
+              : comment
+          )
+        }));
+
         setEditingCommentId(null);
         setEditCommentContent('');
         setCommentMenuOpen(null);
+
+        // Notify parent with updated post data
         if (onPostUpdate) {
-          onPostUpdate();
+          const updatedPost = {
+            ...post,
+            comments: post.comments.map(comment =>
+              comment._id === commentId
+                ? { ...comment, content: editCommentContent.trim() }
+                : comment
+            )
+          };
+          onPostUpdate(updatedPost);
         }
       }
     } catch (error) {
@@ -278,8 +354,41 @@ export default function Post({ post, onPostUpdate }: PostProps) {
         method,
       });
 
-      if (response.ok && onPostUpdate) {
-        onPostUpdate();
+      if (response.ok) {
+        const userId = (session.user as any).id;
+
+        // Update local state with toggled comment like
+        setPost(prev => ({
+          ...prev,
+          comments: prev.comments.map(c =>
+            c._id === commentId
+              ? {
+                  ...c,
+                  likes: isLiked
+                    ? (c.likes || []).filter(like => like.userId !== userId)
+                    : [...(c.likes || []), { userId, likedAt: new Date().toISOString() }]
+                }
+              : c
+          )
+        }));
+
+        // Notify parent with updated post data
+        if (onPostUpdate) {
+          const updatedPost = {
+            ...post,
+            comments: post.comments.map(c =>
+              c._id === commentId
+                ? {
+                    ...c,
+                    likes: isLiked
+                      ? (c.likes || []).filter(like => like.userId !== userId)
+                      : [...(c.likes || []), { userId, likedAt: new Date().toISOString() }]
+                  }
+                : c
+            )
+          };
+          onPostUpdate(updatedPost);
+        }
       }
     } catch (error) {
       console.error('Error toggling comment like:', error);
@@ -329,10 +438,22 @@ export default function Post({ post, onPostUpdate }: PostProps) {
       });
 
       if (response.ok) {
+        // Update local state with edited content
+        setPost(prev => ({
+          ...prev,
+          content: editContent.trim()
+        }));
+
         setIsEditing(false);
         setShowMenu(false);
+
+        // Notify parent with updated post data
         if (onPostUpdate) {
-          onPostUpdate();
+          const updatedPost = {
+            ...post,
+            content: editContent.trim()
+          };
+          onPostUpdate(updatedPost);
         }
       }
     } catch (error) {
@@ -348,8 +469,9 @@ export default function Post({ post, onPostUpdate }: PostProps) {
         method: 'DELETE',
       });
 
-      if (response.ok && onPostUpdate) {
-        onPostUpdate();
+      if (response.ok) {
+        // Post borrado, redirigir o refrescar página
+        window.location.href = '/muro';
       }
     } catch (error) {
       console.error('Error deleting post:', error);
@@ -489,7 +611,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
       )}
 
       {/* Media */}
-      {post.media.length > 0 && (
+      {post.media && post.media.length > 0 && (
         <div className="space-y-2 post-media-container">
           {post.media.length === 1 ? (
             // Una sola imagen/video
@@ -604,13 +726,13 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                         src={item.url}
                         alt="Media"
                         className={`w-full object-cover hover:opacity-95 transition-opacity max-w-full ${
-                          index === 3 && post.media.length > 4 ? 'h-24 sm:h-32' : 'h-24 sm:h-32'
+                          index === 3 && post.media && post.media.length > 4 ? 'h-24 sm:h-32' : 'h-24 sm:h-32'
                         }`}
                         style={{ maxWidth: '100%' }}
                       />
-                      {index === 3 && post.media.length > 4 && (
+                      {index === 3 && post.media && post.media.length > 4 && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <span className="text-white font-semibold text-lg">+{post.media.length - 4}</span>
+                          <span className="text-white font-semibold text-lg">+{post.media ? post.media.length - 4 : 0}</span>
                         </div>
                       )}
                     </>
@@ -619,7 +741,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                       <video
                         src={item.url}
                         className={`w-full object-cover max-w-full ${
-                          index === 3 && post.media.length > 4 ? 'h-24 sm:h-32' : 'h-24 sm:h-32'
+                          index === 3 && post.media && post.media.length > 4 ? 'h-24 sm:h-32' : 'h-24 sm:h-32'
                         }`}
                         style={{ maxWidth: '100%' }}
                         muted
@@ -627,9 +749,9 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                         <span className="text-white text-lg">▶️</span>
                       </div>
-                      {index === 3 && post.media.length > 4 && (
+                      {index === 3 && post.media && post.media.length > 4 && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <span className="text-white font-semibold text-lg">+{post.media.length - 4}</span>
+                          <span className="text-white font-semibold text-lg">+{post.media ? post.media.length - 4 : 0}</span>
                         </div>
                       )}
                     </div>
@@ -770,7 +892,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
               // Validar que comment.userId existe antes de renderizar
               if (!comment.userId) {
                 return (
-                  <div key={comment._id} className="flex space-x-2 sm:space-x-3">
+                  <div key={comment._id} id={`comment-${comment._id}`} className="flex space-x-2 sm:space-x-3">
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
                         ?
@@ -786,7 +908,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
               }
 
               return (
-                <div key={comment._id} className="flex space-x-2 sm:space-x-3">
+                <div key={comment._id} id={`comment-${comment._id}`} className="flex space-x-2 sm:space-x-3">
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
                     {comment.userId.image ? (
                       <Image
@@ -817,7 +939,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
                         </div>
                         
                         {/* Menu para el owner del comentario */}
-                        {session?.user && comment.userId && (session.user as any).id === comment.userId._id && (
+                        {session?.user && (session.user as any).id === comment.userId._id && (
                           <div className="relative flex-shrink-0 comment-menu">
                             <button
                               onClick={() => setCommentMenuOpen(commentMenuOpen === comment._id ? null : comment._id)}
@@ -938,7 +1060,7 @@ export default function Post({ post, onPostUpdate }: PostProps) {
       )}
 
       {/* Carrusel de imágenes */}
-      {showCarousel && (
+      {showCarousel && post.media && (
         <ImageCarousel
           images={post.media}
           onClose={() => setShowCarousel(false)}

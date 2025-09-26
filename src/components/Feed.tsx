@@ -13,13 +13,13 @@ interface PostData {
     image?: string;
   };
   content: string;
-  media: Array<{
+  media?: Array<{
     type: 'image' | 'video';
     url: string;
     publicId: string;
     thumbnail?: string;
   }>;
-  links: Array<{
+  links?: Array<{
     url: string;
     title?: string;
     description?: string;
@@ -46,6 +46,7 @@ interface PostData {
   }>;
   createdAt: string;
   updatedAt: string;
+  isActive: boolean;
 }
 
 interface FeedProps {
@@ -117,8 +118,15 @@ export default function Feed({ userId }: FeedProps) {
     fetchPosts(1, true);
   };
 
-  const handlePostUpdate = () => {
-    fetchPosts(1, true); // Recargar desde el inicio para mantener orden correcto
+  const handlePostUpdate = (updatedPost: PostData) => {
+    if (!updatedPost || !updatedPost._id) {
+      console.warn('handlePostUpdate received invalid post data:', updatedPost);
+      return;
+    }
+
+    setPosts(prevPosts =>
+      prevPosts.map(p => p._id === updatedPost._id ? updatedPost : p)
+    );
   };
 
   const loadMore = () => {
