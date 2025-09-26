@@ -105,6 +105,8 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
   const [modalInitialTab, setModalInitialTab] = useState<string>('all');
   const [showReactionSelector, setShowReactionSelector] = useState(false);
   const reactionButtonRef = useRef<HTMLButtonElement>(null);
+  const [showCommentReactionSelector, setShowCommentReactionSelector] = useState<string | null>(null);
+  const commentReactionButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   // Cerrar menús cuando se hace clic fuera - DEBE estar antes de cualquier return
   useEffect(() => {
@@ -112,6 +114,9 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
       const target = event.target as Element;
       if (!target.closest('.comment-menu')) {
         setCommentMenuOpen(null);
+      }
+      if (!target.closest('.reaction-selector') && !target.closest('[data-reaction-trigger]')) {
+        setShowCommentReactionSelector(null);
       }
     };
 
@@ -357,60 +362,66 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
     setEditCommentContent('');
   };
 
-  const handleCommentLike = async (commentId: string) => {
+  const handleCommentReaction = async (commentId: string, reactionType: string) => {
     if (!session?.user) return;
 
+    const userId = (session.user as any).id;
+    const comment = post.comments.find(c => c._id === commentId);
+    if (!comment) return;
+
+    const userReaction = comment.reactions?.find(reaction => reaction.userId === userId)?.type;
+    const isSameReaction = userReaction === reactionType;
+
+    // Update optimista inmediato
+    const updatedPost = {
+      ...post,
+      comments: post.comments.map(c =>
+        c._id === commentId
+          ? {
+              ...c,
+              reactions: isSameReaction
+                ? (c.reactions || []).filter(reaction => reaction.userId !== userId)
+                : [
+                    ...(c.reactions || []).filter(reaction => reaction.userId !== userId),
+                    { userId, type: reactionType, reactedAt: new Date().toISOString() }
+                  ]
+            }
+          : c
+      )
+    };
+    setPost(updatedPost);
+
+    if (onPostUpdate) {
+      onPostUpdate(updatedPost);
+    }
+
     try {
-      const comment = post.comments.find(c => c._id === commentId);
-      if (!comment) return;
+      if (isSameReaction) {
+        // Quitar reacción si es la misma
+        await fetch(`/api/posts/${post._id}/comments/${commentId}/reaction`, {
+          method: 'DELETE',
+        });
+      } else {
+        // Agregar/cambiar reacción
+        const response = await fetch(`/api/posts/${post._id}/comments/${commentId}/reaction`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ reactionType }),
+        });
 
-      // Asegurar que comment.likes existe
-      const likes = comment.likes || [];
-      const isLiked = likes.some(like => like.userId === (session.user as any).id);
-      const method = isLiked ? 'DELETE' : 'POST';
-
-      const response = await fetch(`/api/posts/${post._id}/comments/${commentId}/like`, {
-        method,
-      });
-
-      if (response.ok) {
-        const userId = (session.user as any).id;
-
-        // Update local state with toggled comment like
-        setPost(prev => ({
-          ...prev,
-          comments: prev.comments.map(c =>
-            c._id === commentId
-              ? {
-                  ...c,
-                  likes: isLiked
-                    ? (c.likes || []).filter(like => like.userId !== userId)
-                    : [...(c.likes || []), { userId, likedAt: new Date().toISOString() }]
-                }
-              : c
-          )
-        }));
-
-        // Notify parent with updated post data
-        if (onPostUpdate) {
-          const updatedPost = {
-            ...post,
-            comments: post.comments.map(c =>
-              c._id === commentId
-                ? {
-                    ...c,
-                    likes: isLiked
-                      ? (c.likes || []).filter(like => like.userId !== userId)
-                      : [...(c.likes || []), { userId, likedAt: new Date().toISOString() }]
-                  }
-                : c
-            )
-          };
-          onPostUpdate(updatedPost);
+        if (!response.ok) {
+          throw new Error('Error al reaccionar');
         }
       }
     } catch (error) {
-      console.error('Error toggling comment like:', error);
+      console.error('Error handling comment reaction:', error);
+      // Revertir si falla
+      setPost(post);
+      if (onPostUpdate) {
+        onPostUpdate(post);
+      }
     }
   };
 
@@ -1066,22 +1077,60 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
                         </div>
                       )}
                       
-                      {/* Likes del comentario */}
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
+                      {/* Reacciones del comentario */}
+                      <div className="flex items-center space-x-2 mt-2 pt-2 border-t border-border/20">
                         <button
-                          onClick={() => handleCommentLike(comment._id)}
+                          ref={(el) => {
+                            if (el) commentReactionButtonRefs.current[comment._id] = el;
+                          }}
+                          data-reaction-trigger
+                          onClick={() => setShowCommentReactionSelector(
+                            showCommentReactionSelector === comment._id ? null : comment._id
+                          )}
                           disabled={!session?.user}
-                          className={`flex items-center space-x-1 text-xs transition-colors ${
-                            (comment.likes || []).some(like => like.userId === (session?.user as any)?.id)
-                              ? 'text-red-500 hover:text-red-600'
-                              : 'text-muted-foreground hover:text-foreground'
+                          className={`px-2 py-1 rounded-lg text-xs transition-colors ${
+                            comment.reactions?.find(reaction => reaction.userId === (session?.user as any)?.id)
+                              ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                           } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                          <span className="text-sm">
-                            {(comment.likes || []).some(like => like.userId === (session?.user as any)?.id) ? '❤️' : '🤍'}
-                          </span>
-                          <span>{comment.likes?.length || 0}</span>
+                          Like
                         </button>
+
+                        {/* Mostrar emojis individuales con contadores para comentarios */}
+                        {comment.reactions && comment.reactions.length > 0 && (
+                          <>
+                            {Object.entries(
+                              comment.reactions.reduce((acc, reaction) => {
+                                acc[reaction.type] = (acc[reaction.type] || 0) + 1;
+                                return acc;
+                              }, {} as Record<string, number>)
+                            ).map(([type, count]) => (
+                              <button
+                                key={`${comment._id}-${type}`}
+                                onClick={() => {
+                                  // TODO: Modal de reacciones para comentarios específicos si se necesita
+                                  console.log(`Ver reacciones ${type} en comentario ${comment._id}`);
+                                }}
+                                className={`flex items-center space-x-1 px-1 py-0.5 rounded text-xs transition-colors hover:bg-muted/30 ${
+                                  comment.reactions?.find(reaction => reaction.userId === (session?.user as any)?.id && reaction.type === type)
+                                    ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                                }`}
+                                title={`Ver quién reaccionó con ${type}`}
+                              >
+                                <span className="text-sm">
+                                  {type === 'like' && '❤️'}
+                                  {type === 'laugh' && '😂'}
+                                  {type === 'angry' && '😠'}
+                                  {type === 'wow' && '😮'}
+                                  {type === 'sad' && '😢'}
+                                  {type === 'poop' && '💩'}
+                                </span>
+                                <span>{count}</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1158,6 +1207,25 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
         currentUserReaction={userReaction}
         triggerRef={reactionButtonRef as React.RefObject<HTMLElement>}
       />
+
+      {/* Selector de reacciones para comentarios */}
+      {showCommentReactionSelector && (
+        <ReactionSelector
+          isOpen={true}
+          onClose={() => setShowCommentReactionSelector(null)}
+          onReact={(reactionType) => {
+            handleCommentReaction(showCommentReactionSelector, reactionType);
+          }}
+          currentUserReaction={
+            showCommentReactionSelector
+              ? post.comments.find(c => c._id === showCommentReactionSelector)?.reactions?.find(r => r.userId === (session?.user as any)?.id)?.type
+              : null
+          }
+          triggerRef={{
+            current: (commentReactionButtonRefs.current[showCommentReactionSelector] || null) as HTMLElement
+          }}
+        />
+      )}
     </article>
   );
 }

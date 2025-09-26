@@ -71,17 +71,19 @@ export default function ReactionSelector({
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      // Usar click para evitar conflicto con mousedown de los botones
+      document.addEventListener('click', handleClickOutside);
       document.addEventListener('keydown', handleEscape);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, onClose, triggerRef]);
 
   if (!isOpen) return null;
+
 
   return (
     <div
@@ -95,9 +97,11 @@ export default function ReactionSelector({
       {reactions.map((reaction) => (
         <button
           key={reaction.type}
-          onClick={() => {
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             onReact(reaction.type);
-            onClose();
+            setTimeout(() => onClose(), 50);
           }}
           className={`
             relative group transition-all duration-200 hover:scale-125 p-2 rounded-full
