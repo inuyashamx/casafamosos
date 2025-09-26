@@ -9,6 +9,7 @@ interface VideoEmbedProps {
 export default function VideoEmbed({ embed }: VideoEmbedProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [tiktokClicked, setTiktokClicked] = useState(false);
 
   const handleLoad = () => {
     setIsLoaded(true);
@@ -59,14 +60,25 @@ export default function VideoEmbed({ embed }: VideoEmbedProps) {
 
         {embed.type === 'tiktok' && (
           <div className="relative pb-[177.78%] h-0 max-w-[325px] mx-auto"> {/* TikTok aspect ratio */}
+            {!tiktokClicked && (
+              <div
+                className="absolute inset-0 z-10 bg-black/30 flex items-center justify-center cursor-pointer rounded-lg"
+                onClick={() => setTiktokClicked(true)}
+              >
+                <div className="bg-white/90 rounded-full p-4 hover:bg-white transition-colors">
+                  <span className="text-2xl">▶️</span>
+                </div>
+              </div>
+            )}
             <iframe
-              src={embed.embedUrl}
+              src={tiktokClicked ? embed.embedUrl : 'about:blank'}
               title="TikTok video"
               className="absolute top-0 left-0 w-full h-full"
               frameBorder="0"
-              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allow="clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               loading="lazy"
+              referrerPolicy="no-referrer"
               onLoad={handleLoad}
               onError={handleError}
             />
