@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PostService } from '@/lib/services/postService';
+import User from '@/lib/models/User';
 
 export async function DELETE(
   request: NextRequest,
@@ -13,13 +14,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    const userId = (session.user as any).id;
     const resolvedParams = await params;
+
+    // Verificar si es admin para permitir eliminar comentarios de otros
+    const user = await User.findById(userId);
+    const isAdmin = user?.isAdmin || false;
+
     const post = await PostService.removeComment(
       resolvedParams.id,
       resolvedParams.commentId,
-      (session.user as any).id
+      userId,
+      isAdmin
     );
-    
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error en DELETE /api/posts/[id]/comments/[commentId]:', error);

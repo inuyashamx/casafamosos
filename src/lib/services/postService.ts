@@ -229,21 +229,21 @@ export class PostService {
       .populate('comments.userId', 'name image team');
   }
 
-  static async removeComment(postId: string, commentId: string, userId: string) {
+  static async removeComment(postId: string, commentId: string, userId: string, isAdminDelete: boolean = false) {
     await dbConnect();
-    
+
     const post = await Post.findById(postId);
     if (!post) {
       throw new Error('Post no encontrado');
     }
 
-    // Verificar que el comentario pertenece al usuario
+    // Verificar que el comentario pertenece al usuario O que sea un admin
     const comment = post.comments.find((c: any) => c._id.toString() === commentId);
     if (!comment) {
       throw new Error('Comentario no encontrado');
     }
 
-    if (comment.userId.toString() !== userId) {
+    if (!isAdminDelete && comment.userId.toString() !== userId) {
       throw new Error('No autorizado para eliminar este comentario');
     }
 
@@ -437,15 +437,15 @@ export class PostService {
     return await post.save();
   }
 
-  static async deletePost(postId: string, userId: string) {
+  static async deletePost(postId: string, userId: string, isAdminDelete: boolean = false) {
     await dbConnect();
-    
+
     const post = await Post.findById(postId);
     if (!post) {
       throw new Error('Post no encontrado');
     }
 
-    if (post.userId.toString() !== userId) {
+    if (!isAdminDelete && post.userId.toString() !== userId) {
       throw new Error('No autorizado para eliminar este post');
     }
 

@@ -76,6 +76,11 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
     ...initialPost,
     reactions: initialPost.reactions || []
   });
+
+  // Verificar si el usuario actual es admin
+  const isAdmin = (session?.user as any)?.isAdmin || false;
+  const isOwner = session?.user && (session.user as any).id === post.userId._id;
+  const canDelete = isOwner || isAdmin;
   const [showComments, setShowComments] = useState(true);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [initialVisibleComments, setInitialVisibleComments] = useState(2);
@@ -143,7 +148,6 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
     );
   }
 
-  const isOwner = session?.user && (session.user as any).id === post.userId._id;
   const userReaction = session?.user
     ? post.reactions?.find(reaction => reaction.userId === (session.user as any).id)?.type
     : null;
@@ -567,8 +571,8 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
               </span>
             </div>
             
-            {/* Menu de 3 puntos para el owner */}
-            {isOwner && (
+            {/* Menu de 3 puntos para el owner o admin */}
+            {canDelete && (
               <div className="relative">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
@@ -576,31 +580,41 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
                 >
                   <span className="text-lg">⋯</span>
                 </button>
-                
+
                 {showMenu && (
                   <>
                     <div
                       className="fixed inset-0 z-10"
                       onClick={() => setShowMenu(false)}
                     />
-                    <div className="absolute right-0 mt-1 w-32 bg-card border border-border/40 rounded-lg shadow-lg z-20">
-                      <button
-                        onClick={() => {
-                          setIsEditing(true);
-                          setShowMenu(false);
-                        }}
-                        className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors rounded-t-lg"
-                      >
-                        ✏️ Editar
-                      </button>
+                    <div className="absolute right-0 mt-1 w-40 bg-card border border-border/40 rounded-lg shadow-lg z-20">
+                      {isOwner && (
+                        <button
+                          onClick={() => {
+                            setIsEditing(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted/30 transition-colors rounded-t-lg"
+                        >
+                          ✏️ Editar
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setShowDeleteConfirm(true);
                           setShowMenu(false);
                         }}
-                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-lg"
+                        className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                          isOwner
+                            ? 'text-red-600 hover:bg-red-50 rounded-b-lg'
+                            : 'text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2'
+                        }`}
                       >
-                        🗑️ Eliminar
+                        {isAdmin && !isOwner ? (
+                          <>🛡️ Eliminar como Admin</>
+                        ) : (
+                          <>🗑️ Eliminar</>
+                        )}
                       </button>
                     </div>
                   </>
@@ -998,8 +1012,8 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
                           </span>
                         </div>
                         
-                        {/* Menu para el owner del comentario */}
-                        {session?.user && (session.user as any).id === comment.userId._id && (
+                        {/* Menu para el owner del comentario o admin */}
+                        {session?.user && ((session.user as any).id === comment.userId._id || isAdmin) && (
                           <div className="relative flex-shrink-0 comment-menu">
                             <button
                               onClick={() => setCommentMenuOpen(commentMenuOpen === comment._id ? null : comment._id)}
@@ -1008,21 +1022,27 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
                             >
                               ⋯
                             </button>
-                            
+
                             {/* Menú desplegable */}
                             {commentMenuOpen === comment._id && (
-                              <div className="absolute right-0 top-6 bg-card border border-border rounded-lg shadow-lg z-10 min-w-[120px]">
-                                <button
-                                  onClick={() => startEditComment(comment)}
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
-                                >
-                                  ✏️ Editar
-                                </button>
+                              <div className="absolute right-0 top-6 bg-card border border-border rounded-lg shadow-lg z-10 min-w-[160px]">
+                                {(session.user as any).id === comment.userId._id && (
+                                  <button
+                                    onClick={() => startEditComment(comment)}
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                                  >
+                                    ✏️ Editar
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => setShowCommentDeleteConfirm(comment._id)}
                                   className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"
                                 >
-                                  🗑️ Eliminar
+                                  {isAdmin && (session.user as any).id !== comment.userId._id ? (
+                                    <>🛡️ Eliminar como Admin</>
+                                  ) : (
+                                    <>🗑️ Eliminar</>
+                                  )}
                                 </button>
                               </div>
                             )}
@@ -1171,9 +1191,13 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
       {/* Diálogo de confirmación de eliminación de publicación */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
-        title="Eliminar publicación"
-        message="¿Estás seguro de que quieres eliminar esta publicación? Esta acción no se puede deshacer."
-        confirmText="Eliminar"
+        title={isAdmin && !isOwner ? "Eliminar publicación como Administrador" : "Eliminar publicación"}
+        message={
+          isAdmin && !isOwner
+            ? `¿Estás seguro de que quieres eliminar esta publicación de ${post.userId.name} como administrador? Esta acción no se puede deshacer.`
+            : "¿Estás seguro de que quieres eliminar esta publicación? Esta acción no se puede deshacer."
+        }
+        confirmText={isAdmin && !isOwner ? "🛡️ Eliminar como Admin" : "Eliminar"}
         cancelText="Cancelar"
         onConfirm={() => {
           handleDeletePost();
@@ -1186,9 +1210,24 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
       {/* Diálogo de confirmación de eliminación de comentario */}
       <ConfirmDialog
         isOpen={!!showCommentDeleteConfirm}
-        title="Eliminar comentario"
-        message="¿Estás seguro de que quieres eliminar este comentario? Esta acción no se puede deshacer."
-        confirmText="Eliminar"
+        title={
+          showCommentDeleteConfirm && isAdmin &&
+          post.comments.find(c => c._id === showCommentDeleteConfirm)?.userId._id !== (session?.user as any)?.id
+            ? "Eliminar comentario como Administrador"
+            : "Eliminar comentario"
+        }
+        message={
+          showCommentDeleteConfirm && isAdmin &&
+          post.comments.find(c => c._id === showCommentDeleteConfirm)?.userId._id !== (session?.user as any)?.id
+            ? `¿Estás seguro de que quieres eliminar este comentario de ${post.comments.find(c => c._id === showCommentDeleteConfirm)?.userId.name} como administrador? Esta acción no se puede deshacer.`
+            : "¿Estás seguro de que quieres eliminar este comentario? Esta acción no se puede deshacer."
+        }
+        confirmText={
+          showCommentDeleteConfirm && isAdmin &&
+          post.comments.find(c => c._id === showCommentDeleteConfirm)?.userId._id !== (session?.user as any)?.id
+            ? "🛡️ Eliminar como Admin"
+            : "Eliminar"
+        }
         cancelText="Cancelar"
         onConfirm={() => {
           if (showCommentDeleteConfirm) {
