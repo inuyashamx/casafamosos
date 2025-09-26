@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Notification } from '@/hooks/useNotifications';
+import Navbar from '@/components/Navbar';
 
 export default function NotificationsPage() {
   const { data: session, status } = useSession();
@@ -139,8 +140,9 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-4 sm:py-8">
-      <div className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8">
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="bg-card rounded-lg shadow border border-border">
           <div className="p-4 sm:p-6 border-b border-border">
             <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
