@@ -2,12 +2,13 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Notification } from '@/hooks/useNotifications';
+import { Notification, useNotifications } from '@/hooks/useNotifications';
 import Navbar from '@/components/Navbar';
 
 export default function NotificationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { clearAllNotifications: hookClearAll, markAllAsRead: hookMarkAllAsRead } = useNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -75,15 +76,13 @@ export default function NotificationsPage() {
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('/api/notifications/mark-all-read', {
-        method: 'POST',
-      });
+      // Llamar al hook para sincronizar el estado del dropdown
+      await hookMarkAllAsRead();
 
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.map(notification => ({ ...notification, read: true }))
-        );
-      }
+      // Actualizar el estado local de la página
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, read: true }))
+      );
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
@@ -92,13 +91,11 @@ export default function NotificationsPage() {
   const clearAllNotifications = async () => {
     if (confirm('¿Estás seguro de que quieres eliminar todas las notificaciones?')) {
       try {
-        const response = await fetch('/api/notifications', {
-          method: 'DELETE',
-        });
+        // Llamar al hook para sincronizar el estado del dropdown
+        await hookClearAll();
 
-        if (response.ok) {
-          setNotifications([]);
-        }
+        // Actualizar el estado local de la página
+        setNotifications([]);
       } catch (error) {
         console.error('Error clearing notifications:', error);
       }
