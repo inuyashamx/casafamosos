@@ -7,6 +7,7 @@ import ImageCarousel from './ImageCarousel';
 import ConfirmDialog from './ConfirmDialog';
 import LikesModal from './LikesModal';
 import ReactionSelector from './ReactionSelector';
+import CommentReactionsModal from './CommentReactionsModal';
 
 interface User {
   _id: string;
@@ -107,6 +108,11 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
   const reactionButtonRef = useRef<HTMLButtonElement>(null);
   const [showCommentReactionSelector, setShowCommentReactionSelector] = useState<string | null>(null);
   const commentReactionButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+  const [showCommentReactionsModal, setShowCommentReactionsModal] = useState<{
+    commentId: string;
+    postId: string;
+    initialTab?: string;
+  } | null>(null);
 
   // Cerrar menús cuando se hace clic fuera - DEBE estar antes de cualquier return
   useEffect(() => {
@@ -1109,8 +1115,11 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
                               <button
                                 key={`${comment._id}-${type}`}
                                 onClick={() => {
-                                  // TODO: Modal de reacciones para comentarios específicos si se necesita
-                                  console.log(`Ver reacciones ${type} en comentario ${comment._id}`);
+                                  setShowCommentReactionsModal({
+                                    commentId: comment._id,
+                                    postId: post._id,
+                                    initialTab: type
+                                  });
                                 }}
                                 className={`flex items-center space-x-1 px-1 py-0.5 rounded text-xs transition-colors hover:bg-muted/30 ${
                                   comment.reactions?.find(reaction => reaction.userId === (session?.user as any)?.id && reaction.type === type)
@@ -1224,6 +1233,17 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
           triggerRef={{
             current: (commentReactionButtonRefs.current[showCommentReactionSelector] || null) as HTMLElement
           }}
+        />
+      )}
+
+      {/* Modal de reacciones para comentarios */}
+      {showCommentReactionsModal && (
+        <CommentReactionsModal
+          isOpen={true}
+          onClose={() => setShowCommentReactionsModal(null)}
+          postId={showCommentReactionsModal.postId}
+          commentId={showCommentReactionsModal.commentId}
+          initialTab={showCommentReactionsModal.initialTab}
         />
       )}
     </article>
