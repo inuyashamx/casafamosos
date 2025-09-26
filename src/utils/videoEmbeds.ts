@@ -4,6 +4,7 @@ export interface VideoEmbed {
   embedUrl: string;
   videoId: string;
   thumbnail?: string;
+  requiresResolution?: boolean;
 }
 
 export function extractVideoEmbeds(content: string): VideoEmbed[] {
@@ -37,17 +38,18 @@ export function extractVideoEmbeds(content: string): VideoEmbed[] {
     const videoId = match[1] || match[2] || match[3];
     const fullUrl = match[0].startsWith('http') ? match[0] : `https://${match[0]}`;
 
-    // Para URLs cortas (vt.tiktok.com, vm.tiktok.com), usar la URL original en el embed
-    // El embed de TikTok puede manejar tanto URLs completas como códigos cortos
-    const embedUrl = (fullUrl.includes('vt.tiktok.com') || fullUrl.includes('vm.tiktok.com'))
-      ? `https://www.tiktok.com/embed?url=${encodeURIComponent(fullUrl)}`
-      : `https://www.tiktok.com/embed/v2/${videoId}?autoplay=0&playsinline=0`;
+    // Detectar si es una URL corta que necesita resolución
+    const isShortUrl = fullUrl.includes('vt.tiktok.com') || fullUrl.includes('vm.tiktok.com');
+
+    // Usar el embed estándar de TikTok
+    const embedUrl = `https://www.tiktok.com/embed/v2/${videoId}?autoplay=0&playsinline=0`;
 
     embeds.push({
       type: 'tiktok',
       url: fullUrl,
       embedUrl,
-      videoId
+      videoId,
+      requiresResolution: isShortUrl
     });
   }
 

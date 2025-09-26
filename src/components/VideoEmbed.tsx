@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { VideoEmbed as VideoEmbedType } from '@/utils/videoEmbeds';
 
 interface VideoEmbedProps {
@@ -9,6 +9,26 @@ interface VideoEmbedProps {
 export default function VideoEmbed({ embed }: VideoEmbedProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [resolvedVideoId, setResolvedVideoId] = useState<string | null>(null);
+  const [isResolving, setIsResolving] = useState(false);
+
+  useEffect(() => {
+    // Si es una URL corta de TikTok, resolver el video ID real
+    if (embed.type === 'tiktok' && embed.requiresResolution) {
+      setIsResolving(true);
+      fetch(`/api/tiktok/resolve?url=${encodeURIComponent(embed.url)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.videoId) {
+            setResolvedVideoId(data.videoId);
+          } else {
+            setError(true);
+          }
+        })
+        .catch(() => setError(true))
+        .finally(() => setIsResolving(false));
+    }
+  }, [embed]);
 
   const handleLoad = () => {
     setIsLoaded(true);
@@ -59,17 +79,27 @@ export default function VideoEmbed({ embed }: VideoEmbedProps) {
 
         {embed.type === 'tiktok' && (
           <div className="relative pb-[177.78%] h-0 max-w-[325px] mx-auto">
-            <iframe
-              src={embed.embedUrl}
-              title="TikTok video"
-              className="absolute top-0 left-0 w-full h-full"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              loading="lazy"
-              onLoad={handleLoad}
-              onError={handleError}
-            />
+            {isResolving ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <iframe
+                src={
+                  embed.requiresResolution && resolvedVideoId
+                    ? `https://www.tiktok.com/embed/v2/${resolvedVideoId}?autoplay=0&playsinline=0`
+                    : embed.embedUrl
+                }
+                title="TikTok video"
+                className="absolute top-0 left-0 w-full h-full"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+                onLoad={handleLoad}
+                onError={handleError}
+              />
+            )}
           </div>
         )}
 
