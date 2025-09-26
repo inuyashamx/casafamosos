@@ -39,7 +39,7 @@ export function extractVideoEmbeds(content: string): VideoEmbed[] {
     embeds.push({
       type: 'tiktok',
       url: fullUrl,
-      embedUrl: `https://www.tiktok.com/embed/v2/${videoId}?autoplay=1`,
+      embedUrl: `https://www.tiktok.com/embed/v2/${videoId}`,
       videoId
     });
   }
