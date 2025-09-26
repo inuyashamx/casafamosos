@@ -9,8 +9,8 @@ export interface VideoEmbed {
 export function extractVideoEmbeds(content: string): VideoEmbed[] {
   const embeds: VideoEmbed[] = [];
 
-  // Regex para YouTube
-  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
+  // Regex para YouTube (incluyendo Shorts)
+  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
 
   // Regex para TikTok
   const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[^\/]+\/video\/(\d+)|vm\.tiktok\.com\/([a-zA-Z0-9]+))/g;
@@ -60,7 +60,7 @@ export function extractVideoEmbeds(content: string): VideoEmbed[] {
 }
 
 export function removeVideoUrlsFromContent(content: string): string {
-  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})\S*/g;
+  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})\S*/g;
   const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[^\/]+\/video\/\d+|vm\.tiktok\.com\/[a-zA-Z0-9]+)\S*/g;
   const facebookRegex = /(?:https?:\/\/)?(?:www\.)?facebook\.com\/(?:watch\/?\?v=|reel\/|[^\/]+\/videos\/)\d+\S*/g;
 
