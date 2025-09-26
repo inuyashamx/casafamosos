@@ -13,7 +13,7 @@ export function extractVideoEmbeds(content: string): VideoEmbed[] {
   const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
 
   // Regex para TikTok
-  const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[^\/]+\/video\/(\d+)|vm\.tiktok\.com\/([a-zA-Z0-9]+))/g;
+  const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[^\/]+\/video\/(\d+)|vm\.tiktok\.com\/([a-zA-Z0-9]+)|vt\.tiktok\.com\/([a-zA-Z0-9]+))/g;
 
   // Regex para Facebook Reels
   const facebookRegex = /(?:https?:\/\/)?(?:www\.)?facebook\.com\/(?:watch\/?\?v=|reel\/|[^\/]+\/videos\/)(\d+)/g;
@@ -34,7 +34,7 @@ export function extractVideoEmbeds(content: string): VideoEmbed[] {
 
   // Extraer URLs de TikTok
   while ((match = tiktokRegex.exec(content)) !== null) {
-    const videoId = match[1] || match[2];
+    const videoId = match[1] || match[2] || match[3];
     const fullUrl = match[0].startsWith('http') ? match[0] : `https://${match[0]}`;
     embeds.push({
       type: 'tiktok',
@@ -61,7 +61,7 @@ export function extractVideoEmbeds(content: string): VideoEmbed[] {
 
 export function removeVideoUrlsFromContent(content: string): string {
   const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})\S*/g;
-  const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[^\/]+\/video\/\d+|vm\.tiktok\.com\/[a-zA-Z0-9]+)\S*/g;
+  const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[^\/]+\/video\/\d+|vm\.tiktok\.com\/[a-zA-Z0-9]+|vt\.tiktok\.com\/[a-zA-Z0-9]+)\S*/g;
   const facebookRegex = /(?:https?:\/\/)?(?:www\.)?facebook\.com\/(?:watch\/?\?v=|reel\/|[^\/]+\/videos\/)\d+\S*/g;
 
   return content
