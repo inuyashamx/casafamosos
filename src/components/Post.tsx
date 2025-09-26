@@ -8,6 +8,8 @@ import ConfirmDialog from './ConfirmDialog';
 import LikesModal from './LikesModal';
 import ReactionSelector from './ReactionSelector';
 import CommentReactionsModal from './CommentReactionsModal';
+import VideoEmbed from './VideoEmbed';
+import { extractVideoEmbeds, removeVideoUrlsFromContent } from '@/utils/videoEmbeds';
 
 interface User {
   _id: string;
@@ -519,9 +521,14 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
   };
 
   const renderContent = (content: string) => {
-    // Detectar URLs y convertirlas en links
+    // Extraer videos embebidos
+    const videoEmbeds = extractVideoEmbeds(content);
+    // Remover URLs de videos del contenido de texto
+    const cleanContent = removeVideoUrlsFromContent(content);
+
+    // Detectar URLs restantes y convertirlas en links
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return content.split(urlRegex).map((part, index) => {
+    const textContent = cleanContent.split(urlRegex).map((part, index) => {
       if (part.match(urlRegex)) {
         return (
           <a
@@ -537,6 +544,22 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
       }
       return part;
     });
+
+    return (
+      <>
+        {/* Contenido de texto */}
+        {cleanContent.trim() && (
+          <div className="text-foreground leading-relaxed whitespace-pre-wrap">
+            {textContent}
+          </div>
+        )}
+
+        {/* Videos embebidos */}
+        {videoEmbeds.map((embed, index) => (
+          <VideoEmbed key={`${embed.type}-${embed.videoId}-${index}`} embed={embed} />
+        ))}
+      </>
+    );
   };
 
   return (
@@ -655,7 +678,7 @@ export default function Post({ post: initialPost, onPostUpdate, showBorder = tru
           </div>
         </div>
       ) : (
-        <div className="text-foreground leading-relaxed whitespace-pre-wrap">
+        <div>
           {renderContent(post.content)}
         </div>
       )}
