@@ -36,10 +36,17 @@ export function extractVideoEmbeds(content: string): VideoEmbed[] {
   while ((match = tiktokRegex.exec(content)) !== null) {
     const videoId = match[1] || match[2] || match[3];
     const fullUrl = match[0].startsWith('http') ? match[0] : `https://${match[0]}`;
+
+    // Para URLs cortas (vt.tiktok.com, vm.tiktok.com), usar la URL original en el embed
+    // El embed de TikTok puede manejar tanto URLs completas como códigos cortos
+    const embedUrl = (fullUrl.includes('vt.tiktok.com') || fullUrl.includes('vm.tiktok.com'))
+      ? `https://www.tiktok.com/embed?url=${encodeURIComponent(fullUrl)}`
+      : `https://www.tiktok.com/embed/v2/${videoId}?autoplay=0&playsinline=0`;
+
     embeds.push({
       type: 'tiktok',
       url: fullUrl,
-      embedUrl: `https://www.tiktok.com/embed/v2/${videoId}?autoplay=0&playsinline=0`,
+      embedUrl,
       videoId
     });
   }
