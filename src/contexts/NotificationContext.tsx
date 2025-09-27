@@ -142,12 +142,39 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     }
   }, [session, fetchUnreadCount, fetchRecentNotifications]);
 
-  // Polling para actualizar el contador cada 3 minutos
+  // Polling inteligente basado en actividad del usuario
   useEffect(() => {
     if (!session?.user) return;
 
-    const interval = setInterval(fetchUnreadCount, 180000); // 3 minutos
-    return () => clearInterval(interval);
+    let interval: NodeJS.Timeout;
+
+    const startPolling = () => {
+      // Intervalo basado en visibilidad: 5min activo, 15min inactivo
+      const pollingInterval = document.visibilityState === 'visible' ? 300000 : 900000;
+
+      clearInterval(interval);
+      interval = setInterval(fetchUnreadCount, pollingInterval);
+    };
+
+    // Iniciar polling
+    startPolling();
+
+    // Ajustar polling cuando cambia la visibilidad
+    const handleVisibilityChange = () => {
+      startPolling();
+
+      // Si vuelve a estar visible, hacer fetch inmediato
+      if (document.visibilityState === 'visible') {
+        fetchUnreadCount();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [session, fetchUnreadCount]);
 
   const value = {
