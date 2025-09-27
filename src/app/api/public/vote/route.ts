@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
         name: activeSeason.name,
         year: activeSeason.year,
       },
-      totalVotes: weekWithResults.results?.totalVotes || 0,
+      totalVotes: totalVotesAfterPenalties, // Usar el total recalculado sin el candidato salvado
       eliminatedCandidate,
       savedCandidate
     });
