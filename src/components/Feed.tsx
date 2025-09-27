@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Post from './Post';
 import CreatePost from './CreatePost';
@@ -64,6 +64,7 @@ export default function Feed({ userId }: FeedProps) {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [sortBy, setSortBy] = useState<'recent' | 'activity'>('activity');
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const fetchPosts = useCallback(async (pageNum: number = 1, reset: boolean = true) => {
     try {
@@ -120,6 +121,42 @@ export default function Feed({ userId }: FeedProps) {
     fetchPosts(1, true);
   }, [fetchPosts]);
 
+  // Función para cargar más posts sin dependencias problemáticas
+  const loadMorePosts = useCallback(() => {
+    if (hasMore && !loadingMore) {
+      fetchPosts(page + 1, false);
+    }
+  }, [hasMore, loadingMore, page, fetchPosts]);
+
+  // Intersection Observer para scroll infinito
+  useEffect(() => {
+    const currentRef = loadMoreRef.current;
+
+    if (!currentRef || !hasMore || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting) {
+          loadMorePosts();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '200px',
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(currentRef);
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasMore, loadingMore, loadMorePosts, posts.length]);
+
   const handlePostCreated = () => {
     fetchPosts(1, true);
   };
@@ -141,11 +178,6 @@ export default function Feed({ userId }: FeedProps) {
     );
   };
 
-  const loadMore = () => {
-    if (hasMore && !loadingMore) {
-      fetchPosts(page + 1, false);
-    }
-  };
 
   if (loading && page === 1) {
     return (
@@ -242,16 +274,32 @@ export default function Feed({ userId }: FeedProps) {
             <Post key={post._id} post={post} onPostUpdate={handlePostUpdate} />
           ))}
           
-          {/* Load more button */}
-          {hasMore && (
-            <div className="text-center">
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="bg-muted text-foreground px-6 py-3 rounded-lg hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loadingMore ? 'Cargando...' : 'Cargar más posts'}
-              </button>
+          {/* Infinite scroll trigger + Manual button backup */}
+          {hasMore && posts.length > 0 && (
+            <div className="text-center space-y-4">
+              {/* Elemento invisible para scroll infinito */}
+              <div
+                ref={loadMoreRef}
+                className="h-1 w-full"
+                style={{ backgroundColor: 'transparent' }}
+              />
+
+              {/* Loading state */}
+              {loadingMore ? (
+                <div className="flex items-center justify-center space-x-2 py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  <span className="text-muted-foreground">Cargando más posts...</span>
+                </div>
+              ) : (
+                /* Manual button backup */
+                <button
+                  onClick={() => fetchPosts(page + 1, false)}
+                  disabled={loadingMore}
+                  className="bg-muted text-foreground px-6 py-3 rounded-lg hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cargar más posts
+                </button>
+              )}
             </div>
           )}
           
