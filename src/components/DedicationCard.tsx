@@ -43,7 +43,7 @@ export default function DedicationCard({
 
   const isOwner = session?.user && (session.user as any).id === dedication.userId._id;
   const isAdmin = (session?.user as any)?.isAdmin || false;
-  const canDelete = isOwner || isAdmin;
+  const canDelete = isOwner; // Solo el propietario puede borrar en la vista pública
 
   const handleLike = async () => {
     if (!session || isLiking) return;
