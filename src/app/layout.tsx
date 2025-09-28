@@ -72,11 +72,22 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#ff6b6b" />
 
+        {/* Google AdSense */}
+        <meta name="google-adsense-account" content="ca-pub-3763339383362664" />
+
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           {children}
         </Providers>
+
+        {/* Google AdSense Script */}
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3763339383362664"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

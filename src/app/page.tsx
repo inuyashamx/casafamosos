@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -16,6 +16,7 @@ import CountdownTimer from '@/components/CountdownTimer';
 import VotingTrends from '@/components/VotingTrends';
 import TeamInfluenceChart from '@/components/TeamInfluenceChart';
 import { escapeHtml, sanitizeUrl } from '@/lib/security';
+import { BannerAd, InArticleAd, StickyFooterAd } from '@/components/AdSense';
 
 interface Nominee {
   id: string;
@@ -690,6 +691,10 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+        {/* Banner Ad - Top - HIDDEN DURING VERIFICATION */}
+        {/* <BannerAd /> */}
+
         {/* Status Banner */}
         {loading ? (
           <div className="bg-card/50 rounded-xl p-4 border border-border/20 text-center">
@@ -960,6 +965,9 @@ export default function Home() {
 
 
 
+        {/* In-Article Ad before Stats - HIDDEN DURING VERIFICATION */}
+        {/* <InArticleAd /> */}
+
         {/* Quick Stats + Ver Historial + Team Influence */}
         {votingData?.nominees && (
           <div className="bg-card rounded-xl p-6 border border-border/20">
@@ -1196,7 +1204,13 @@ export default function Home() {
           </button>
         </div>
 
+        {/* Banner Ad - Bottom - HIDDEN DURING VERIFICATION */}
+        {/* <BannerAd /> */}
+
       </div>
+
+      {/* Sticky Footer Ad for Mobile - HIDDEN DURING VERIFICATION */}
+      {/* <StickyFooterAd /> */}
 
       {/* Floating Chat Button - Oculto por ahora */}
       {/* <button
