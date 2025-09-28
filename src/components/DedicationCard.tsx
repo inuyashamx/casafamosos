@@ -195,7 +195,7 @@ export default function DedicationCard({
                 {dedication.userId.name}
               </span>
               {dedication.userId.team && (
-                <TeamBadge team={dedication.userId.team} size="sm" />
+                <TeamBadge team={dedication.userId.team} size={1} />
               )}
               <span className="text-xs sm:text-sm text-muted-foreground">
                 · {formatDistanceToNow(new Date(dedication.createdAt), {

@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
     }
 
     const sort = sortBy === 'popular'
-      ? { 'likes.length': -1, createdAt: -1 }
-      : { createdAt: -1 };
+      ? { createdAt: 'desc' } // Temporal fix - ordenar por fecha para popular también
+      : { createdAt: 'desc' };
 
     const skip = (page - 1) * limit;
 
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       Dedication.find(query)
         .populate('userId', 'name image team')
         .populate('candidateId', 'name photo')
-        .sort(sort)
+        .sort(sort as any)
         .limit(limit)
         .skip(skip)
         .lean(),

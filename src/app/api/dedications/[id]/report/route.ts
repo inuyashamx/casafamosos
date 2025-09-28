@@ -10,7 +10,7 @@ import { checkRateLimit, getClientIP } from '@/lib/security';
 // POST - Reportar una dedicatoria
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -36,7 +36,7 @@ export async function POST(
 
     await dbConnect();
 
-    const dedicationId = params.id;
+    const { id: dedicationId } = await params;
     // userId ya está definido arriba para rate limiting
     const { reason, customReason } = await req.json();
 
@@ -119,7 +119,7 @@ export async function POST(
 // GET - Obtener información de reportes (solo admin)
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -142,7 +142,7 @@ export async function GET(
 
     await dbConnect();
 
-    const dedicationId = params.id;
+    const { id: dedicationId } = await params;
 
     const dedication = await Dedication.findById(dedicationId)
       .populate('reports.reportedBy', 'name email image')
@@ -156,9 +156,9 @@ export async function GET(
     }
 
     return NextResponse.json({
-      reports: dedication.reports,
-      total: dedication.reports.length,
-      isReported: dedication.isReported,
+      reports: (dedication as any).reports,
+      total: (dedication as any).reports.length,
+      isReported: (dedication as any).isReported,
     });
   } catch (error) {
     console.error('Error fetching reports:', error);

@@ -8,7 +8,7 @@ import { validateContent, sanitizeContent } from '@/lib/security';
 // PUT - Editar dedicatoria específica
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,7 +22,7 @@ export async function PUT(
 
     await dbConnect();
 
-    const dedicationId = params.id;
+    const { id: dedicationId } = await params;
     const { content } = await req.json();
 
     if (!content || !content.trim()) {

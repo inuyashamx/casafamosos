@@ -280,7 +280,7 @@ export default function DedicationsManager() {
                         {dedication.userId.name}
                       </span>
                       {dedication.userId.team && (
-                        <TeamBadge team={dedication.userId.team} size="sm" />
+                        <TeamBadge team={dedication.userId.team} size={1} />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">

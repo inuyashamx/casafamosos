@@ -9,7 +9,7 @@ import { checkRateLimit, getClientIP } from '@/lib/security';
 // POST - Dar like a una dedicatoria
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -35,7 +35,7 @@ export async function POST(
 
     await dbConnect();
 
-    const dedicationId = params.id;
+    const { id: dedicationId } = await params;
     // userId ya está definido arriba para rate limiting
 
     const dedication = await Dedication.findById(dedicationId)
@@ -101,25 +101,25 @@ export async function POST(
 // GET - Obtener usuarios que dieron like
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
-    const dedicationId = params.id;
+    const { id: dedicationId } = await params;
 
     const dedication = await Dedication.findById(dedicationId)
       .populate('likes.userId', 'name image team')
       .lean();
 
-    if (!dedication || !dedication.isActive) {
+    if (!dedication || !(dedication as any).isActive) {
       return NextResponse.json(
         { error: 'Dedicatoria no encontrada' },
         { status: 404 }
       );
     }
 
-    const likes = dedication.likes.map((like: any) => ({
+    const likes = (dedication as any).likes.map((like: any) => ({
       user: like.userId,
       likedAt: like.likedAt,
     }));

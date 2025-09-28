@@ -181,7 +181,11 @@ export default function PalabrasCorazonPage() {
 
       {/* Login Modal */}
       {showLoginModal && (
-        <LoginModal onClose={() => setShowLoginModal(false)} />
+        <LoginModal
+          isOpen={true}
+          onClose={() => setShowLoginModal(false)}
+          onAccept={() => setShowLoginModal(false)}
+        />
       )}
     </main>
   );

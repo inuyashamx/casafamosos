@@ -210,7 +210,7 @@ export default function DedicationReports() {
                         {report.user.name}
                       </span>
                       {report.user.team && (
-                        <TeamBadge team={report.user.team} size="sm" />
+                        <TeamBadge team={report.user.team} size={1} />
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
