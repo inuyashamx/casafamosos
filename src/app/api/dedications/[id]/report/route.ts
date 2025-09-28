@@ -95,6 +95,7 @@ export async function POST(
       fromUserId: userId,
       type: 'DEDICATION_REPORT',
       dedicationId: dedicationId,
+      candidateId: dedication.candidateId._id,
       message: `Nueva dedicatoria reportada para ${dedication.candidateId.name}`,
     }));
 

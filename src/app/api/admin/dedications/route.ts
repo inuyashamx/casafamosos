@@ -146,6 +146,7 @@ export async function DELETE(req: NextRequest) {
       fromUserId: (session.user as any).id,
       type: 'DEDICATION_DELETED',
       dedicationId: dedicationId,
+      candidateId: dedication.candidateId._id,
       message: `Tu dedicatoria para ${dedication.candidateId.name} fue eliminada por un administrador. Razón: ${reason}`,
     });
 
@@ -158,6 +159,7 @@ export async function DELETE(req: NextRequest) {
           fromUserId: (session.user as any).id,
           type: 'DEDICATION_DELETED',
           dedicationId: dedicationId,
+          candidateId: dedication.candidateId._id,
           message: `La dedicatoria que reportaste para ${dedication.candidateId.name} fue eliminada por un administrador. Razón: ${reason}`,
         }));
 

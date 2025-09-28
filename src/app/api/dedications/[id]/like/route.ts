@@ -75,6 +75,7 @@ export async function POST(
             fromUserId: userId,
             type: 'DEDICATION_LIKE',
             dedicationId: dedicationId,
+            candidateId: dedication.candidateId._id,
             message: `Le gustó tu dedicatoria para ${dedication.candidateId.name}`,
           });
         } catch (error) {

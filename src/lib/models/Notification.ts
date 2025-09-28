@@ -27,6 +27,11 @@ const NotificationSchema = new mongoose.Schema({
     ref: 'Dedication',
     required: false,
   },
+  candidateId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Candidate',
+    required: false,
+  },
   commentId: {
     type: mongoose.Schema.Types.ObjectId,
     required: false,
@@ -64,9 +69,9 @@ NotificationSchema.virtual('navigationLink').get(function() {
   if (this.type === 'DEDICATION_DELETED') {
     return '/palabras-corazon';
   }
-  // Notificaciones de likes de dedicatorias van a palabras-corazon
+  // Notificaciones de likes de dedicatorias van a la página del candidato
   if (this.type === 'DEDICATION_LIKE') {
-    return '/palabras-corazon';
+    return this.candidateId ? `/palabras-corazon/${this.candidateId}` : '/palabras-corazon';
   }
   // Otras notificaciones van a la página individual del post
   return `/post/${this.postId}${this.commentId ? `#comment-${this.commentId}` : ''}`;

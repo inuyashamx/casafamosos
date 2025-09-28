@@ -56,14 +56,20 @@ export default function DedicationsManager() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchDedications();
   }, [filter, selectedCandidate, page]);
 
-  const fetchDedications = async () => {
+  const fetchDedications = async (showRefreshLoader = false) => {
     try {
-      setLoading(true);
+      if (showRefreshLoader) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
       const params = new URLSearchParams({
         filter,
         page: page.toString(),
@@ -85,6 +91,7 @@ export default function DedicationsManager() {
       console.error('Error fetching dedications:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -148,7 +155,7 @@ export default function DedicationsManager() {
       }
 
       // También refrescar desde el servidor
-      fetchDedications();
+      fetchDedications(true);
     } catch (error) {
       console.error('Error moderating:', error);
       alert('Error al moderar la dedicatoria');
@@ -175,6 +182,10 @@ export default function DedicationsManager() {
   const handleCandidateChange = (candidateId: string) => {
     setSelectedCandidate(candidateId);
     setPage(1);
+  };
+
+  const handleRefresh = () => {
+    fetchDedications(true);
   };
 
   return (
@@ -228,6 +239,31 @@ export default function DedicationsManager() {
             </option>
           ))}
         </select>
+
+        {/* Botón de actualizar */}
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing || loading}
+          className="flex items-center space-x-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg
+                   hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg
+            className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          <span className="text-sm">
+            {refreshing ? 'Actualizando...' : 'Actualizar'}
+          </span>
+        </button>
       </div>
 
       {/* Lista de dedicatorias */}
