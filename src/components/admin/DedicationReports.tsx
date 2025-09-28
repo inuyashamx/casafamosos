@@ -258,7 +258,7 @@ export default function DedicationReports() {
                         </span>
                         {r.customReason && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            "{r.customReason}"
+                            &quot;{r.customReason}&quot;
                           </p>
                         )}
                       </div>
@@ -425,7 +425,7 @@ export default function DedicationReports() {
                   </p>
                   {r.customReason && (
                     <p className="text-sm mt-1 text-muted-foreground">
-                      "{r.customReason}"
+                      &quot;{r.customReason}&quot;
                     </p>
                   )}
                 </div>

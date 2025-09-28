@@ -445,7 +445,7 @@ export default function DedicationsManager() {
                   </p>
                   {report.customReason && (
                     <p className="text-sm mt-1 text-muted-foreground">
-                      "{report.customReason}"
+                      &quot;{report.customReason}&quot;
                     </p>
                   )}
                 </div>
