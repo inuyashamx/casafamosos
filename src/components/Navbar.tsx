@@ -87,7 +87,15 @@ export default function Navbar() {
             </svg>
           </button>
 
+          <button
+            onClick={() => router.push('/palabras-corazon')}
+            className={getButtonStyle('/palabras-corazon')}
+            title="Palabras al Corazón"
+          >
+            <span className="text-xl">❤️</span>
+          </button>
 
+          {/* Simulador - Oculto temporalmente
           <button
             onClick={() => router.push('/simulador')}
             className={getButtonStyle('/simulador')}
@@ -100,6 +108,7 @@ export default function Navbar() {
               <circle cx="16" cy="18" r="1"/>
             </svg>
           </button>
+          */}
 
           <button
             onClick={() => router.push('/ranking')}

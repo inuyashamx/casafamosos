@@ -108,3 +108,127 @@ export function createSafeModal(content: {
 
   return modal;
 }
+
+/**
+ * Sanitize user input to prevent XSS attacks
+ * @param input - Raw user input
+ * @returns Sanitized string safe for display
+ */
+export function sanitizeContent(input: string): string {
+  if (!input) return '';
+
+  return input
+    .trim()
+    // Remove potential script tags and javascript: URLs
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/data:/gi, '')
+    .replace(/vbscript:/gi, '')
+    // Remove HTML tags but preserve line breaks
+    .replace(/<[^>]*>/g, '')
+    // Remove any remaining suspicious patterns
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers like onclick=
+    .replace(/expression\s*\(/gi, '') // Remove CSS expressions
+    .trim();
+}
+
+/**
+ * Validate content for malicious patterns
+ * @param content - Content to validate
+ * @returns true if content is safe, false otherwise
+ */
+export function validateContent(content: string): boolean {
+  if (!content || typeof content !== 'string') return false;
+
+  const cleaned = content.trim();
+
+  // Length validation
+  if (cleaned.length < 20 || cleaned.length > 2000) return false;
+
+  // Check for malicious patterns
+  const maliciousPatterns = [
+    /<script/i,
+    /javascript:/i,
+    /data:/i,
+    /vbscript:/i,
+    /on\w+\s*=/i, // Event handlers
+    /expression\s*\(/i, // CSS expressions
+    /<iframe/i,
+    /<object/i,
+    /<embed/i,
+    /<link/i,
+    /<meta/i,
+    /<style/i,
+  ];
+
+  for (const pattern of maliciousPatterns) {
+    if (pattern.test(cleaned)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Rate limiting storage (in-memory for now)
+ */
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+/**
+ * Check rate limit for a given key
+ * @param key - Unique identifier (IP + action)
+ * @param limit - Maximum requests allowed
+ * @param windowMs - Time window in milliseconds
+ * @returns true if within limit, false if exceeded
+ */
+export function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+
+  if (!entry || now > entry.resetTime) {
+    // First request or window expired
+    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (entry.count >= limit) {
+    return false; // Rate limit exceeded
+  }
+
+  entry.count++;
+  return true;
+}
+
+/**
+ * Clean up expired rate limit entries
+ */
+export function cleanupRateLimit(): void {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (now > entry.resetTime) {
+      rateLimitStore.delete(key);
+    }
+  }
+}
+
+/**
+ * Get client IP address from request headers
+ */
+export function getClientIP(headers: Headers): string {
+  const forwarded = headers.get('x-forwarded-for');
+  const realIp = headers.get('x-real-ip');
+  const clientIp = headers.get('x-client-ip');
+
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  if (realIp) {
+    return realIp;
+  }
+  if (clientIp) {
+    return clientIp;
+  }
+
+  return 'unknown';
+}

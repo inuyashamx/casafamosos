@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import DedicationsManager from '@/components/admin/DedicationsManager';
 
 // Tipos para las temporadas
 interface Season {
@@ -1831,6 +1832,7 @@ export default function AdminPage() {
     { id: 'vote-analysis', label: 'Análisis de Votos', icon: '📊' },
     { id: 'cloudinary', label: 'Imágenes', icon: '🖼️' },
     { id: 'social-media', label: 'Redes Sociales', icon: '📱' },
+    { id: 'dedication-reports', label: 'Dedicatorias', icon: '❤️' },
     { id: 'public', label: 'Página Pública', icon: '🌐' },
   ];
 
@@ -4529,6 +4531,11 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* Gestión de Dedicatorias */}
+          {activeTab === 'dedication-reports' && (
+            <DedicationsManager />
+          )}
+
           {/* Redes Sociales */}
           {activeTab === 'social-media' && (
             <div className="space-y-6">
@@ -4967,7 +4974,7 @@ export default function AdminPage() {
           )}
 
           {/* Otras pestañas */}
-          {activeTab !== 'dashboard' && activeTab !== 'seasons' && activeTab !== 'weeks' && activeTab !== 'candidates' && activeTab !== 'nominees' && activeTab !== 'votes' && activeTab !== 'users' && activeTab !== 'cloudinary' && activeTab !== 'social-media' && activeTab !== 'vote-analysis' && (
+          {activeTab !== 'dashboard' && activeTab !== 'seasons' && activeTab !== 'weeks' && activeTab !== 'candidates' && activeTab !== 'nominees' && activeTab !== 'votes' && activeTab !== 'users' && activeTab !== 'cloudinary' && activeTab !== 'social-media' && activeTab !== 'vote-analysis' && activeTab !== 'dedication-reports' && (
             <div className="text-center text-muted-foreground py-12">
               <div className="text-4xl lg:text-6xl mb-4">🚧</div>
               <p className="text-lg">Sección en construcción...</p>

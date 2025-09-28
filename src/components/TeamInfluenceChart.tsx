@@ -45,12 +45,11 @@ export default function TeamInfluenceChart({ nominees }: TeamInfluenceChartProps
   const percentages = calculateTeamPercentages();
 
   return (
-    <div className="bg-card rounded-xl p-6 border border-border/20 space-y-4">
-      {/* Título con icono */}
+    <div className="space-y-4">
+      {/* Título */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <span className="text-2xl">⚔️</span>
-          Influencia de Teams en la Votación
+        <h3 className="text-lg font-bold text-foreground">
+          Influencia de Teams
         </h3>
       </div>
 
@@ -69,7 +68,7 @@ export default function TeamInfluenceChart({ nominees }: TeamInfluenceChartProps
             >
               {percentages.dia > 10 && (
                 <div className="text-white font-bold drop-shadow-lg flex items-center gap-1">
-                  <span>Team Día {percentages.dia}%</span>
+                  <span>Día {percentages.dia}%</span>
                 </div>
               )}
             </div>
@@ -84,7 +83,7 @@ export default function TeamInfluenceChart({ nominees }: TeamInfluenceChartProps
             >
               {percentages.noche > 10 && (
                 <div className="text-white font-bold drop-shadow-lg flex items-center gap-1">
-                  <span>Team Noche {percentages.noche}%</span>
+                  <span>Noche {percentages.noche}%</span>
                 </div>
               )}
             </div>

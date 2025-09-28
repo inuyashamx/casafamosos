@@ -743,29 +743,28 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Share App Banner Compacto con animaciones */}
-                {session && votingData?.week && canReceiveShareBonus && (
-                  <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-3 text-center animate-pulse shadow-lg hover:shadow-xl transition-all duration-300">
-                    <p className="text-sm font-medium text-foreground mb-2 animate-bounce">
-                      🎁 ¡Comparte y obtén 50 puntos extra!
+                {/* Banner Palabras al Corazón */}
+                <div className="bg-gradient-to-r from-pink-500/10 to-red-500/10 border border-pink-500/20 rounded-lg p-4 mb-4 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 to-red-500/5 animate-pulse"></div>
+                  <div className="relative text-center">
+                    <div className="inline-flex items-center justify-center mb-2">
+                      <span className="text-2xl animate-bounce">❤️</span>
+                      <span className="text-sm font-bold text-pink-500 ml-2 animate-pulse">NUEVO</span>
+                    </div>
+                    <h3 className="text-base font-bold text-foreground mb-1">
+                      Palabras al Corazón
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Escribe dedicatorias a tu habitante favorito
                     </p>
                     <button
-                      onClick={handleShareApp}
-                      className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:scale-110 hover:shadow-lg transform transition-all duration-200 animate-pulse"
+                      onClick={() => router.push('/palabras-corazon')}
+                      className="bg-gradient-to-r from-pink-500 to-red-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:scale-105 transition-all duration-200 shadow-lg animate-pulse"
                     >
-                      📤 COMPARTIR
+                      💌 Escribir Dedicatoria
                     </button>
                   </div>
-                )}
-
-                {/* Mensaje compacto cuando ya recibió el bonus hoy */}
-                {session && votingData?.week && !canReceiveShareBonus && (
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 text-center shadow-md transition-all duration-300">
-                    <p className="text-green-600 text-sm font-medium animate-pulse">
-                      ✅ Bonus recibido hoy
-                    </p>
-                  </div>
-                )}
+                </div>
 
                 <button
                   onClick={handleVoteClick}
@@ -841,9 +840,6 @@ export default function Home() {
                 🔄
               </button>
             </div>
-
-            {/* Team Influence Chart */}
-            <TeamInfluenceChart nominees={votingData.nominees} />
 
             {/* Tab Navigation */}
             <div className="flex space-x-1 bg-muted/30 p-1 rounded-lg">
@@ -964,7 +960,7 @@ export default function Home() {
 
 
 
-        {/* Quick Stats + Ver Historial */}
+        {/* Quick Stats + Ver Historial + Team Influence */}
         {votingData?.nominees && (
           <div className="bg-card rounded-xl p-6 border border-border/20">
             <h3 className="font-semibold text-foreground mb-4">Estadísticas</h3>
@@ -979,6 +975,11 @@ export default function Home() {
                 <div className="text-2xl font-bold text-accent">{votingData.nominees.length}</div>
                 <div className="text-xs text-muted-foreground">Nominados</div>
               </div>
+            </div>
+
+            {/* Team Influence Chart */}
+            <div className="border-t border-border/20 pt-4 pb-4">
+              <TeamInfluenceChart nominees={votingData.nominees} />
             </div>
 
             {/* Ver Historial de Votos */}
@@ -1001,8 +1002,42 @@ export default function Home() {
           </div>
         )}
 
-        {/* Nuevo Simulador de Nominaciones */}
-        <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-6">
+        {/* Share App Banner - Movido aquí */}
+        {session && votingData?.week && canReceiveShareBonus && (
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-4">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                🎁 ¡Comparte y obtén 50 puntos extra!
+              </h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Comparte la app con tus amigos y recibe puntos bonus diarios
+              </p>
+              <button
+                onClick={handleShareApp}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+              >
+                📤 COMPARTIR AHORA
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mensaje cuando ya recibió el bonus hoy */}
+        {session && votingData?.week && !canReceiveShareBonus && (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+            <div className="text-center">
+              <p className="text-green-600 font-medium">
+                ✅ Ya recibiste tu bonus de hoy
+              </p>
+              <p className="text-green-600/80 text-sm mt-1">
+                Vuelve mañana para obtener más puntos compartiendo
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Nuevo Simulador de Nominaciones - Oculto temporalmente */}
+        <div className="hidden bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-6">
           <div className="text-center">
             {/* Badge NUEVO animado centrado */}
             <div className="flex justify-center mb-3">

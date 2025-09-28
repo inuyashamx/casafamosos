@@ -14,13 +14,18 @@ const NotificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['POST_LIKE', 'COMMENT', 'COMMENT_LIKE', 'POST_REACTION', 'COMMENT_REACTION'],
+    enum: ['POST_LIKE', 'COMMENT', 'COMMENT_LIKE', 'POST_REACTION', 'COMMENT_REACTION', 'DEDICATION_REPORT', 'DEDICATION_DELETED', 'DEDICATION_LIKE'],
     required: true,
   },
   postId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Post',
-    required: true,
+    required: false,
+  },
+  dedicationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Dedication',
+    required: false,
   },
   commentId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -51,7 +56,19 @@ NotificationSchema.index({ fromUserId: 1 });
 
 // Método virtual para obtener el enlace de navegación
 NotificationSchema.virtual('navigationLink').get(function() {
-  // Todas las notificaciones van a la página individual del post
+  // Notificaciones de reportes de dedicatorias van al admin dashboard
+  if (this.type === 'DEDICATION_REPORT') {
+    return '/admin';
+  }
+  // Notificaciones de eliminación de dedicatorias van a palabras-corazon
+  if (this.type === 'DEDICATION_DELETED') {
+    return '/palabras-corazon';
+  }
+  // Notificaciones de likes de dedicatorias van a palabras-corazon
+  if (this.type === 'DEDICATION_LIKE') {
+    return '/palabras-corazon';
+  }
+  // Otras notificaciones van a la página individual del post
   return `/post/${this.postId}${this.commentId ? `#comment-${this.commentId}` : ''}`;
 });
 

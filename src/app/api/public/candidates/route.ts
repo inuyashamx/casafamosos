@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Obtener candidatos activos (no eliminados)
-    const candidates = await CandidateService.getActiveCandidates(activeSeason._id.toString());
+    // Obtener TODOS los candidatos (activos y eliminados)
+    const candidates = await CandidateService.getCandidatesBySeason(activeSeason._id.toString());
 
     return NextResponse.json({
       candidates,
