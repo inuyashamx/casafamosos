@@ -56,7 +56,25 @@ export default function DedicationsManager() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
+  const [selectedReasonOption, setSelectedReasonOption] = useState<string>('support_only');
+  const [customDeleteReason, setCustomDeleteReason] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  // Opciones predefinidas para motivos de eliminación
+  const deleteReasonOptions = [
+    { value: 'support_only', label: 'Solo se permiten mensajes de apoyo y cariño' },
+    { value: 'no_sarcasm', label: 'No mensajes de sarcasmo o burla' },
+    { value: 'no_attacks', label: 'No se debe atacar otros habitantes u otros teams' },
+    { value: 'inappropriate', label: 'Contenido inapropiado' },
+    { value: 'offensive', label: 'Lenguaje ofensivo o insultos' },
+    { value: 'spam', label: 'Spam o publicidad' },
+    { value: 'false_info', label: 'Información falsa o engañosa' },
+    { value: 'community_rules', label: 'Violación de normas de la comunidad' },
+    { value: 'duplicate', label: 'Contenido duplicado' },
+    { value: 'explicit', label: 'Contenido sexual o explícito' },
+    { value: 'harassment', label: 'Acoso o amenazas' },
+    { value: 'other', label: 'Otro (especificar)' },
+  ];
 
   useEffect(() => {
     fetchDedications();
@@ -96,8 +114,21 @@ export default function DedicationsManager() {
   };
 
   const handleDelete = async (dedicationId: string) => {
-    if (!deleteReason.trim()) {
-      alert('Por favor especifica una razón para la eliminación');
+    // Determinar el motivo final basado en la opción seleccionada
+    let finalReason = '';
+    if (selectedReasonOption === 'other') {
+      if (!customDeleteReason.trim()) {
+        alert('Por favor especifica una razón personalizada para la eliminación');
+        return;
+      }
+      finalReason = customDeleteReason.trim();
+    } else {
+      const selectedOption = deleteReasonOptions.find(opt => opt.value === selectedReasonOption);
+      finalReason = selectedOption ? selectedOption.label : '';
+    }
+
+    if (!finalReason) {
+      alert('Por favor selecciona una razón para la eliminación');
       return;
     }
 
@@ -106,7 +137,7 @@ export default function DedicationsManager() {
       const response = await fetch(`/api/admin/dedications?id=${dedicationId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: deleteReason.trim() }),
+        body: JSON.stringify({ reason: finalReason }),
       });
 
       if (!response.ok) throw new Error('Error al eliminar');
@@ -115,6 +146,8 @@ export default function DedicationsManager() {
       setDedications(prev => prev.filter(d => d._id !== dedicationId));
       setShowDeleteModal(null);
       setDeleteReason('');
+      setSelectedReasonOption('support_only');
+      setCustomDeleteReason('');
       alert('Dedicatoria eliminada y notificaciones enviadas');
     } catch (error) {
       console.error('Error deleting dedication:', error);
@@ -496,15 +529,23 @@ export default function DedicationsManager() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowDeleteModal(null)}
+            onClick={() => {
+              setShowDeleteModal(null);
+              setSelectedReasonOption('support_only');
+              setCustomDeleteReason('');
+            }}
           />
-          <div className="relative bg-card rounded-xl border border-border/20 max-w-md w-full p-6">
+          <div className="relative bg-card rounded-xl border border-border/20 max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">
                 Eliminar Dedicatoria
               </h3>
               <button
-                onClick={() => setShowDeleteModal(null)}
+                onClick={() => {
+                  setShowDeleteModal(null);
+                  setSelectedReasonOption('support_only');
+                  setCustomDeleteReason('');
+                }}
                 className="text-muted-foreground hover:text-foreground"
               >
                 <svg
@@ -526,31 +567,72 @@ export default function DedicationsManager() {
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Esta acción eliminará permanentemente la dedicatoria. Se notificará al autor
-                y a quienes la reportaron. Especifica una razón:
+                y a quienes la reportaron. Selecciona una razón:
               </p>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-foreground mb-3">
                   Razón de la eliminación *
                 </label>
-                <textarea
-                  value={deleteReason}
-                  onChange={(e) => setDeleteReason(e.target.value)}
-                  placeholder="Ej: Contenido inapropiado, violación de normas, spam, etc."
-                  className="w-full px-3 py-2 bg-background rounded-lg border border-border/50
-                           focus:outline-none focus:border-primary resize-none
-                           text-foreground placeholder:text-muted-foreground"
-                  rows={3}
-                  maxLength={200}
-                />
-                <div className="text-xs text-muted-foreground mt-1">
-                  {deleteReason.length}/200 caracteres
+
+                {/* Opciones predefinidas */}
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {deleteReasonOptions.map((option) => (
+                    <label
+                      key={option.value}
+                      className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all
+                                ${selectedReasonOption === option.value
+                                  ? 'border-primary bg-primary/10'
+                                  : 'border-border/50 hover:border-border hover:bg-muted/50'}`}
+                    >
+                      <input
+                        type="radio"
+                        name="deleteReason"
+                        value={option.value}
+                        checked={selectedReasonOption === option.value}
+                        onChange={(e) => {
+                          setSelectedReasonOption(e.target.value);
+                          if (e.target.value !== 'other') {
+                            setCustomDeleteReason('');
+                          }
+                        }}
+                        className="mt-0.5 mr-3"
+                      />
+                      <span className="text-sm text-foreground">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
                 </div>
+
+                {/* Campo de texto personalizado para "Otro" */}
+                {selectedReasonOption === 'other' && (
+                  <div className="mt-3">
+                    <textarea
+                      value={customDeleteReason}
+                      onChange={(e) => setCustomDeleteReason(e.target.value)}
+                      placeholder="Especifica el motivo de eliminación..."
+                      className="w-full px-3 py-2 bg-background rounded-lg border border-border/50
+                               focus:outline-none focus:border-primary resize-none
+                               text-foreground placeholder:text-muted-foreground"
+                      rows={3}
+                      maxLength={200}
+                      autoFocus
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {customDeleteReason.length}/200 caracteres
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex space-x-3">
                 <button
-                  onClick={() => setShowDeleteModal(null)}
+                  onClick={() => {
+                    setShowDeleteModal(null);
+                    setSelectedReasonOption('support_only');
+                    setCustomDeleteReason('');
+                  }}
                   className="flex-1 bg-muted text-foreground px-4 py-2 rounded-lg
                            hover:bg-muted/80 transition-colors"
                 >
@@ -558,7 +640,8 @@ export default function DedicationsManager() {
                 </button>
                 <button
                   onClick={() => handleDelete(showDeleteModal)}
-                  disabled={!deleteReason.trim() || actionLoading === showDeleteModal}
+                  disabled={(selectedReasonOption === 'other' && !customDeleteReason.trim()) ||
+                           actionLoading === showDeleteModal}
                   className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg
                            hover:bg-red-600 transition-colors disabled:opacity-50
                            disabled:cursor-not-allowed"
