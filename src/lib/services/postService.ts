@@ -54,7 +54,7 @@ export class PostService {
     let posts;
 
     if (sortBy === 'activity') {
-      // Para ordenar por actividad, necesitamos calcular la última actividad
+      // Para ordenar por actividad, solo consideramos comentarios (no reacciones/likes)
       posts = await Post.aggregate([
         { $match: { isActive: true } },
         {
@@ -68,27 +68,13 @@ export class PostService {
                 }
               }
             },
-            lastReactionDate: {
-              $max: {
-                $map: {
-                  input: "$reactions",
-                  as: "reaction",
-                  in: "$$reaction.reactedAt"
-                }
-              }
-            },
+            // Solo consideramos la última actividad basada en comentarios
             lastActivity: {
               $max: [
                 "$createdAt",
                 {
                   $ifNull: [
                     { $max: { $map: { input: "$comments", as: "comment", in: "$$comment.createdAt" } } },
-                    "$createdAt"
-                  ]
-                },
-                {
-                  $ifNull: [
-                    { $max: { $map: { input: "$reactions", as: "reaction", in: "$$reaction.reactedAt" } } },
                     "$createdAt"
                   ]
                 }
