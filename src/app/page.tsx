@@ -16,7 +16,7 @@ import CountdownTimer from '@/components/CountdownTimer';
 import VotingTrends from '@/components/VotingTrends';
 import TeamInfluenceChart from '@/components/TeamInfluenceChart';
 import { escapeHtml, sanitizeUrl } from '@/lib/security';
-import { BannerAd, InArticleAd, StickyFooterAd } from '@/components/AdSense';
+import { BannerAd, InArticleAd, StickyFooterAd, SmallBannerAd } from '@/components/AdSense';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 interface Nominee {
@@ -877,28 +877,8 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Banner Palabras al Corazón */}
-                <div className="bg-gradient-to-r from-pink-500/10 to-red-500/10 border border-pink-500/20 rounded-lg p-4 mb-4 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 to-red-500/5 animate-pulse"></div>
-                  <div className="relative text-center">
-                    <div className="inline-flex items-center justify-center mb-2">
-                      <span className="text-2xl animate-bounce">❤️</span>
-                      <span className="text-sm font-bold text-pink-500 ml-2 animate-pulse">NUEVO</span>
-                    </div>
-                    <h3 className="text-base font-bold text-foreground mb-1">
-                      Palabras al Corazón
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Escribe dedicatorias a tu habitante favorito
-                    </p>
-                    <button
-                      onClick={() => router.push('/palabras-corazon')}
-                      className="bg-gradient-to-r from-pink-500 to-red-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:scale-105 transition-all duration-200 shadow-lg animate-pulse"
-                    >
-                      💌 Escribir Dedicatoria
-                    </button>
-                  </div>
-                </div>
+                {/* Small Banner Ad */}
+                <SmallBannerAd className="mb-4" />
 
                 <button
                   onClick={handleVoteClick}
@@ -1094,8 +1074,8 @@ export default function Home() {
 
 
 
-        {/* In-Article Ad before Stats - HIDDEN DURING VERIFICATION */}
-        {/* <InArticleAd /> */}
+        {/* In-Article Ad before Stats */}
+        <InArticleAd />
 
         {/* Quick Stats + Ver Historial + Team Influence */}
         {votingData?.nominees && (
@@ -1356,8 +1336,8 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Banner Ad - Bottom - HIDDEN DURING VERIFICATION */}
-        {/* <BannerAd /> */}
+        {/* Banner Ad - Bottom */}
+        <BannerAd />
 
       </div>
 
