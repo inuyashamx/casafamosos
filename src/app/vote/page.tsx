@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import TeamBadge from '@/components/TeamBadge';
 import { escapeHtml, sanitizeUrl } from '@/lib/security';
+import { InArticleAd } from '@/components/AdSense';
 
 interface Nominee {
   id: string;
@@ -582,6 +583,8 @@ export default function VotePage() {
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* In-Article Ad */}
+        <InArticleAd />
 
         {/* Error Display */}
         {error && (

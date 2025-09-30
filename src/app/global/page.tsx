@@ -6,7 +6,7 @@ import Image from 'next/image';
 import DraggableRanking from '@/components/DraggableRanking';
 import TeamBadge from '@/components/TeamBadge';
 import Navbar from '@/components/Navbar';
-import { InArticleAd } from '@/components/AdSense';
+import { InArticleAd, BannerAd } from '@/components/AdSense';
 
 interface Candidate {
   _id: string;
@@ -391,6 +391,9 @@ export default function GlobalPage() {
                 })}
               </div>
             </div>
+
+            {/* Banner Ad */}
+            <BannerAd />
 
             {/* Recent Activity */}
             {globalResults.recentActivity.length > 0 && (
