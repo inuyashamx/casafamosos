@@ -25,11 +25,11 @@ export default function AdSense({
   className = ''
 }: AdSenseProps) {
   const pathname = usePathname();
-  const [adKey, setAdKey] = useState(0);
+  const [adKey, setAdKey] = useState(() => Math.random().toString(36).substr(2, 9));
 
   useEffect(() => {
-    // Reinicializar el anuncio cuando cambie la ruta
-    setAdKey(prev => prev + 1);
+    // Reinicializar el anuncio cuando cambie la ruta con un ID único
+    setAdKey(Math.random().toString(36).substr(2, 9));
   }, [pathname]);
 
   useEffect(() => {
@@ -45,8 +45,10 @@ export default function AdSense({
     }
   }, [adKey]);
 
+  const uniqueId = `ad-${slot}-${adKey}`;
+
   return (
-    <div className={`adsense-container ${className}`} key={`ad-${adKey}`}>
+    <div className={`adsense-container ${className}`} key={uniqueId} data-ad-id={uniqueId}>
       <ins
         className="adsbygoogle"
         style={style}

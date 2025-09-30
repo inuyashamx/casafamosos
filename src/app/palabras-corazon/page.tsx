@@ -68,7 +68,7 @@ export default function PalabrasCorazonPage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
-        {/* Small Banner Ad */}
+        {/* Small Banner Ad - Top */}
         <SmallBannerAd className="mb-4" />
 
         {/* Header */}
@@ -148,6 +148,9 @@ export default function PalabrasCorazonPage() {
             </div>
           )}
         </div>
+
+        {/* Small Banner Ad */}
+        <SmallBannerAd className="my-6" />
 
         {/* Info Section */}
         <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
