@@ -25,31 +25,28 @@ export default function AdSense({
   className = ''
 }: AdSenseProps) {
   const pathname = usePathname();
-  const [adKey, setAdKey] = useState(() => Math.random().toString(36).substr(2, 9));
+  const [loadKey, setLoadKey] = useState(0);
 
+  // Reinicializar cuando cambie la ruta
   useEffect(() => {
-    // Reinicializar el anuncio cuando cambie la ruta con un ID único
-    setAdKey(Math.random().toString(36).substr(2, 9));
+    setLoadKey(prev => prev + 1);
   }, [pathname]);
 
   useEffect(() => {
     try {
-      // Pequeño delay para asegurar que el DOM esté listo
       const timer = setTimeout(() => {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       }, 100);
-
       return () => clearTimeout(timer);
     } catch (err) {
       console.error('AdSense error:', err);
     }
-  }, [adKey]);
-
-  const uniqueId = `ad-${slot}-${adKey}`;
+  }, [loadKey]);
 
   return (
-    <div className={`adsense-container ${className}`} key={uniqueId} data-ad-id={uniqueId}>
+    <div className={`adsense-container ${className}`}>
       <ins
+        key={`${slot}-${loadKey}`}
         className="adsbygoogle"
         style={style}
         data-ad-client="ca-pub-3763339383362664"
@@ -76,10 +73,10 @@ export function BannerAd({ className = '' }: { className?: string }) {
 export function SmallBannerAd({ className = '' }: { className?: string }) {
   return (
     <AdSense
-      slot={process.env.NEXT_PUBLIC_ADSENSE_INARTICLE_SLOT || ''}
-      format="fluid"
+      slot={process.env.NEXT_PUBLIC_ADSENSE_BANNER_SLOT || ''}
+      format="auto"
       className={`my-4 ${className}`}
-      style={{ display: 'block', textAlign: 'center', minHeight: '100px', maxHeight: '250px' }}
+      style={{ display: 'block', minHeight: '100px', maxHeight: '250px' }}
     />
   );
 }
