@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import Post from './Post';
 import CreatePost from './CreatePost';
+import { InFeedAd } from './AdSense';
 
 interface PostData {
   _id: string;
@@ -270,10 +271,17 @@ export default function Feed({ userId }: FeedProps) {
         </div>
       ) : (
         <>
-          {posts.map((post) => (
-            <Post key={post._id} post={post} onPostUpdate={handlePostUpdate} />
-          ))}
-          
+          {posts.map((post, index) => {
+            const showAd = (index + 1) % 3 === 0;
+            return (
+              <Fragment key={post._id}>
+                <Post post={post} onPostUpdate={handlePostUpdate} />
+                {/* Insertar InFeedAd cada 3 posts */}
+                {showAd && <InFeedAd />}
+              </Fragment>
+            );
+          })}
+
           {/* Infinite scroll trigger + Manual button backup */}
           {hasMore && posts.length > 0 && (
             <div className="text-center space-y-4">
