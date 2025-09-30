@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import LoginModal from '@/components/LoginModal';
-import { InArticleAd } from '@/components/AdSense';
+import { InArticleAd, BannerAd } from '@/components/AdSense';
 
 interface Candidate {
   _id: string;
@@ -149,8 +149,8 @@ export default function PalabrasCorazonPage() {
           )}
         </div>
 
-        {/* In-Article Ad */}
-        <InArticleAd />
+        {/* Banner Ad */}
+        <BannerAd />
 
         {/* Info Section */}
         <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
