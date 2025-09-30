@@ -5,6 +5,7 @@ import TeamBadge from '@/components/TeamBadge';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Navbar from '@/components/Navbar';
+import { SmallBannerAd } from '@/components/AdSense';
 
 interface RankingUserItem {
   rank: number;
@@ -131,6 +132,9 @@ export default function RankingPage() {
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Small Banner Ad */}
+        <SmallBannerAd className="mb-4" />
+
         {/* Título movido al contenido */}
         <div className="text-center">
           <h1 className="text-2xl font-bold text-primary">RANKINGS DE VOTANTES</h1>

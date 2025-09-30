@@ -6,6 +6,7 @@ import Image from 'next/image';
 import DraggableRanking from '@/components/DraggableRanking';
 import TeamBadge from '@/components/TeamBadge';
 import Navbar from '@/components/Navbar';
+import { SmallBannerAd } from '@/components/AdSense';
 
 interface Candidate {
   _id: string;
@@ -238,6 +239,9 @@ export default function GlobalPage() {
       <Navbar />
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Small Banner Ad */}
+        <SmallBannerAd className="mb-4" />
+
         {/* Hero Section */}
         <div className="text-center bg-gradient-to-r from-yellow-500/20 via-amber-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-6">
           <div className="text-6xl mb-4">🏆</div>

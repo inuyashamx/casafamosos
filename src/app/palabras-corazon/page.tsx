@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import LoginModal from '@/components/LoginModal';
+import { SmallBannerAd } from '@/components/AdSense';
 
 interface Candidate {
   _id: string;
@@ -67,6 +68,9 @@ export default function PalabrasCorazonPage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
+        {/* Small Banner Ad */}
+        <SmallBannerAd className="mb-4" />
+
         {/* Header */}
         <div className="text-center mb-6 sm:mb-12">
           <h1 className="text-2xl sm:text-4xl font-bold text-foreground mb-3 sm:mb-4">
