@@ -17,6 +17,7 @@ import VotingTrends from '@/components/VotingTrends';
 import TeamInfluenceChart from '@/components/TeamInfluenceChart';
 import { escapeHtml, sanitizeUrl } from '@/lib/security';
 import { BannerAd, InArticleAd, StickyFooterAd } from '@/components/AdSense';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 interface Nominee {
   id: string;
@@ -75,6 +76,7 @@ interface VotingData {
 export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { enablePushNotifications } = usePushNotifications();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
@@ -93,6 +95,7 @@ export default function Home() {
   const [showVotesModal, setShowVotesModal] = useState(false);
   const [votesModalFilter, setVotesModalFilter] = useState<{candidateId?: string; candidateName?: string}>({});
   const [activeTab, setActiveTab] = useState<'current' | 'trends'>('current');
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
   // Redes sociales
   const [socialMedia, setSocialMedia] = useState({
@@ -146,6 +149,31 @@ export default function Home() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
+
+  // Push Notifications prompt
+  useEffect(() => {
+    if (!session) return;
+
+    // Verificar estado de permisos
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+
+    // Mostrar modal de notificaciones después de 60 segundos si no lo ha visto
+    const hasSeenNotificationPrompt = localStorage.getItem('hasSeenNotificationPrompt');
+
+    if (!hasSeenNotificationPrompt &&
+        typeof window !== 'undefined' &&
+        'Notification' in window &&
+        Notification.permission === 'default') {
+      const timer = setTimeout(() => {
+        showNotificationPrompt();
+        localStorage.setItem('hasSeenNotificationPrompt', 'true');
+      }, 60000); // 60 segundos
+
+      return () => clearTimeout(timer);
+    }
+  }, [session]);
 
   const showInstallAlert = () => {
     const modal = document.createElement('div');
@@ -227,6 +255,107 @@ export default function Home() {
     };
 
     document.body.appendChild(modal);
+  };
+
+  const showNotificationPrompt = () => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in';
+    modal.innerHTML = `
+      <div class="bg-card rounded-2xl w-full max-w-md border border-border/40 overflow-hidden shadow-2xl transform scale-95 animate-scale-in">
+        <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 text-center text-white">
+          <div class="text-5xl mb-3">🔔</div>
+          <h3 class="text-2xl font-bold">¡Activa las Notificaciones!</h3>
+          <p class="text-sm opacity-90 mt-2">No te pierdas nada importante</p>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="bg-muted/30 rounded-lg p-4 border border-border/20">
+            <div class="flex items-start space-x-3">
+              <span class="text-2xl">✨</span>
+              <div>
+                <p class="font-semibold text-foreground">Recibe notificaciones de:</p>
+                <ul class="text-sm text-muted-foreground mt-2 space-y-1">
+                  <li>• Comentarios en tus publicaciones</li>
+                  <li>• Likes y reacciones</li>
+                  <li>• Nuevas votaciones activas</li>
+                  <li>• Actualizaciones importantes</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex space-x-3">
+            <button id="activate-notifications-btn" class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg">
+              Activar Notificaciones
+            </button>
+            <button id="close-notification-prompt-btn" class="flex-1 bg-muted hover:bg-muted/80 text-foreground py-3 rounded-lg font-medium transition-colors">
+              Más Tarde
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Add event listeners
+    const activateBtn = document.getElementById('activate-notifications-btn');
+    const closeBtn = document.getElementById('close-notification-prompt-btn');
+
+    if (activateBtn) {
+      activateBtn.addEventListener('click', async () => {
+        activateBtn.innerHTML = '<span class="animate-spin">⏳</span> Activando...';
+        activateBtn.setAttribute('disabled', 'true');
+
+        const success = await enablePushNotifications();
+
+        if (success) {
+          modal.innerHTML = `
+            <div class="bg-card rounded-2xl w-full max-w-md border border-border/40 overflow-hidden shadow-2xl transform scale-95 animate-scale-in">
+              <div class="bg-gradient-to-r from-green-500 to-emerald-500 p-6 text-center text-white">
+                <div class="text-5xl mb-3">✅</div>
+                <h3 class="text-2xl font-bold">¡Notificaciones Activadas!</h3>
+                <p class="text-sm opacity-90 mt-2">Ahora recibirás notificaciones en tiempo real</p>
+              </div>
+              <div class="p-6">
+                <button id="close-success-btn" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-colors">
+                  Continuar
+                </button>
+              </div>
+            </div>
+          `;
+
+          const successCloseBtn = document.getElementById('close-success-btn');
+          if (successCloseBtn) {
+            successCloseBtn.addEventListener('click', () => modal.remove());
+          }
+        } else {
+          modal.innerHTML = `
+            <div class="bg-card rounded-2xl w-full max-w-md border border-border/40 overflow-hidden shadow-2xl transform scale-95 animate-scale-in">
+              <div class="bg-gradient-to-r from-red-500 to-orange-500 p-6 text-center text-white">
+                <div class="text-5xl mb-3">❌</div>
+                <h3 class="text-2xl font-bold">No se pudieron activar</h3>
+                <p class="text-sm opacity-90 mt-2">Por favor, verifica los permisos del navegador</p>
+              </div>
+              <div class="p-6">
+                <button id="close-error-btn" class="w-full bg-muted hover:bg-muted/80 text-foreground py-3 rounded-lg font-semibold transition-colors">
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          `;
+
+          const errorCloseBtn = document.getElementById('close-error-btn');
+          if (errorCloseBtn) {
+            errorCloseBtn.addEventListener('click', () => modal.remove());
+          }
+        }
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => modal.remove());
+    }
   };
 
   const handleInstallClick = async () => {
@@ -1094,7 +1223,30 @@ export default function Home() {
           </div>
         )}
 
-
+        {/* Push Notifications Block */}
+        {session && (
+          <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="text-3xl">🔔</div>
+                <div>
+                  <h3 className="font-bold text-foreground">
+                    Recibe notificaciones en tu celular
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Entérate de comentarios, likes y más
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={showNotificationPrompt}
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:scale-105 transition-all duration-200 shadow-lg whitespace-nowrap"
+              >
+                🔔 Activar
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Redes Sociales */}
         {(socialMedia.telegram || socialMedia.twitter || socialMedia.facebook || socialMedia.instagram || socialMedia.tiktok) && (
