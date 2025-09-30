@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 
 declare global {
   interface Window {
@@ -24,29 +23,16 @@ export default function AdSense({
   responsive = true,
   className = ''
 }: AdSenseProps) {
-  const pathname = usePathname();
-  const [adKey, setAdKey] = useState(0);
-
-  useEffect(() => {
-    // Reinicializar el anuncio cuando cambie la ruta
-    setAdKey(prev => prev + 1);
-  }, [pathname]);
-
   useEffect(() => {
     try {
-      // Pequeño delay para asegurar que el DOM esté listo
-      const timer = setTimeout(() => {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      }, 100);
-
-      return () => clearTimeout(timer);
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
       console.error('AdSense error:', err);
     }
-  }, [adKey]);
+  }, []);
 
   return (
-    <div className={`adsense-container ${className}`} key={`ad-${adKey}`}>
+    <div className={`adsense-container ${className}`}>
       <ins
         className="adsbygoogle"
         style={style}
@@ -75,10 +61,9 @@ export function SmallBannerAd({ className = '' }: { className?: string }) {
   return (
     <AdSense
       slot={process.env.NEXT_PUBLIC_ADSENSE_BANNER_SLOT || ''}
-      format="auto"
-      responsive={true}
-      className={`my-4 ${className}`}
-      style={{ display: 'block' }}
+      format="horizontal"
+      className={className}
+      style={{ display: 'block', minHeight: '50px', maxHeight: '90px' }}
     />
   );
 }
