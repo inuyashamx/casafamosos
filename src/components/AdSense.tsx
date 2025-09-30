@@ -74,9 +74,9 @@ export function SmallBannerAd({ className = '' }: { className?: string }) {
   return (
     <AdSense
       slot={process.env.NEXT_PUBLIC_ADSENSE_BANNER_SLOT || ''}
-      format="fluid"
+      format="horizontal"
       className={`my-4 ${className}`}
-      style={{ display: 'block', textAlign: 'center', minHeight: '90px', maxHeight: '150px' }}
+      style={{ display: 'block', minHeight: '50px', maxHeight: '100px' }}
     />
   );
 }
