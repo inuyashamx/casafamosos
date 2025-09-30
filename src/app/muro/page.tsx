@@ -3,7 +3,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Feed from '@/components/Feed';
 import Navbar from '@/components/Navbar';
-import { SmallBannerAd } from '@/components/AdSense';
+import { InArticleAd } from '@/components/AdSense';
 
 export default function MuroPage() {
   const { data: session, status } = useSession();
@@ -27,8 +27,8 @@ export default function MuroPage() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Small Banner Ad */}
-        <SmallBannerAd className="mb-4" />
+        {/* In-Article Ad */}
+        <InArticleAd />
 
         <Feed />
       </div>

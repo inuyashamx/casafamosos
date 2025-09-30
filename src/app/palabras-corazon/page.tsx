@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import LoginModal from '@/components/LoginModal';
-import { SmallBannerAd } from '@/components/AdSense';
+import { InArticleAd } from '@/components/AdSense';
 
 interface Candidate {
   _id: string;
@@ -68,8 +68,8 @@ export default function PalabrasCorazonPage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
-        {/* Small Banner Ad - Top */}
-        <SmallBannerAd className="mb-4" />
+        {/* In-Article Ad - Top */}
+        <InArticleAd />
 
         {/* Header */}
         <div className="text-center mb-6 sm:mb-12">
@@ -149,8 +149,8 @@ export default function PalabrasCorazonPage() {
           )}
         </div>
 
-        {/* Small Banner Ad */}
-        <SmallBannerAd className="my-6" />
+        {/* In-Article Ad */}
+        <InArticleAd />
 
         {/* Info Section */}
         <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
