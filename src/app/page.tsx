@@ -877,8 +877,8 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Small Banner Ad */}
-                <SmallBannerAd className="mb-4" />
+                {/* In-Article Ad */}
+                <InArticleAd />
 
                 <button
                   onClick={handleVoteClick}
