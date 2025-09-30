@@ -19,7 +19,7 @@ export function middleware(request: NextRequest) {
     "img-src 'self' data: https: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://securepubads.g.doubleclick.net; " +
     "font-src 'self' data: https://fonts.gstatic.com; " +
     "connect-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://fcm.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://fcmregistrations.googleapis.com; " +
-    "frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com;"
+    "frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.youtube.com https://www.youtube-nocookie.com;"
   );
 
   // HSTS (HTTP Strict Transport Security) - only in production
