@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 
 declare global {
   interface Window {
@@ -24,29 +23,17 @@ export default function AdSense({
   responsive = true,
   className = ''
 }: AdSenseProps) {
-  const pathname = usePathname();
-  const [loadKey, setLoadKey] = useState(0);
-
-  // Reinicializar cuando cambie la ruta
-  useEffect(() => {
-    setLoadKey(prev => prev + 1);
-  }, [pathname]);
-
   useEffect(() => {
     try {
-      const timer = setTimeout(() => {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      }, 100);
-      return () => clearTimeout(timer);
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
       console.error('AdSense error:', err);
     }
-  }, [loadKey]);
+  }, []);
 
   return (
     <div className={`adsense-container ${className}`}>
       <ins
-        key={`${slot}-${loadKey}`}
         className="adsbygoogle"
         style={style}
         data-ad-client="ca-pub-3763339383362664"
