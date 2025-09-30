@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Notification, useNotifications } from '@/contexts/NotificationContext';
 import Navbar from '@/components/Navbar';
+import PushNotificationToggle from '@/components/notifications/PushNotificationToggle';
 
 export default function NotificationsPage() {
   const { data: session, status } = useSession();
@@ -185,6 +186,11 @@ export default function NotificationsPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Push Notification Settings */}
+          <div className="p-4 sm:p-6 border-b border-border">
+            <PushNotificationToggle />
           </div>
 
           <div className="divide-y divide-border">

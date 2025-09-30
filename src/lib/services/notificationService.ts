@@ -3,6 +3,7 @@ import Notification from '@/lib/models/Notification';
 import UserPushSettings from '@/lib/models/UserPushSettings';
 import User from '@/lib/models/User';
 import mongoose from 'mongoose';
+import { PushNotificationService } from './pushNotificationService';
 
 export interface CreateNotificationData {
   userId: string;
@@ -37,6 +38,12 @@ export class NotificationService {
     const populatedNotification = await Notification.findById(notification._id)
       .populate('fromUserId', 'name image')
       .lean();
+
+    // Intentar enviar push notification de manera no bloqueante
+    // Si falla, no afecta la creación de la notificación
+    PushNotificationService.sendFromNotification(notification._id.toString()).catch((error) => {
+      console.error('Error sending push notification:', error);
+    });
 
     return populatedNotification;
   }

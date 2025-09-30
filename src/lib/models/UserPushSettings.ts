@@ -69,7 +69,6 @@ UserPushSettingsSchema.methods.canReceivePush = function() {
   const PUSH_RULES = {
     MIN_INTERVAL: 30 * 60 * 1000, // 30 minutos
     MAX_DAILY_PUSH: 5,
-    QUIET_HOURS: { start: 22, end: 8 }
   };
 
   // 1. ¿Usuario tiene push habilitado?
@@ -81,12 +80,7 @@ UserPushSettingsSchema.methods.canReceivePush = function() {
     if (timeSinceLastPush < PUSH_RULES.MIN_INTERVAL) return false;
   }
 
-  // 3. ¿Está en horas silenciosas?
-  const currentHour = new Date().getHours();
-  if (currentHour >= PUSH_RULES.QUIET_HOURS.start ||
-      currentHour < PUSH_RULES.QUIET_HOURS.end) return false;
-
-  // 4. ¿Ha excedido límite diario?
+  // 3. ¿Ha excedido límite diario?
   if (this.pushCount >= PUSH_RULES.MAX_DAILY_PUSH) return false;
 
   return true;
