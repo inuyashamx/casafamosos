@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/mongodb';
-import User from '@/models/User';
-import Vote from '@/models/Vote';
-import Post from '@/models/Post';
-import Dedication from '@/models/Dedication';
-import Notification from '@/models/Notification';
+import User from '@/lib/models/User';
+import Vote from '@/lib/models/Vote';
+import Post from '@/lib/models/Post';
+import Dedication from '@/lib/models/Dedication';
+import Notification from '@/lib/models/Notification';
 
 export async function POST(request: NextRequest) {
   try {

@@ -24,7 +24,7 @@ export default function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
 
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
             <p>
-              <strong className="text-foreground">Última actualización:</strong> 17 de septiembre de 2025
+              <strong className="text-foreground">Última actualización:</strong> 2 de octubre de 2025
             </p>
 
             <div>
@@ -93,6 +93,9 @@ export default function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
                 <li>Oponerse al procesamiento de sus datos</li>
                 <li>Retirar su consentimiento en cualquier momento</li>
               </ul>
+              <p className="mt-2">
+                <strong className="text-foreground">Eliminación de Cuenta:</strong> Puede eliminar su cuenta y todos sus datos asociados en cualquier momento desde la sección de perfil. Esta acción eliminará permanentemente su información, incluyendo votos, posts, comentarios, dedicatorias y notificaciones. Esta acción es irreversible.
+              </p>
             </div>
 
             <div>

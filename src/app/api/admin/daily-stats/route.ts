@@ -59,7 +59,8 @@ export async function GET(req: NextRequest) {
           date: {
             $dateToString: {
               format: '%Y-%m-%d',
-              date: '$voteDate'
+              date: '$voteDate',
+              timezone: 'America/Mexico_City'
             }
           },
           userId: 1,
@@ -102,7 +103,8 @@ export async function GET(req: NextRequest) {
           date: {
             $dateToString: {
               format: '%Y-%m-%d',
-              date: '$createdAt'
+              date: '$createdAt',
+              timezone: 'America/Mexico_City'
             }
           }
         }

@@ -1074,8 +1074,8 @@ export default function Home() {
 
 
 
-        {/* In-Article Ad before Stats */}
-        <InArticleAd />
+        {/* Small Banner Ad before Stats */}
+        <SmallBannerAd />
 
         {/* Quick Stats + Ver Historial + Team Influence */}
         {votingData?.nominees && (
