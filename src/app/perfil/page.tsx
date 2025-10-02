@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import TeamBadge from '@/components/TeamBadge';
 import Navbar from '@/components/Navbar';
+import DeleteAccountModal from '@/components/DeleteAccountModal';
+import { signOut } from 'next-auth/react';
 
 interface UserProfile {
   _id: string;
@@ -46,6 +48,11 @@ export default function PerfilPage() {
     hasPrevPage: false,
     limit: 5
   });
+
+  // Estados para eliminación de cuenta
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -216,6 +223,34 @@ export default function PerfilPage() {
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       fetchVoteHistory(newPage);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+
+      const response = await fetch('/api/user/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          confirmationText: 'ELIMINAR MI CUENTA',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar la cuenta');
+      }
+
+      // Cerrar sesión y redirigir al home
+      await signOut({ callbackUrl: '/' });
+    } catch (error: any) {
+      setDeleteError(error.message);
+      setIsDeleting(false);
     }
   };
 
@@ -477,6 +512,27 @@ export default function PerfilPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Zona de Peligro - Botón oculto de eliminación */}
+              <div className="mt-6 pt-6 border-t border-destructive/20">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-destructive">Zona de Peligro</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Esta acción eliminará permanentemente tu cuenta y todos tus datos.
+                  </p>
+                  {deleteError && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                      <p className="text-destructive text-sm">{deleteError}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="w-full bg-destructive/10 text-destructive px-4 py-2 rounded-lg text-sm font-medium hover:bg-destructive/20 transition-colors border border-destructive/20"
+                  >
+                    Eliminar mi cuenta
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Historial de Votos */}
@@ -635,6 +691,14 @@ export default function PerfilPage() {
           </div>
         ) : null}
       </div>
+
+      {/* Modal de confirmación de eliminación */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteAccount}
+        isDeleting={isDeleting}
+      />
     </main>
   );
 } 
