@@ -44,11 +44,9 @@ export default function DailyStatsModule() {
     }
   };
 
-  // Cargar datos iniciales (último mes)
+  // Cargar datos iniciales (últimos 3 meses)
   useEffect(() => {
-    const currentMonth = getCurrentMonth();
-    setSelectedMonth(currentMonth);
-    loadStatsData(currentMonth);
+    loadStatsData(); // Sin mes específico para cargar últimos 3 meses
   }, []);
 
   // Formatear fecha para mostrar
@@ -86,6 +84,7 @@ export default function DailyStatsModule() {
             <div>
               <h3 className="text-xl font-semibold text-foreground">Actividad Diaria</h3>
               <p className="text-sm text-muted-foreground mt-1">
+                {selectedMonth ? 'Mes seleccionado' : 'Últimos 3 meses'} |{' '}
                 <span className="font-bold text-foreground">{getTotalVotes()}</span> votos |
                 <span className="font-bold text-foreground"> {getTotalPoints().toLocaleString()}</span> puntos |
                 <span className="font-bold text-foreground"> {getTotalRegisteredUsers()}</span> usuarios registrados
@@ -109,6 +108,18 @@ export default function DailyStatsModule() {
               >
                 {loading ? 'Cargando...' : 'Filtrar'}
               </button>
+              {selectedMonth && (
+                <button
+                  onClick={() => {
+                    setSelectedMonth('');
+                    loadStatsData();
+                  }}
+                  disabled={loading}
+                  className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                >
+                  Ver últimos 3 meses
+                </button>
+              )}
             </div>
           </div>
         </div>

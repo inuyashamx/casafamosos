@@ -36,10 +36,10 @@ export async function GET(req: NextRequest) {
       startDate = new Date(year, monthNum - 1, 1);
       endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
     } else {
-      // Por defecto: último mes
+      // Por defecto: últimos 3 meses
       endDate = new Date();
       startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 1);
+      startDate.setMonth(startDate.getMonth() - 3);
       startDate.setHours(0, 0, 0, 0);
     }
 
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
       totalPuntos: dailyVotes.find(v => v._id === date)?.totalPuntos || 0,
       usuariosActivos: dailyVotes.find(v => v._id === date)?.usuariosActivos || 0,
       usuariosRegistrados: usersMap.get(date) || 0
-    })).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    })).sort((a, b) => b.fecha.localeCompare(a.fecha)); // Orden descendente: más reciente primero
 
     return NextResponse.json({
       data: combinedData,
