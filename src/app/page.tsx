@@ -824,6 +824,40 @@ export default function Home() {
         {/* Banner Ad - Top - HIDDEN DURING VERIFICATION */}
         {/* <BannerAd /> */}
 
+        {/* Granja VIP Promo */}
+        <div className="bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border-2 border-green-500/40 rounded-2xl p-6 shadow-xl">
+          <div className="text-center space-y-4">
+            {/* Badge Nuevo */}
+            <div className="flex justify-center">
+              <div className="bg-gradient-to-r from-yellow-400 to-amber-500 text-black px-4 py-2 rounded-full text-xs font-bold shadow-lg animate-pulse">
+                ✨ NUEVA PLATAFORMA ✨
+              </div>
+            </div>
+
+            {/* Título */}
+            <h2 className="text-3xl font-bold text-foreground">
+              🌟 ¡Granja VIP ya tiene su propia plataforma!
+            </h2>
+
+            {/* Logo o Emoji destacado */}
+            <div className="text-6xl animate-bounce">
+              🐔🐄🐷
+            </div>
+
+            {/* Botón CTA */}
+            <div className="pt-2">
+              <a
+                href="https://lagranjavota.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:scale-105 transition-all duration-200"
+              >
+                🚀 IR A LAGRANJAVOTA.COM
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Status Banner */}
         {loading ? (
           <div className="bg-card/50 rounded-xl p-4 border border-border/20 text-center">
