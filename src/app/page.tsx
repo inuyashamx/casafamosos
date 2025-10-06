@@ -96,6 +96,8 @@ export default function Home() {
   const [votesModalFilter, setVotesModalFilter] = useState<{candidateId?: string; candidateName?: string}>({});
   const [activeTab, setActiveTab] = useState<'current' | 'trends'>('current');
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [seasonLikes, setSeasonLikes] = useState(0);
+  const [hasLiked, setHasLiked] = useState(false);
 
   // Redes sociales
   const [socialMedia, setSocialMedia] = useState({
@@ -411,6 +413,57 @@ export default function Home() {
 
     fetchSocialMedia();
   }, []);
+
+  // Cargar likes de la temporada
+  useEffect(() => {
+    const fetchSeasonLikes = async () => {
+      try {
+        const response = await fetch('/api/season-likes');
+        if (response.ok) {
+          const data = await response.json();
+          setSeasonLikes(data.likes || 0);
+          setHasLiked(data.hasLiked || false);
+        }
+      } catch (error) {
+        console.error('Error fetching season likes:', error);
+      }
+    };
+
+    fetchSeasonLikes();
+  }, []);
+
+  // Función para dar like a la temporada
+  const handleSeasonLike = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget;
+    btn.classList.add('animate-ping');
+    setTimeout(() => btn.classList.remove('animate-ping'), 600);
+
+    if (hasLiked) {
+      return; // Ya dio like
+    }
+
+    try {
+      const response = await fetch('/api/season-likes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSeasonLikes(data.totalLikes);
+        setHasLiked(true);
+
+        // Mostrar mensaje de éxito
+        if (typeof window !== 'undefined' && (window as any).showSuccessMessage) {
+          (window as any).showSuccessMessage('¡Gracias por tu reacción! ❤️');
+        }
+      }
+    } catch (error) {
+      console.error('Error liking season:', error);
+    }
+  };
 
 
   // Cargar puntos del usuario y verificar si es admin
@@ -824,6 +877,52 @@ export default function Home() {
         {/* Banner Ad - Top - HIDDEN DURING VERIFICATION */}
         {/* <BannerAd /> */}
 
+        {/* Bloque de Felicitaciones a Aldo de Nigris - CIERRE DE TEMPORADA */}
+        <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border-2 border-yellow-500/40 rounded-2xl p-8 shadow-2xl">
+          <div className="text-center space-y-6">
+            {/* Título Principal */}
+            <div className="space-y-3">
+              <div className="text-6xl animate-bounce">🎉</div>
+              <h1 className="text-4xl font-bold text-foreground bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+                ¡Felicitaciones a Aldo de Nigris!
+              </h1>
+              <p className="text-2xl font-semibold text-foreground">
+                Ganador de La Casa de los Famosos México
+              </p>
+            </div>
+
+            {/* Foto de Aldo */}
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                <Image
+                  src="https://www.lacasadelosfamososmexico.tv/_next/image?url=https%3A%2F%2Fst1.uvnimg.com%2F88%2F5f%2F072ca02f44a89263dd017aa5fa18%2Flcdlf3-showcast-tarzan.jpg&w=1280&q=75"
+                  alt="Aldo de Nigris"
+                  width={200}
+                  height={200}
+                  className="relative rounded-full border-4 border-yellow-500 shadow-2xl"
+                />
+                <div className="absolute -top-2 -right-2 text-5xl">👑</div>
+              </div>
+            </div>
+
+            {/* Mensaje de dedicatorias */}
+            <div className="bg-white/50 dark:bg-black/20 rounded-xl p-6 border border-yellow-500/30">
+              <p className="text-lg text-foreground mb-4">
+                💬 Recuerda que puedes escribirle dedicatorias a tus habitantes favoritos
+              </p>
+
+              {/* Botón de Acción */}
+              <button
+                onClick={() => router.push('/palabras-corazon')}
+                className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+              >
+                ✍️ Escribir Dedicatorias
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Granja VIP Promo */}
         <div className="bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border-2 border-green-500/40 rounded-2xl p-6 shadow-xl">
           <div className="text-center space-y-4">
@@ -854,6 +953,80 @@ export default function Home() {
               >
                 🚀 IR A LAGRANJAVOTA.COM
               </a>
+            </div>
+
+            {/* Mensaje adicional */}
+            <p className="text-foreground text-base mt-4">
+              💚 ¡Sigamos juntos con este viaje! La diversión continúa en La Granja VIP
+            </p>
+          </div>
+        </div>
+
+        {/* Bloque de Agradecimiento Final - CIERRE DE TEMPORADA */}
+        <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 border-2 border-blue-500/30 rounded-2xl p-8 shadow-xl">
+          <div className="text-center space-y-6">
+            {/* Título de agradecimiento */}
+            <div className="space-y-3">
+              <div className="text-5xl">🙏</div>
+              <h2 className="text-3xl font-bold text-foreground">
+                ¡Gracias por esta temporada!
+              </h2>
+              <div className="space-y-2">
+                <button
+                  onClick={handleSeasonLike}
+                  disabled={hasLiked}
+                  className={`inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all duration-200 shadow-lg ${
+                    hasLiked
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 hover:scale-110'
+                  } text-white`}
+                >
+                  <span className="text-2xl">❤️</span>
+                  <span>{hasLiked ? 'Ya reaccionaste' : 'Me encantó esta temporada'}</span>
+                </button>
+                <p className="text-sm text-muted-foreground">
+                  {seasonLikes.toLocaleString()} {seasonLikes === 1 ? 'persona ha' : 'personas han'} reaccionado
+                </p>
+              </div>
+            </div>
+
+            {/* Estadísticas totales */}
+            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-2 text-3xl font-bold text-foreground">
+                  <span>📊</span>
+                  <span>6,679,295</span>
+                </div>
+                <p className="text-xl text-foreground font-semibold">
+                  votos totales durante la temporada
+                </p>
+                <p className="text-lg text-foreground mt-4">
+                  <span className="font-bold"> lacasavota.com</span> le da las gracias a toda la comunidad
+                </p>
+              </div>
+            </div>
+
+            {/* Invitación al muro */}
+            <div className="bg-white/50 dark:bg-black/20 rounded-xl p-5 border border-blue-500/30">
+              <p className="text-lg text-foreground font-medium mb-4">
+                💬 Recuerda comentar en el muro y compartir tus pensamientos
+              </p>
+              <button
+                onClick={() => router.push('/muro')}
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-semibold hover:scale-105 transition-all duration-200 shadow-lg"
+              >
+                💭 Ir al Muro
+              </button>
+            </div>
+
+            {/* Despedida */}
+            <div className="pt-2">
+              <p className="text-2xl font-bold text-foreground mb-3">
+                👋 Nos vemos en la próxima Casa de Telemundo el próximo año
+              </p>
+              <p className="text-base text-muted-foreground">
+                ¡Gracias por ser parte de esta increíble temporada! 💖
+              </p>
             </div>
           </div>
         </div>
@@ -899,19 +1072,17 @@ export default function Home() {
         ) : null}
 
 
-        {/* Vote Button o Estado de Votación */}
-        {votingData?.week && (
+        {/* Vote Button o Estado de Votación - COMENTADO PARA CIERRE DE TEMPORADA */}
+        {/* {votingData?.week && (
           <>
             {votingData.week.isActive && votingData.week.status === 'voting' ? (
               <div className="space-y-3">
-                {/* Contador regresivo */}
                 {votingData.week.votingEndDate && (
                   <div style={{display: 'none'}}>
                     <CountdownTimer endDate={votingData.week.votingEndDate} />
                   </div>
                 )}
 
-                {/* In-Article Ad */}
                 <InArticleAd />
 
                 <button
@@ -931,7 +1102,7 @@ export default function Home() {
               </div>
             )}
           </>
-        )}
+        )} */}
 
         {/* Eliminated Candidate Section */}
         {votingData?.eliminatedCandidate && votingData.week.status === 'completed' && (
@@ -976,8 +1147,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* Nominees and Trends Tabs */}
-        {votingData?.nominees && votingData.nominees.length > 0 && (
+        {/* Nominees and Trends Tabs - COMENTADO PARA CIERRE DE TEMPORADA */}
+        {/* {votingData?.nominees && votingData.nominees.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-foreground">Nominados de la semana - lacasavota.com</h2>
@@ -989,7 +1160,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Tab Navigation */}
             <div className="flex space-x-1 bg-muted/30 p-1 rounded-lg">
               <button
                 onClick={() => setActiveTab('current')}
@@ -1013,7 +1183,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Tab Content */}
             <div className="min-h-[400px]">
               {activeTab === 'current' ? (
                 <div className="space-y-4">
@@ -1030,7 +1199,6 @@ export default function Home() {
                       onClick={() => handleCandidateClick(nominee.id, nominee.name)}
                     >
                       <div className="flex items-center space-x-4">
-                        {/* Position Badge */}
                         <div className={`position-badge ${
                           index === 0
                             ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg'
@@ -1043,7 +1211,6 @@ export default function Home() {
                           {index === 0 ? '👑' : `#${index + 1}`}
                         </div>
 
-                        {/* Avatar */}
                         <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
                           index === 0
                             ? 'bg-gradient-to-br from-yellow-400/30 to-amber-500/30 avatar-glow shadow-lg'
@@ -1062,7 +1229,6 @@ export default function Home() {
                           )}
                         </div>
 
-                        {/* Info */}
                         <div className="flex-1">
                           <h3 className={`font-semibold ${
                             index === 0
@@ -1082,7 +1248,6 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {/* Percentage and Votes */}
                         <div className="text-right">
                           <div className={`text-2xl font-bold ${
                             index === 0 ? 'text-white' : 'text-primary'
@@ -1104,15 +1269,15 @@ export default function Home() {
               )}
             </div>
           </div>
-        )}
+        )} */}
 
 
 
         {/* Small Banner Ad before Stats */}
         <SmallBannerAd />
 
-        {/* Quick Stats + Ver Historial + Team Influence */}
-        {votingData?.nominees && (
+        {/* Quick Stats + Ver Historial + Team Influence - COMENTADO PARA CIERRE DE TEMPORADA */}
+        {/* {votingData?.nominees && (
           <div className="bg-card rounded-xl p-6 border border-border/20">
             <h3 className="font-semibold text-foreground mb-4">Estadísticas</h3>
             <div className="grid grid-cols-2 gap-4 text-center mb-6">
@@ -1128,12 +1293,10 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Team Influence Chart */}
             <div className="border-t border-border/20 pt-4 pb-4">
               <TeamInfluenceChart nominees={votingData.nominees} />
             </div>
 
-            {/* Ver Historial de Votos */}
             <div className="border-t border-border/20 pt-4">
               <div className="text-center">
                 <h4 className="font-semibold text-foreground mb-2 flex items-center justify-center gap-2">
@@ -1151,10 +1314,10 @@ export default function Home() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
-        {/* Share App Banner - Movido aquí */}
-        {session && votingData?.week && canReceiveShareBonus && (
+        {/* Share App Banner - COMENTADO PARA CIERRE DE TEMPORADA */}
+        {/* {session && votingData?.week && canReceiveShareBonus && (
           <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-4">
             <div className="text-center">
               <h3 className="text-lg font-bold text-foreground mb-2">
@@ -1171,10 +1334,10 @@ export default function Home() {
               </button>
             </div>
           </div>
-        )}
+        )} */}
 
-        {/* Mensaje cuando ya recibió el bonus hoy */}
-        {session && votingData?.week && !canReceiveShareBonus && (
+        {/* Mensaje cuando ya recibió el bonus hoy - COMENTADO PARA CIERRE DE TEMPORADA */}
+        {/* {session && votingData?.week && !canReceiveShareBonus && (
           <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
             <div className="text-center">
               <p className="text-green-600 font-medium">
@@ -1185,7 +1348,7 @@ export default function Home() {
               </p>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Nuevo Simulador de Nominaciones - Oculto temporalmente */}
         <div className="hidden bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-6">
@@ -1352,14 +1515,14 @@ export default function Home() {
           </div>
         )}
 
-        {/* CREA TU TOP Block */}
-        <div className="bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-indigo-500/10 border border-purple-500/20 rounded-xl p-6 text-center">
+        {/* CREA TU TOP Block - COMENTADO PARA CIERRE DE TEMPORADA */}
+        {/* <div className="bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-indigo-500/10 border border-purple-500/20 rounded-xl p-6 text-center">
           <div className="text-4xl mb-3">🏆</div>
           <h3 className="text-xl font-bold text-foreground mb-2">
             CREA TU TOP DE HABITANTES
           </h3>
           <p className="text-muted-foreground text-sm mb-4">
-            Participa en la encuesta global y ordena a todos los habitantes según tus preferencias. 
+            Participa en la encuesta global y ordena a todos los habitantes según tus preferencias.
             ¡Tu opinión cuenta para el ranking mundial!
           </p>
           <button
@@ -1368,7 +1531,7 @@ export default function Home() {
           >
             🌍 IR AL RANKING GLOBAL
           </button>
-        </div>
+        </div> */}
 
         {/* Banner Ad - Bottom */}
         <BannerAd />
